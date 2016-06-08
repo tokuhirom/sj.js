@@ -14,7 +14,7 @@
     'sj-mouseover': 'mouseover',
     'sj-mouseup': 'mouseup',
     'sj-paste': 'paste',
-    'sj-selected': 'selected,'
+    'sj-selected': 'selected',
     'sj-submit': 'onsubmit'
   };
 
