@@ -122,6 +122,26 @@ customElements.define('test-for', class extends HTMLElementBase {
   }
 });
 
+customElements.define('test-attr-var', class extends HTMLElementBase {
+  template() {
+    return `
+    <h1>Attr variable</h1>
+    <div style="color: {{ccc}}">CONTENT</div>`;
+  }
+
+  initialize() {
+    this.scope.ccc = "green";
+  }
+
+  attachedCallback() {
+  }
+
+  done_testing() {
+    const elems = this.querySelector('div');
+    return elems.style.color === 'green';
+  }
+});
+
 // test case runner
 window.addEventListener("load", function () {
   const tests = document.getElementsByClassName("test");

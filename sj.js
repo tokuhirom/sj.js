@@ -128,7 +128,11 @@
           }
         }
       } else {
-        IncrementalDOM.attr(attr.name, attr.value);
+        let labelValue = attr.value;
+        labelValue = labelValue.replace(/\{\{(\w+)\}\}/g, (m, s) => {
+          return scope[s];
+        });
+        IncrementalDOM.attr(attr.name, labelValue);
       }
       return [isModelAttribute, hasForAttribute];
     }
