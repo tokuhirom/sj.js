@@ -1,12 +1,29 @@
 <!doctype html>
 <html>
-  <head>
-    <script type="text/javascript" src="node_modules/webcomponents.js/webcomponents.js"></script>
-    <script type="text/javascript" src="polyfill.js"></script>
-    <script type="text/javascript" src="sj.js"></script>
-    <script type="text/javascript" src="demo.js"></script>
-  </head>
-  <body>
-    <x-foo></x-foo>
-  </body>
+<head>
+  <script type="text/javascript" src="node_modules/webcomponents.js/webcomponents.js"></script>
+  <script type="text/javascript" src="polyfill.js"></script>
+  <script type="text/javascript" src="sj.js"></script>
+  <script type="text/javascript" src="demo.js"></script>
+</head>
+<body>
+Result: <span id="testResult">in progress...</span>
+<hr>
+<x-foo></x-foo>
+<div class="testcases">
+  <test-events class="test"></test-events>
+  <test-input class="test">test-input</test-input>
+  <test-textarea class="test">test-textarea</test-textarea>
+  <test-from-controller class="test"></test-from-controller>
+  <test-select class="test"></test-select>
+</div>
+
+<style>
+  .testcases > * {
+    padding: 20px;
+    margin-top: 80px;
+    display: block;
+  }
+</style>
+</body>
 </html>
