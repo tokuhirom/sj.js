@@ -1,33 +1,3 @@
-class FooElement extends HTMLElementBase {
-  constructor() {
-    super();
-  }
-
-  createdCallback() {
-    super.createdCallback()
-
-    this.innerHTML = `
-
-        <hr>
-
-
-        <hr>
-
-        `;
-
-    this.scope.bar = "aaa";
-  }
-
-  btnclick(e) {
-    alert("Clicked");
-  }
-
-  set name(v) {
-    console.log(v);
-  }
-}
-customElements.define('x-foo', FooElement);
-
 customElements.define('test-events', class extends HTMLElementBase {
   initialize() {
     this.innerHTML = `
