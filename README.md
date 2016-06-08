@@ -13,3 +13,12 @@ This library is based on incremental-dom.
     </select>
 
 TODO: expression in attributes
+
+## sj-expression
+
+sj supports sj-expression.
+
+    x : get `scope['x']`
+    x.0 : get `scope['x'][0]`
+    x.foo() : call `scope['x']['foo']()`
+

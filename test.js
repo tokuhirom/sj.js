@@ -1,3 +1,14 @@
+/**
+ *
+ * You shouldn't use following syntax in this script:
+ *
+ * - Safari doesn't support `let` and `const` yet@20160609.
+ *   - https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/let
+ * - Safari doesn't support Arrow expression like `e => { }` yet @20160609
+ *   - https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Functions/Arrow_functions
+ *
+ */
+
 customElements.define('test-events', class extends HTMLElementBase {
   template() {
     return `
@@ -6,7 +17,7 @@ customElements.define('test-events', class extends HTMLElementBase {
   }
 
   attachedCallback() {
-    let elem = document.getElementById("clickTest");
+    var elem = document.getElementById("clickTest");
     elem.click();
   }
 
@@ -29,7 +40,7 @@ customElements.define('test-input', class extends HTMLElementBase {
   }
 
   attachedCallback() {
-    const input = this.querySelector('input');
+    var input = this.querySelector('input');
     input.value = 'foo';
     input.dispatchEvent(new Event("change"));
   }
@@ -49,7 +60,7 @@ customElements.define('test-textarea', class extends HTMLElementBase {
   }
 
   attachedCallback() {
-    const input = this.querySelector('textarea');
+    var input = this.querySelector('textarea');
     input.value = "foo";
     input.dispatchEvent(new Event("change"));
   }
@@ -116,7 +127,7 @@ customElements.define('test-for', class extends HTMLElementBase {
   }
 
   doneTesting() {
-    const elems = this.querySelectorAll('div');
+    var elems = this.querySelectorAll('div');
     return elems.length == 4 && elems[0].textContent == "4649";
   }
 });
@@ -136,7 +147,7 @@ customElements.define('test-attr-var', class extends HTMLElementBase {
   }
 
   doneTesting() {
-    const elems = this.querySelector('div');
+    var elems = this.querySelector('div');
     return elems.style.color === 'green';
   }
 });
@@ -150,26 +161,26 @@ customElements.define('test-if', class extends HTMLElementBase {
   }
 
   initialize() {
-    this.scope.getTrue = e => { return true };
-    this.scope.getFalse = e => { return false };
+    this.scope.getTrue = function (e) { return true };
+    this.scope.getFalse = function (e) { return false };
   }
 
   attachedCallback() {
   }
 
   doneTesting() {
-    const elems = this.querySelectorAll('div');
+    var elems = this.querySelectorAll('div');
     return elems.length == 1 && elems[0].textContent === 'TRUE';
   }
 });
 
 // test case runner
 window.addEventListener("load", function () {
-  const tests = document.getElementsByClassName("test");
-  let successCount = 0;
-  let failCount = 0;
-  for (let i = 0, l = tests.length; i < l; i++) {
-    const success = tests[i].doneTesting();
+  var tests = document.getElementsByClassName("test");
+  var successCount = 0;
+  var failCount = 0;
+  for (var i = 0, l = tests.length; i < l; i++) {
+    var success = tests[i].doneTesting();
     if (success) {
       successCount++;
 
@@ -181,7 +192,7 @@ window.addEventListener("load", function () {
     }
   }
 
-  const resultElem = document.getElementById("testResult");
+  var resultElem = document.getElementById("testResult");
   resultElem.textContent = `Success: ${successCount} Fail: ${failCount} Total: ${tests.length}`;
   if (successCount === tests.length) {
     resultElem.style.color = "green";
