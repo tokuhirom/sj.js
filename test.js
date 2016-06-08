@@ -15,7 +15,7 @@ customElements.define('test-events', class extends HTMLElementBase {
     this.clicked = true;
   }
 
-  done_testing() {
+  doneTesting() {
     return !!this.clicked;
   }
 });
@@ -35,7 +35,7 @@ customElements.define('test-input', class extends HTMLElementBase {
     input.dispatchEvent(new Event("change"));
   }
 
-  done_testing() {
+  doneTesting() {
     return this.querySelector('span').textContent === "foo";
   }
 });
@@ -55,7 +55,7 @@ customElements.define('test-textarea', class extends HTMLElementBase {
     input.dispatchEvent(new Event("change"));
   }
 
-  done_testing() {
+  doneTesting() {
     return this.querySelector('span').textContent === "foo";
   }
 });
@@ -72,7 +72,7 @@ customElements.define('test-from-controller', class extends HTMLElementBase {
     `;
   }
 
-  done_testing() {
+  doneTesting() {
     return this.querySelector('input').value === "foo";
   }
 });
@@ -89,7 +89,7 @@ customElements.define('test-select', class extends HTMLElementBase {
     `;
   }
 
-  done_testing() {
+  doneTesting() {
     return this.querySelector('span').textContent === "ppp";
   }
 });
@@ -116,7 +116,7 @@ customElements.define('test-for', class extends HTMLElementBase {
   attachedCallback() {
   }
 
-  done_testing() {
+  doneTesting() {
     const elems = this.querySelectorAll('div');
     return elems.length == 4 && elems[0].textContent == "4649";
   }
@@ -136,7 +136,7 @@ customElements.define('test-attr-var', class extends HTMLElementBase {
   attachedCallback() {
   }
 
-  done_testing() {
+  doneTesting() {
     const elems = this.querySelector('div');
     return elems.style.color === 'green';
   }
@@ -148,7 +148,7 @@ window.addEventListener("load", function () {
   let successCount = 0;
   let failCount = 0;
   for (let i = 0, l = tests.length; i < l; i++) {
-    const success = tests[i].done_testing();
+    const success = tests[i].doneTesting();
     if (success) {
       successCount++;
 
