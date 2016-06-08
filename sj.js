@@ -1,6 +1,20 @@
 (function (window) {
   const sj_attr2event = {
     'sj-click': 'onclick',
+    'sj-checked': 'onchecked',
+    'sj-dblclick': 'dblclick',
+    'sj-focus': 'focus',
+    'sj-keydown': 'keydown',
+    'sj-keypress': 'keypress',
+    'sj-keyup': 'keyup',
+    'sj-mousedown': 'mousedown',
+    'sj-mouseenter': 'mouseenter',
+    'sj-mouseleave': 'mouseleave',
+    'sj-mousemove': 'mousemove',
+    'sj-mouseover': 'mouseover',
+    'sj-mouseup': 'mouseup',
+    'sj-paste': 'paste',
+    'sj-selected': 'selected,'
     'sj-submit': 'onsubmit'
   };
 
