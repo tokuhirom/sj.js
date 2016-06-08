@@ -174,6 +174,28 @@ customElements.define('test-if', class extends HTMLElementBase {
   }
 });
 
+customElements.define('test-var', class extends HTMLElementBase {
+  template() {
+    return `
+    <h1>Test if</h1>
+    <div sj-if="getFalse()">FALSE</div>
+    <div sj-if="getTrue()">TRUE</div>`;
+  }
+
+  initialize() {
+    this.scope.getTrue = function (e) { return true };
+    this.scope.getFalse = function (e) { return false };
+  }
+
+  attachedCallback() {
+  }
+
+  doneTesting() {
+    var elems = this.querySelectorAll('div');
+    return elems.length == 1 && elems[0].textContent === 'TRUE';
+  }
+});
+
 // test case runner
 window.addEventListener("load", function () {
   var tests = document.getElementsByClassName("test");

@@ -1,8 +1,6 @@
 # sj.js
 
-Tiny 2way data binding library for custom elements.
-
-This library is based on incremental-dom.
+Tiny javascript view for custom elements based on incremental-dom.
 
 ## Supported syntax
 
