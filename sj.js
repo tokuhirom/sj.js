@@ -38,46 +38,46 @@
         const children = this.templateElement.children;
         for (let i = 0; i < children.length; ++i) {
 
-          this.renderDOM(children[i]);
+          this.renderDOM(children[i], this.scope);
         }
       });
     }
 
-    renderDOM(elem) {
+    renderDOM(elem, scope) {
       if (elem instanceof Text) {
         IncrementalDOM.text(elem.textContent);
         return;
       }
       IncrementalDOM.elementOpenStart(elem.tagName.toLowerCase());
-      const modelName = this.renderAttributes(elem);
-      if (modelName && this.scope[modelName] && isFormElement(elem)) {
-        IncrementalDOM.attr("value", this.scope[modelName]);
+      const modelName = this.renderAttributes(elem, scope);
+      if (modelName && scope[modelName] && isFormElement(elem)) {
+        IncrementalDOM.attr("value", scope[modelName]);
       }
       IncrementalDOM.elementOpenEnd(elem.tagName.toLowerCase());
       const children = elem.childNodes;
       for (let i = 0, l = children.length; i < l; ++i) {
-        this.renderDOM(children[i]);
+        this.renderDOM(children[i], scope);
       }
-      if (modelName && this.scope[modelName] && !isFormElement(elem)) {
-        IncrementalDOM.text(this.scope[modelName]);
+      if (modelName && scope[modelName] && !isFormElement(elem)) {
+        IncrementalDOM.text(scope[modelName]);
       }
       IncrementalDOM.elementClose(elem.tagName.toLowerCase());
     }
 
-    renderAttributes(elem) {
+    renderAttributes(elem, scope) {
       let modelName;
       const attrs = elem.attributes;
       for (let i = 0, l = attrs.length; i < l; ++i) {
         const attr = attrs[i];
         const attrName = attr.name;
-        if (this.renderAttribute(attrName, attr, elem)) {
+        if (this.renderAttribute(attrName, attr, elem, scope)) {
           modelName = attr.value;
         }
       }
       return modelName;
     }
 
-    renderAttribute(attrName, attr, elem) {
+    renderAttribute(attrName, attr, elem, scope) {
       let isModelAttribute;
       if (attrName.startsWith('sj-')) {
         const event = sj_attr2event[attrName];
@@ -88,11 +88,11 @@
         } else if (attr.name === 'sj-model') {
           isModelAttribute = attr.value;
           IncrementalDOM.attr("onchange", (e) => {
-            this.scope[attr.value] = e.target.value;
+            scope[attr.value] = e.target.value;
             this.render();
           });
-          if (!this.scope[attr.value]) {
-            this.scope[attr.value] = elem.value;
+          if (!scope[attr.value]) {
+            scope[attr.value] = elem.value;
           }
         }
       } else {
