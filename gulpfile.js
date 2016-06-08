@@ -12,7 +12,7 @@ function jsStream() {
         .pipe(webpack())
         .pipe(babel());
 
-    const bundleStream = gulp.src(["node_modules/webcomponents.js/webcomponents.js", "node_modules/incremental-dom/dist/incremental-dom-min.js", 'src/polyfill.js', 'node_modules/whatwg-fetch/fetch.js'])
+    const bundleStream = gulp.src(["node_modules/webcomponents.js/CustomElements.js", "node_modules/incremental-dom/dist/incremental-dom-min.js", 'src/polyfill.js', 'node_modules/whatwg-fetch/fetch.js'])
         .pipe(plumber());
 
     return merge(bundleStream, srcStream);
