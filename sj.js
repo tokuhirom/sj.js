@@ -62,6 +62,10 @@
         IncrementalDOM.text(elem.textContent);
         return;
       }
+      if (this.shouldHideElement(elem, scope)) {
+        return;
+      }
+
       IncrementalDOM.elementOpenStart(elem.tagName.toLowerCase());
       const [modelName, hasForAttribute] = this.renderAttributes(elem, scope);
       const modelValue = modelName? sjExpression.getValueByPath(scope, modelName) : null;
@@ -89,6 +93,17 @@
       IncrementalDOM.elementClose(elem.tagName.toLowerCase());
     }
 
+    shouldHideElement(elem, scope) {
+      const cond = elem.getAttribute('sj-if');
+      if (cond) {
+        const val = sjExpression.getValueByPath(scope, cond);
+        if (!val) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     renderAttributes(elem, scope) {
       let modelName;
       const attrs = elem.attributes;
@@ -108,6 +123,7 @@
     renderAttribute(attrName, attr, elem, scope) {
       let isModelAttribute;
       let hasForAttribute;
+      let hideElement;
       if (attrName.startsWith('sj-')) {
         const event = sj_attr2event[attrName];
         if (event) {
