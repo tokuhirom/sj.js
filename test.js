@@ -6,7 +6,6 @@ customElements.define('test-events', class extends HTMLElementBase {
   }
 
   attachedCallback() {
-    console.log("GO");
     let elem = document.getElementById("clickTest");
     elem.click();
   }

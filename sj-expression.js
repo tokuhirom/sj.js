@@ -1,6 +1,6 @@
 (function (root) {
   const trace = function (msg) {
-    console.log(msg);
+    // console.log(msg);
   };
 
   function _get(scope, path, origPath) {
