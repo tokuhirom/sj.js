@@ -117,9 +117,9 @@ customElements.define('test-for', class extends HTMLElementBase {
   initialize() {
     this.scope.bar = [
       {boo: 4649},
-      {boo: 4649},
-      {boo: 4649},
-      {boo: 4649}
+      {boo: 1},
+      {boo: 2},
+      {boo: 3}
     ];
   }
 
