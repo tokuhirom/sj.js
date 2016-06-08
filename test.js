@@ -128,7 +128,7 @@ customElements.define('test-for', class extends HTMLElementBase {
 
   doneTesting() {
     var elems = this.querySelectorAll('div');
-    return elems.length == 4 && elems[0].textContent == "4649";
+    return elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' && elems[2].textContent === '2' && elems[3].textContent === '3';
   }
 });
 
