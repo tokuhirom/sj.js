@@ -7293,7 +7293,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 /* 0 */
 /***/function (module, exports, __webpack_require__) {
 
-	window.HTMLElementBase = __webpack_require__(1).HTMLElementBase;
+	window.SJElement = __webpack_require__(1).SJElement;
 
 	/***/
 },
@@ -7304,20 +7304,21 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 	var sj_attr2event = {
 		'sj-click': 'onclick',
+		'sj-blur': 'onblur',
 		'sj-checked': 'onchecked',
-		'sj-dblclick': 'dblclick',
-		'sj-focus': 'focus',
-		'sj-keydown': 'keydown',
-		'sj-keypress': 'keypress',
-		'sj-keyup': 'keyup',
-		'sj-mousedown': 'mousedown',
-		'sj-mouseenter': 'mouseenter',
-		'sj-mouseleave': 'mouseleave',
-		'sj-mousemove': 'mousemove',
-		'sj-mouseover': 'mouseover',
-		'sj-mouseup': 'mouseup',
-		'sj-paste': 'paste',
-		'sj-selected': 'selected',
+		'sj-dblclick': 'ondblclick',
+		'sj-focus': 'onfocus',
+		'sj-keydown': 'onkeydown',
+		'sj-keypress': 'onkeypress',
+		'sj-keyup': 'onkeyup',
+		'sj-mousedown': 'onmousedown',
+		'sj-mouseenter': 'onmouseenter',
+		'sj-mouseleave': 'onmouseleave',
+		'sj-mousemove': 'onmousemove',
+		'sj-mouseover': 'onmouseover',
+		'sj-mouseup': 'onmouseup',
+		'sj-paste': 'onpaste',
+		'sj-selected': 'onselected',
 		'sj-submit': 'onsubmit'
 	};
 
@@ -7325,16 +7326,16 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 		return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
 	}
 
-	var HTMLElementBase = function (_HTMLElement) {
-		_inherits(HTMLElementBase, _HTMLElement);
+	var SJElement = function (_HTMLElement) {
+		_inherits(SJElement, _HTMLElement);
 
-		function HTMLElementBase() {
-			_classCallCheck(this, HTMLElementBase);
+		function SJElement() {
+			_classCallCheck(this, SJElement);
 
-			return _possibleConstructorReturn(this, Object.getPrototypeOf(HTMLElementBase).apply(this, arguments));
+			return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
 		}
 
-		_createClass(HTMLElementBase, [{
+		_createClass(SJElement, [{
 			key: 'createdCallback',
 			value: function createdCallback() {
 				this.scope = {};
@@ -7530,10 +7531,10 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 			}
 		}]);
 
-		return HTMLElementBase;
+		return SJElement;
 	}(HTMLElement);
 
-	module.exports.HTMLElementBase = HTMLElementBase;
+	module.exports.SJElement = SJElement;
 
 	/***/
 },
