@@ -9,6 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "incremental-dom": "^0.4.1",
     "webcomponents.js": "^0.7.22"
   }
 }

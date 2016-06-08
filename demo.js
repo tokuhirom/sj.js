@@ -30,8 +30,8 @@ customElements.define('test-input', class extends HTMLElementBase {
   }
 
   attachedCallback() {
-    this.querySelector('input').value = 'foo';
     const input = this.querySelector('input');
+    input.value = 'foo';
     input.dispatchEvent(new Event("change"));
   }
 
@@ -96,7 +96,7 @@ customElements.define('test-select', class extends HTMLElementBase {
 
 // test case runner
 window.addEventListener("load", function () {
-  let tests = document.getElementsByClassName("test");
+  const tests = document.getElementsByClassName("test");
   let successCount = 0;
   let failCount = 0;
   for (let i = 0, l = tests.length; i < l; i++) {
@@ -107,6 +107,7 @@ window.addEventListener("load", function () {
       tests[i].style.backgroundColor = "green";
     } else {
       failCount++;
+
       tests[i].style.backgroundColor = "red";
     }
   }
