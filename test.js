@@ -16,16 +16,14 @@ customElements.define('test-events', class extends HTMLElementBase {
     `;
   }
 
-  attachedCallback() {
-    var elem = document.getElementById("clickTest");
-    elem.click();
-  }
-
   btnclick() {
     this.clicked = true;
   }
 
-  doneTesting() {
+  runTest() {
+    var elem = document.getElementById("clickTest");
+    elem.click();
+
     return !!this.clicked;
   }
 });
@@ -39,13 +37,11 @@ customElements.define('test-input', class extends HTMLElementBase {
     `;
   }
 
-  attachedCallback() {
+  runTest() {
     var input = this.querySelector('input');
     input.value = 'foo';
     input.dispatchEvent(new Event("change"));
-  }
 
-  doneTesting() {
     return this.querySelector('span').textContent === "foo";
   }
 });
@@ -59,13 +55,11 @@ customElements.define('test-textarea', class extends HTMLElementBase {
     `;
   }
 
-  attachedCallback() {
+  runTest() {
     var input = this.querySelector('textarea');
     input.value = "foo";
     input.dispatchEvent(new Event("change"));
-  }
 
-  doneTesting() {
     return this.querySelector('span').textContent === "foo";
   }
 });
@@ -82,7 +76,7 @@ customElements.define('test-from-controller', class extends HTMLElementBase {
     `;
   }
 
-  doneTesting() {
+  runTest() {
     return this.querySelector('input').value === "foo";
   }
 });
@@ -99,7 +93,7 @@ customElements.define('test-select', class extends HTMLElementBase {
     `;
   }
 
-  doneTesting() {
+  runTest() {
     return this.querySelector('span').textContent === "ppp";
   }
 });
@@ -123,10 +117,7 @@ customElements.define('test-for', class extends HTMLElementBase {
     ];
   }
 
-  attachedCallback() {
-  }
-
-  doneTesting() {
+  runTest() {
     var elems = this.querySelectorAll('div');
     return elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' && elems[2].textContent === '2' && elems[3].textContent === '3';
   }
@@ -143,10 +134,7 @@ customElements.define('test-attr-var', class extends HTMLElementBase {
     this.scope.ccc = "green";
   }
 
-  attachedCallback() {
-  }
-
-  doneTesting() {
+  runTest() {
     var elems = this.querySelector('div');
     return elems.style.color === 'green';
   }
@@ -165,10 +153,7 @@ customElements.define('test-if', class extends HTMLElementBase {
     this.scope.getFalse = function (e) { return false };
   }
 
-  attachedCallback() {
-  }
-
-  doneTesting() {
+  runTest() {
     var elems = this.querySelectorAll('div');
     return elems.length == 1 && elems[0].textContent === 'TRUE';
   }
@@ -187,10 +172,7 @@ customElements.define('test-var', class extends HTMLElementBase {
     this.scope.getFalse = function (e) { return false };
   }
 
-  attachedCallback() {
-  }
-
-  doneTesting() {
+  runTest() {
     var elems = this.querySelectorAll('div');
     return elems.length == 1 && elems[0].textContent === 'TRUE';
   }
@@ -208,7 +190,7 @@ customElements.define('test-text-var', class extends HTMLElementBase {
     this.scope.name = 'John';
   }
 
-  doneTesting() {
+  runTest() {
     var elem = this.querySelector('div');
     return elem.textContent === 'Hello, John';
   }
@@ -220,7 +202,7 @@ window.addEventListener("load", function () {
   var successCount = 0;
   var failCount = 0;
   for (var i = 0, l = tests.length; i < l; i++) {
-    var success = tests[i].doneTesting();
+    var success = tests[i].runTest();
     if (success) {
       successCount++;
 
