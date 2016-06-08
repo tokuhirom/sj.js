@@ -94,6 +94,34 @@ customElements.define('test-select', class extends HTMLElementBase {
   }
 });
 
+customElements.define('test-for', class extends HTMLElementBase {
+  template() {
+    return `
+        <h1>bar</h1>
+        <div sj-for="x in bar">
+          <div class="item" sj-model="x.boo">replace here</div>
+        </div>
+    `;
+  }
+
+  initialize() {
+    this.scope.bar = [
+      {boo: 4649},
+      {boo: 4649},
+      {boo: 4649},
+      {boo: 4649}
+    ];
+  }
+
+  attachedCallback() {
+  }
+
+  done_testing() {
+    const elems = this.querySelectorAll('div');
+    return elems.length == 4 && elems[0].textContent == "4649";
+  }
+});
+
 // test case runner
 window.addEventListener("load", function () {
   const tests = document.getElementsByClassName("test");
