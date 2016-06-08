@@ -196,6 +196,24 @@ customElements.define('test-var', class extends HTMLElementBase {
   }
 });
 
+customElements.define('test-text-var', class extends HTMLElementBase {
+  template() {
+    return `
+    <h1>Test if</h1>
+    <div>Hello, {{name}}</div>
+    `;
+  }
+
+  initialize() {
+    this.scope.name = 'John';
+  }
+
+  doneTesting() {
+    var elem = this.querySelector('div');
+    return elem.textContent === 'Hello, John';
+  }
+});
+
 // test case runner
 window.addEventListener("load", function () {
   var tests = document.getElementsByClassName("test");

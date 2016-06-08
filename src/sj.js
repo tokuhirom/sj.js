@@ -60,7 +60,7 @@ class HTMLElementBase extends HTMLElement {
 
   renderDOM(elem, scope) {
     if (elem instanceof Text) {
-      IncrementalDOM.text(elem.textContent);
+      IncrementalDOM.text(this.replaceVariables(elem.textContent, scope));
       return;
     }
     if (this.shouldHideElement(elem, scope)) {
@@ -81,7 +81,7 @@ class HTMLElementBase extends HTMLElement {
         const child = children[i];
         if (child instanceof Text) {
           if (!modelName) {
-            IncrementalDOM.text(child.textContent);
+            IncrementalDOM.text(this.replaceVariables(child.textContent, scope));
           }
         } else {
           this.renderDOM(child, scope);
@@ -159,13 +159,17 @@ class HTMLElementBase extends HTMLElement {
         }
       }
     } else {
-      let labelValue = attr.value;
-      labelValue = labelValue.replace(/\{\{(\w+)\}\}/g, (m, s) => {
-        return scope[s];
-      });
+      const labelValue = this.replaceVariables(attr.value, scope);
       IncrementalDOM.attr(attr.name, labelValue);
     }
     return [isModelAttribute, hasForAttribute];
+  }
+
+  replaceVariables(label, scope) {
+      console.log(label);
+    return label.replace(/\{\{(\w+)\}\}/g, (m, s) => {
+      return scope[s];
+    });
   }
 
 }
