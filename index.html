@@ -3,12 +3,18 @@
 <head>
   <script type="text/javascript" src="node_modules/webcomponents.js/webcomponents.js"></script>
   <script type="text/javascript" src="polyfill.js"></script>
+  <script type="text/javascript" src="node_modules/incremental-dom/dist/incremental-dom-min.js"></script>
   <script type="text/javascript" src="sj.js"></script>
   <script type="text/javascript" src="demo.js"></script>
 </head>
 <body>
-Result: <span id="testResult">in progress...</span>
+
+<div id="result">
+  Result: <span id="testResult">in progress...</span>
+</div>
+
 <hr>
+
 <div class="testcases">
   <test-events class="test"></test-events>
   <test-input class="test">test-input</test-input>
@@ -24,5 +30,6 @@ Result: <span id="testResult">in progress...</span>
     display: block;
   }
 </style>
+
 </body>
 </html>
