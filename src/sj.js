@@ -26,7 +26,7 @@ function isFormElement(elem) {
          || elem instanceof HTMLSelectElement;
 }
 
-class HTMLElementBase extends HTMLElement {
+class SJElement extends HTMLElement {
   createdCallback() {
     this.scope = {};
 
@@ -175,5 +175,5 @@ class HTMLElementBase extends HTMLElement {
 
 }
 
-module.exports.HTMLElementBase = HTMLElementBase;
+module.exports.SJElement = SJElement;
 

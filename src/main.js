@@ -1,1 +1,1 @@
-window.HTMLElementBase = require('./sj.js').HTMLElementBase;
+window.SJElement = require('./sj.js').SJElement;

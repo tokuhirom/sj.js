@@ -9,7 +9,7 @@
  *
  */
 
-customElements.define('test-events', class extends HTMLElementBase {
+customElements.define('test-events', class extends SJElement {
   template() {
     return `
         <button id="clickTest" sj-click="btnclick">yay</button>
@@ -28,7 +28,7 @@ customElements.define('test-events', class extends HTMLElementBase {
   }
 });
 
-customElements.define('test-input', class extends HTMLElementBase {
+customElements.define('test-input', class extends SJElement {
   template() {
     return `
         <h1>Input</h1>
@@ -46,7 +46,7 @@ customElements.define('test-input', class extends HTMLElementBase {
   }
 });
 
-customElements.define('test-textarea', class extends HTMLElementBase {
+customElements.define('test-textarea', class extends SJElement {
   template() {
     return `
         <h1>Textarea</h1>
@@ -64,7 +64,7 @@ customElements.define('test-textarea', class extends HTMLElementBase {
   }
 });
 
-customElements.define('test-from-controller', class extends HTMLElementBase {
+customElements.define('test-from-controller', class extends SJElement {
   initialize() {
     this.scope.hogehoge = "foo";
   }
@@ -81,7 +81,7 @@ customElements.define('test-from-controller', class extends HTMLElementBase {
   }
 });
 
-customElements.define('test-select', class extends HTMLElementBase {
+customElements.define('test-select', class extends SJElement {
   template() {
     return `
         <h1>Select</h1>
@@ -98,7 +98,7 @@ customElements.define('test-select', class extends HTMLElementBase {
   }
 });
 
-customElements.define('test-for', class extends HTMLElementBase {
+customElements.define('test-for', class extends SJElement {
   template() {
     return `
         <h1>bar</h1>
@@ -123,7 +123,7 @@ customElements.define('test-for', class extends HTMLElementBase {
   }
 });
 
-customElements.define('test-attr-var', class extends HTMLElementBase {
+customElements.define('test-attr-var', class extends SJElement {
   template() {
     return `
     <h1>Attr variable</h1>
@@ -140,7 +140,7 @@ customElements.define('test-attr-var', class extends HTMLElementBase {
   }
 });
 
-customElements.define('test-if', class extends HTMLElementBase {
+customElements.define('test-if', class extends SJElement {
   template() {
     return `
     <h1>Test if</h1>
@@ -159,7 +159,7 @@ customElements.define('test-if', class extends HTMLElementBase {
   }
 });
 
-customElements.define('test-var', class extends HTMLElementBase {
+customElements.define('test-var', class extends SJElement {
   template() {
     return `
     <h1>Test if</h1>
@@ -178,7 +178,7 @@ customElements.define('test-var', class extends HTMLElementBase {
   }
 });
 
-customElements.define('test-text-var', class extends HTMLElementBase {
+customElements.define('test-text-var', class extends SJElement {
   template() {
     return `
     <h1>Test if</h1>
