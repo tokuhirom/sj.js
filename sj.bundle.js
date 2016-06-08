@@ -7376,7 +7376,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 			key: 'renderDOM',
 			value: function renderDOM(elem, scope) {
 				if (elem instanceof Text) {
-					IncrementalDOM.text(elem.textContent);
+					IncrementalDOM.text(this.replaceVariables(elem.textContent, scope));
 					return;
 				}
 				if (this.shouldHideElement(elem, scope)) {
@@ -7404,7 +7404,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 						var child = children[i];
 						if (child instanceof Text) {
 							if (!modelName) {
-								IncrementalDOM.text(child.textContent);
+								IncrementalDOM.text(this.replaceVariables(child.textContent, scope));
 							}
 						} else {
 							this.renderDOM(child, scope);
@@ -7515,13 +7515,18 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 						}
 					}
 				} else {
-					var labelValue = attr.value;
-					labelValue = labelValue.replace(/\{\{(\w+)\}\}/g, function (m, s) {
-						return scope[s];
-					});
+					var labelValue = this.replaceVariables(attr.value, scope);
 					IncrementalDOM.attr(attr.name, labelValue);
 				}
 				return [isModelAttribute, hasForAttribute];
+			}
+		}, {
+			key: 'replaceVariables',
+			value: function replaceVariables(label, scope) {
+				console.log(label);
+				return label.replace(/\{\{(\w+)\}\}/g, function (m, s) {
+					return scope[s];
+				});
 			}
 		}]);
 
