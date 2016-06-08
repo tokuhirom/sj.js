@@ -49,7 +49,7 @@
         return;
       }
       IncrementalDOM.elementOpenStart(elem.tagName.toLowerCase());
-      let modelName = this.renderAttributes(elem);
+      const modelName = this.renderAttributes(elem);
       if (modelName && this.scope[modelName] && isFormElement(elem)) {
         IncrementalDOM.attr("value", this.scope[modelName]);
       }
@@ -70,27 +70,35 @@
       for (let i = 0, l = attrs.length; i < l; ++i) {
         const attr = attrs[i];
         const attrName = attr.name;
-        if (attrName.startsWith('sj-')) {
-          const event = sj_attr2event[attrName];
-          if (event) {
-            IncrementalDOM.attr(event, (e) => {
-              this[attr.value](e);
-            });
-          } else if (attr.name === 'sj-model') {
-            modelName = attr.value;
-            IncrementalDOM.attr("onchange", (e) => {
-              this.scope[attr.value] = e.target.value;
-              this.render();
-            });
-            if (!this.scope[attr.value]) {
-              this.scope[attr.value] = elem.value;
-            }
-          }
-        } else {
-          IncrementalDOM.attr(attr.name, attr.value);
+        if (this.renderAttribute(attrName, attr, elem)) {
+          modelName = attr.value;
         }
       }
       return modelName;
+    }
+
+    renderAttribute(attrName, attr, elem) {
+      let isModelAttribute;
+      if (attrName.startsWith('sj-')) {
+        const event = sj_attr2event[attrName];
+        if (event) {
+          IncrementalDOM.attr(event, (e) => {
+            this[attr.value](e);
+          });
+        } else if (attr.name === 'sj-model') {
+          isModelAttribute = attr.value;
+          IncrementalDOM.attr("onchange", (e) => {
+            this.scope[attr.value] = e.target.value;
+            this.render();
+          });
+          if (!this.scope[attr.value]) {
+            this.scope[attr.value] = elem.value;
+          }
+        }
+      } else {
+        IncrementalDOM.attr(attr.name, attr.value);
+      }
+      return isModelAttribute;
     }
 
   }
