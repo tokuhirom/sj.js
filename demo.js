@@ -1,8 +1,8 @@
 customElements.define('test-events', class extends HTMLElementBase {
-  initialize() {
-    this.innerHTML = `
+  template() {
+    return `
         <button id="clickTest" sj-click="btnclick">yay</button>
-        `;
+    `;
   }
 
   attachedCallback() {
@@ -21,12 +21,12 @@ customElements.define('test-events', class extends HTMLElementBase {
 });
 
 customElements.define('test-input', class extends HTMLElementBase {
-  initialize() {
-    this.innerHTML = `
+  template() {
+    return `
         <h1>Input</h1>
         <input type="text" name="name" sj-model="name" id="myInput">
         Hello, <span sj-model="name"></span>
-        `;
+    `;
   }
 
   attachedCallback() {
@@ -41,12 +41,12 @@ customElements.define('test-input', class extends HTMLElementBase {
 });
 
 customElements.define('test-textarea', class extends HTMLElementBase {
-  initialize() {
-    this.innerHTML = `
+  template() {
+    return `
         <h1>Textarea</h1>
         <textarea name="hoge" sj-model="hoge"></textarea>
         Hello, <span sj-model="hoge"></span>
-        `;
+    `;
   }
 
   attachedCallback() {
@@ -62,14 +62,14 @@ customElements.define('test-textarea', class extends HTMLElementBase {
 
 customElements.define('test-from-controller', class extends HTMLElementBase {
   initialize() {
-    this.innerHTML = `
-        <h1>Passed from controller</h1>
-        <input type="text" name="bar" sj-model="bar">
-    `;
-    this.scope.bar = "foo";
+    this.scope.hogehoge = "foo";
   }
 
-  attachedCallback() {
+  template() {
+    return `
+        <h1>Passed from controller</h1>
+        <input type="text" name="bar" sj-model="hogehoge">
+    `;
   }
 
   done_testing() {
@@ -78,8 +78,8 @@ customElements.define('test-from-controller', class extends HTMLElementBase {
 });
 
 customElements.define('test-select', class extends HTMLElementBase {
-  initialize() {
-    this.innerHTML = `
+  template() {
+    return `
         <h1>Select</h1>
         <select sj-model="sss">
             <option value="ppp">ppp</option>

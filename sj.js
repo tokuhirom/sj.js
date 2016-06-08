@@ -1,7 +1,7 @@
 (function (window) {
   const sj_attr2event = {
-    'sj-click': 'click',
-    'sj-submit': 'submit'
+    'sj-click': 'onclick',
+    'sj-submit': 'onsubmit'
   };
 
   function isFormElement(elem) {
@@ -28,17 +28,77 @@
       this.feedbackQueue = []; // queue
       this.model2elements = {};
 
+      const template = this.template();
+      const html = document.createElement("div");
+      html.innerHTML = template;
+      this.templateElement = html;
+
       this.initialize();
-      this.go();
+
+      this.render();
     }
 
     initialize() {
       // nop. abstract method.
     }
 
+    render() {
+      console.log("render");
+      IncrementalDOM.patch(this, () => {
+        const children = this.templateElement.children;
+        for (let i = 0; i < children.length; ++i) {
+
+          this.renderDOM(children[i]);
+        }
+      });
+    }
+
+    renderDOM(elem) {
+      if (elem instanceof Text) {
+        IncrementalDOM.text(elem.textContent);
+        return;
+      }
+      IncrementalDOM.elementOpenStart(elem.tagName.toLowerCase());
+      let modelName;
+      const attrs = elem.attributes;
+      for (let i = 0, l = attrs.length; i < l; ++i) {
+        const attr = attrs[i];
+        const attrName = attr.name;
+        if (attrName.startsWith('sj-')) {
+          let event = sj_attr2event[attrName];
+          if (event) {
+            IncrementalDOM.attr(event, (e) => {
+              this[attr.value](e);
+            });
+          } else if (attr.name === 'sj-model') {
+            modelName = attr.value;
+            IncrementalDOM.attr("onchange", (e) => {
+              this.scope[attr.value] = e.target.value;
+              this.render();
+            });
+            if (!this.scope[attr.value]) {
+              this.scope[attr.value] = elem.value;
+            }
+          }
+        } else {
+          IncrementalDOM.attr(attr.name, attr.value);
+        }
+      }
+      if (modelName && this.scope[modelName] && isFormElement(elem)) {
+        IncrementalDOM.attr("value", this.scope[modelName]);
+      }
+      IncrementalDOM.elementOpenEnd(elem.tagName.toLowerCase());
+      const children = elem.childNodes;
+      for (let i = 0, l = children.length; i < l; ++i) {
+        this.renderDOM(children[i]);
+      }
+      if (modelName && this.scope[modelName] && !isFormElement(elem)) {
+        IncrementalDOM.text(this.scope[modelName]);
+      }
+      IncrementalDOM.elementClose(elem.tagName.toLowerCase());
+    }
+
     go() {
-      console.log(`scanning ${this.tagName}`);
-      this.scanElements();
       if (!this.scanned) {
         for (const property of this.feedbackQueue) {
           this.feedbackToUI(property, this.scope[property]);
@@ -49,29 +109,8 @@
       }
     }
 
-    scanElements() {
-      let children = this.querySelectorAll("*");
-      for (let i = 0; i < children.length; ++i) {
-        let child = children[i];
-        let attrs = child.attributes;
-        for (let j = 0; j < attrs.length; j++) {
-          let attr = attrs[j];
-          if (attr.name.startsWith('sj-')) {
-            let event = sj_attr2event[attr.name];
-            if (event) {
-              this.registerListener(child, event, attr.value);
-            } else if (attr.name == 'sj-model') {
-              this.bindModel(child, attr.value);
-            }
-          }
-        }
-      }
-    }
-
-    registerListener(elem, name, callback) {
-      elem.addEventListener(name, e => {
-        this[callback](e);
-      });
+    template() {
+      throw "Please implement 'template' method";
     }
 
     bindModel(elem, name) {
