@@ -2331,7 +2331,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             var currentScope = Object.assign({}, this.scope);
             currentScope[this.varName] = item;
             currentScope['$index'] = i++;
-            this.renderer(this.element, currentScope);
+            this.renderer.render(this.element, currentScope);
           }
         } catch (err) {
           _didIteratorError = true;
@@ -2502,9 +2502,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             var container = m[2];
 
             var e = elem.querySelector('*');
-            forRenderer = new ForRenderer(function (elem, scope) {
-              _this2.renderDOM(elem, scope);
-            }, e, scope[container], scope, varName);
+            forRenderer = new ForRenderer(this, e, scope[container], scope, varName);
           }
         } else {
           var labelValue = this.replaceVariables(attr.value, scope);
