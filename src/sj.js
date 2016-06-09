@@ -203,7 +203,10 @@
       this.scope = {};
 
       // parse template
-      const template = this.template();
+      var template = this.template();
+      if (template instanceof Function) {
+        template = template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+      }
       const html = document.createElement("div");
       html.innerHTML = template;
       this.renderer = new Renderer(this, html, this.scope);
@@ -215,6 +218,23 @@
 
     template() {
       throw "Please implement 'template' method";
+    }
+
+    attributeChangedCallback(key) {
+      if (this.accessors) {
+        const accessorConf = this.accessors[key];
+        if (accessorConf) {
+          const accessor = accessorConf.set;
+          if (accessor) {
+            accessor.apply(this, [this.getAttribute(key)]);
+            this.update();
+            return;
+          }
+        }
+      }
+
+      this[key] = this.getAttribute(key);
+      this.update();
     }
 
     initialize() {

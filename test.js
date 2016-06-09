@@ -42,26 +42,63 @@ window.addEventListener("load", function () {
   }
   var t = new Assertion(document.getElementById('logs'));
 
-  customElements.define('test-events', class extends SJElement {
-    template() {
-      return `
-      <button id="clickTest" sj-click="btnclick($event)">yay</button>
-      `;
+  function createElement(opts) {
+    var template = opts.template;
+    delete opts['template'];
+    var proto = Object.create(SJElement.prototype);
+    proto.template = (function () {
+      if (template instanceof Function) {
+        return template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+      } else {
+        return template;
+      }
+    });
+    for (var k in opts) {
+      proto[k] = opts[k];
     }
+    return {prototype: proto};
+  }
+  function runTest(tagName, elementClass, code) {
+    try {
+      customElements.define(tagName, elementClass);
+      var elem = document.createElement(tagName);
+      code.apply(elem, [t, tagName]);
+      console.log(elem.innerHTML);
+    } catch (e) {
+      console.log(e);
+      t.fail(`${tag} - ${e}`);
+    }
+  }
 
-    initialize() {
-      this.scope.btnclick = e => {
-        console.log(e);
+  runTest('test-events', createElement({
+    template: function() {/*
+        <button id="clickTest" sj-click="btnclick($event)">yay</button>
+    */},
+    initialize: function() {
+      this.scope.btnclick = function (e) {
         this.scope.clicked = true;
       };
     }
+  }), function (t) {
+    var elem = this.querySelector("#clickTest");
+    elem.click();
 
-    runTest() {
-      var elem = this.querySelector("#clickTest");
-      elem.click();
+    t.ok(!!this.scope.clicked, 'test-events');
+  });
 
-      return !!this.scope.clicked;
+  runTest('test-set-attrs', createElement({
+    template: '<div>{{foo}}</div>',
+    accessors: {
+      foo: {
+        set: function (v) {
+          this.scope.foo = v;
+        }
+      }
     }
+  }), function (t, tagName) {
+    this.setAttribute('foo', 'bar');
+
+    t.ok(this.querySelector('div').textContent, 'bar');
   });
 
   customElements.define('test-input', class extends SJElement {
@@ -388,7 +425,6 @@ window.addEventListener("load", function () {
 
   // test case runner
   var tags = [
-    "test-events",
     "test-input",
     "test-input-nested",
     "test-textarea",
@@ -425,12 +461,12 @@ window.addEventListener("load", function () {
   }
 
   var resultElem = document.getElementById("testResult");
-  resultElem.textContent = `Success: ${t.successCount} Fail: ${t.failCount} Total: ${tags.length}`;
-  if (t.successCount === tags.length) {
-    resultElem.style.color = location.hash? 'yellow' : "green";
-  } else if (!t.failCount && location.hash) {
+  resultElem.textContent = `Success: ${t.successCount} Fail: ${t.failCount}`;
+  if (!t.failCount && location.hash) {
     resultElem.style.color = "yellow";
-  } else {
+  } else if (t.failCount > 0) {
     resultElem.style.color = "red";
+  } else {
+    resultElem.style.color = 'green';
   }
 });
