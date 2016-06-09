@@ -2306,11 +2306,12 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
   }
 
   var ForRenderer = function () {
-    function ForRenderer(renderer, element, scope, varName) {
+    function ForRenderer(renderer, element, items, scope, varName) {
       _classCallCheck(this, ForRenderer);
 
       this.renderer = renderer;
       this.element = element;
+      this.items = items;
       this.scope = scope;
       this.varName = varName;
     }
@@ -2324,7 +2325,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         var _iteratorError = undefined;
 
         try {
-          for (var _iterator = this.scope[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          for (var _iterator = this.items[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
             var item = _step.value;
 
             var currentScope = Object.assign({}, this.scope);
@@ -2503,7 +2504,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             var e = elem.querySelector('*');
             forRenderer = new ForRenderer(function (elem, scope) {
               _this2.renderDOM(elem, scope);
-            }, e, scope[container], varName);
+            }, e, scope[container], scope, varName);
           }
         } else {
           var labelValue = this.replaceVariables(attr.value, scope);
