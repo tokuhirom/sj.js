@@ -49,7 +49,7 @@
         const currentScope = Object.assign({}, this.scope);
         currentScope[this.varName] = item;
         currentScope['$index'] = i++;
-        this.renderer(this.element, currentScope);
+        this.renderer.render(this.element, currentScope);
       }
     }
   }
@@ -177,9 +177,7 @@
           const container = m[2];
 
           const e = elem.querySelector('*');
-          forRenderer = new ForRenderer((elem, scope) => {
-            this.renderDOM(elem, scope)
-          }, e, scope[container], scope, varName);
+          forRenderer = new ForRenderer(this, e, scope[container], scope, varName);
         }
       } else {
         const labelValue = this.replaceVariables(attr.value, scope);
