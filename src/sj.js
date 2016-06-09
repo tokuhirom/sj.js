@@ -184,10 +184,10 @@
           if (!scope[attr.value]) {
             scope[attr.value] = elem.value;
           }
-        } else if (attr.name === 'sj-for') {
+        } else if (attr.name === 'sj-repeat') {
           const m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
           if (!m) {
-            throw "Invalid sj-for value: " + m;
+            throw "Invalid sj-repeat value: " + m;
           }
 
           const varName = m[1];

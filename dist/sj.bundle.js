@@ -2501,10 +2501,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             if (!scope[attr.value]) {
               scope[attr.value] = elem.value;
             }
-          } else if (attr.name === 'sj-for') {
+          } else if (attr.name === 'sj-repeat') {
             var m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
             if (!m) {
-              throw "Invalid sj-for value: " + m;
+              throw "Invalid sj-repeat value: " + m;
             }
 
             var varName = m[1];

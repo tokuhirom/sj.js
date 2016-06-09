@@ -4,9 +4,9 @@ Tiny javascript view for custom elements based on incremental-dom.
 
 ## Supported syntax
 
-### sj-for
+### sj-repeat
 
-    <select sj-for="x in ary">
+    <select sj-repeat="x in ary">
         <option value="{{x.value}}" sj-model="x.label"></option>
     </select>
 

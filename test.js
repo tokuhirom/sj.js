@@ -111,7 +111,7 @@ customElements.define('test-for', class extends SJElement {
   template() {
     return `
     <h1>bar</h1>
-    <div sj-for="x in bar">
+    <div sj-repeat="x in bar">
     <div class="item" sj-model="x.boo">replace here</div>
     </div>
     `;
@@ -137,7 +137,7 @@ customElements.define('test-for-index', class extends SJElement {
   template() {
     return `
     <h1>For index</h1>
-    <div sj-for="x in bar">
+    <div sj-repeat="x in bar">
     <div class="item">{{x.boo}}:{{$index}}</div>
     </div>
     `;
@@ -162,8 +162,8 @@ customElements.define('test-for-index', class extends SJElement {
 customElements.define('test-for-empty', class extends SJElement {
   template() {
     return `
-    <h1>sj-for with empty value</h1>
-    <div sj-for="x in bar">
+    <h1>sj-repeat with empty value</h1>
+    <div sj-repeat="x in bar">
     <div class="item" sj-model="x.boo">replace here</div>
     </div>
     `;
