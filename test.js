@@ -404,7 +404,11 @@ window.addEventListener("load", function () {
     }
     try {
       var elem = document.createElement(tag);
-      t.ok(elem.runTest(), tag);
+      var ret = elem.runTest();
+      t.ok(ret, tag);
+      if (!ret) {
+        console.log(elem.innerHTML);
+      }
     } catch (e) {
       window.exceptions.push(e);
       console.log(e);
@@ -414,10 +418,10 @@ window.addEventListener("load", function () {
 
   var resultElem = document.getElementById("testResult");
   resultElem.textContent = `Success: ${successCount} Fail: ${failCount} Total: ${tags.length}`;
-  if (location.hash) {
+  if (successCount === tags.length) {
+    resultElem.style.color = location.hash? 'yellow' : "green";
+  } else if (!failCount && location.hash) {
     resultElem.style.color = "yellow";
-  } else if (successCount === tags.length) {
-    resultElem.style.color = "green";
   } else {
     resultElem.style.color = "red";
   }

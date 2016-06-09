@@ -49,7 +49,7 @@
         const currentScope = Object.assign({}, this.scope);
         currentScope[this.varName] = item;
         currentScope['$index'] = i++;
-        this.renderer.render(this.element, currentScope);
+        this.renderer.renderDOM(this.element, currentScope);
       }
     }
   }
