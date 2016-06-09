@@ -230,7 +230,7 @@ customElements.define('test-if-array', class extends SJElement {
 
   initialize() {
     this.scope.bar = [{"foo":1}]
-    this.scope.matched = function (e) {
+    this.scope.matched = function(x) {
       return x.foo == 1;
     };
   }
