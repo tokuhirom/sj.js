@@ -12,7 +12,7 @@
 customElements.define('test-events', class extends SJElement {
   template() {
     return `
-        <button id="clickTest" sj-click="btnclick">yay</button>
+    <button id="clickTest" sj-click="btnclick">yay</button>
     `;
   }
 
@@ -31,9 +31,9 @@ customElements.define('test-events', class extends SJElement {
 customElements.define('test-input', class extends SJElement {
   template() {
     return `
-        <h1>Input</h1>
-        <input type="text" name="name" sj-model="name" id="myInput">
-        Hello, <span sj-model="name"></span>
+    <h1>Input</h1>
+    <input type="text" name="name" sj-model="name" id="myInput">
+    Hello, <span sj-model="name"></span>
     `;
   }
 
@@ -49,9 +49,9 @@ customElements.define('test-input', class extends SJElement {
 customElements.define('test-textarea', class extends SJElement {
   template() {
     return `
-        <h1>Textarea</h1>
-        <textarea name="hoge" sj-model="hoge"></textarea>
-        Hello, <span sj-model="hoge"></span>
+    <h1>Textarea</h1>
+    <textarea name="hoge" sj-model="hoge"></textarea>
+    Hello, <span sj-model="hoge"></span>
     `;
   }
 
@@ -71,8 +71,8 @@ customElements.define('test-from-controller', class extends SJElement {
 
   template() {
     return `
-        <h1>Passed from controller</h1>
-        <input type="text" name="bar" sj-model="hogehoge">
+    <h1>Passed from controller</h1>
+    <input type="text" name="bar" sj-model="hogehoge">
     `;
   }
 
@@ -84,12 +84,12 @@ customElements.define('test-from-controller', class extends SJElement {
 customElements.define('test-select', class extends SJElement {
   template() {
     return `
-        <h1>Select</h1>
-        <select sj-model="sss">
-            <option value="ppp">ppp</option>
-            <option value="qqq">qqq</option>
-        </select>
-        SSS: <span sj-model="sss"></span>
+    <h1>Select</h1>
+    <select sj-model="sss">
+    <option value="ppp">ppp</option>
+    <option value="qqq">qqq</option>
+    </select>
+    SSS: <span sj-model="sss"></span>
     `;
   }
 
@@ -101,10 +101,10 @@ customElements.define('test-select', class extends SJElement {
 customElements.define('test-for', class extends SJElement {
   template() {
     return `
-        <h1>bar</h1>
-        <div sj-for="x in bar">
-          <div class="item" sj-model="x.boo">replace here</div>
-        </div>
+    <h1>bar</h1>
+    <div sj-for="x in bar">
+    <div class="item" sj-model="x.boo">replace here</div>
+    </div>
     `;
   }
 

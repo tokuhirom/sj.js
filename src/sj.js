@@ -22,8 +22,8 @@ const sj_attr2event = {
 
 function isFormElement(elem) {
   return elem instanceof HTMLInputElement
-         || elem instanceof HTMLTextAreaElement
-         || elem instanceof HTMLSelectElement;
+    || elem instanceof HTMLTextAreaElement
+      || elem instanceof HTMLSelectElement;
 }
 
 class SJElement extends HTMLElement {
@@ -31,13 +31,13 @@ class SJElement extends HTMLElement {
     this.initialized = false;
 
     this.scope = new Proxy({}, {
-        set: (target, property, value) => {
-            target[property] = value;
-            if (this.initialized) {
-                this.render();
-            }
-            return true;
+      set: (target, property, value) => {
+        target[property] = value;
+        if (this.initialized) {
+          this.render();
         }
+        return true;
+      }
     });
 
     // parse template
@@ -66,15 +66,15 @@ class SJElement extends HTMLElement {
     }
 
     try {
-        this.rendering = true;
+      this.rendering = true;
 
-        IncrementalDOM.patch(this, () => {
+      IncrementalDOM.patch(this, () => {
         const children = this.templateElement.children;
         for (let i = 0; i < children.length; ++i) {
 
-            this.renderDOM(children[i], this.scope);
+          this.renderDOM(children[i], this.scope);
         }
-        });
+      });
     } finally {
       this.rendering = false;
     }
@@ -188,7 +188,7 @@ class SJElement extends HTMLElement {
   }
 
   replaceVariables(label, scope) {
-      console.log(label);
+    console.log(label);
     return label.replace(/\{\{(\w+)\}\}/g, (m, s) => {
       return scope[s];
     });
