@@ -2378,16 +2378,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
     return ForRenderer;
   }();
 
-  var Renderer = function () {
-    function Renderer(targetElement, templateElement, scope) {
-      _classCallCheck(this, Renderer);
+  var SJRenderer = function () {
+    function SJRenderer(targetElement, templateElement, scope) {
+      _classCallCheck(this, SJRenderer);
 
       this.targetElement = targetElement;
       this.templateElement = templateElement;
       this.scope = scope;
     }
 
-    _createClass(Renderer, [{
+    _createClass(SJRenderer, [{
       key: 'render',
       value: function render() {
         var _this = this;
@@ -2550,7 +2550,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
       }
     }]);
 
-    return Renderer;
+    return SJRenderer;
   }();
 
   var SJElement = function (_HTMLElement2) {
@@ -2574,7 +2574,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         }
         var html = document.createElement("div");
         html.innerHTML = template;
-        this.renderer = new Renderer(this, html, this.scope);
+        this.renderer = new SJRenderer(this, html, this.scope);
 
         this.initialize();
 
@@ -2619,6 +2619,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
   }(HTMLElement);
 
   global.SJElement = SJElement;
+  global.SJRenderer = SJRenderer;
 })(typeof global !== 'undefined' ? global : window);
 // polyfill
 if (!window.customElements) {
@@ -2630,6 +2631,47 @@ if (!window.customElements) {
 }
 
 
+"use strict";
+
+(function (global) {
+  function sjtag(opts) {
+    var template = opts.template;
+    delete opts['template'];
+    if (!template) {
+      throw "Missing template";
+    }
+
+    var elementClassPrototype = Object.create(HTMLElement.prototype);
+
+    for (var k in opts) {
+      elementClassPrototype[k] = opts[k];
+    }
+    elementClassPrototype.createdCallback = function () {
+      this.scope = {};
+
+      var html = document.createElement("div");
+      html.innerHTML = function () {
+        if (template instanceof Function) {
+          return template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+        } else {
+          return template;
+        }
+      }();
+      this.renderer = new SJRenderer(this, html, this.scope);
+
+      if (this.initialize) {
+        this.initialize();
+      }
+      this.update();
+    };
+    elementClassPrototype.update = function () {
+      this.renderer.render();
+    };
+    return { prototype: elementClassPrototype };
+  }
+
+  global.sjtag = sjtag;
+})(typeof global !== 'undefined' ? global : window);
 (function(self) {
   'use strict';
 

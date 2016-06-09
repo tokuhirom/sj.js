@@ -42,24 +42,13 @@ window.addEventListener("load", function () {
   }
   var t = new Assertion(document.getElementById('logs'));
 
-  function createElement(opts) {
-    var template = opts.template;
-    delete opts['template'];
-    var proto = Object.create(SJElement.prototype);
-    proto.template = (function () {
-      if (template instanceof Function) {
-        return template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
-      } else {
-        return template;
-      }
-    });
-    for (var k in opts) {
-      proto[k] = opts[k];
-    }
-    return {prototype: proto};
-  }
   function runTest(tagName, elementClass, code) {
     try {
+      if (location.hash && tagName !== location.hash.substr(1)) {
+        t.skip(tagName);
+        return;
+      }
+
       customElements.define(tagName, elementClass);
       var elem = document.createElement(tagName);
       code.apply(elem, [t, tagName]);
@@ -70,7 +59,7 @@ window.addEventListener("load", function () {
     }
   }
 
-  runTest('test-events', createElement({
+  runTest('test-events', sjtag({
     template: function() {/*
         <button id="clickTest" sj-click="btnclick($event)">yay</button>
     */},
@@ -86,7 +75,7 @@ window.addEventListener("load", function () {
     t.ok(!!this.scope.clicked, 'test-events');
   });
 
-  runTest('test-set-attrs', createElement({
+  runTest('test-set-attrs', sjtag({
     template: '<div>{{foo}}</div>',
     accessors: {
       foo: {

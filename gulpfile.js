@@ -15,7 +15,7 @@ function jsStream() {
     ])
         .pipe(plumber());
 
-    const srcStream = gulp.src(['src/sj-expression.js', "src/sj.js"])
+    const srcStream = gulp.src(['src/sj-expression.js', "src/sj.js", 'src/sj-es5.js'])
         .pipe(plumber())
         .pipe(babel());
 

@@ -54,7 +54,7 @@
     }
   }
 
-  class Renderer {
+  class SJRenderer {
     constructor(targetElement, templateElement, scope) {
       this.targetElement = targetElement;
       this.templateElement = templateElement;
@@ -209,7 +209,7 @@
       }
       const html = document.createElement("div");
       html.innerHTML = template;
-      this.renderer = new Renderer(this, html, this.scope);
+      this.renderer = new SJRenderer(this, html, this.scope);
 
       this.initialize();
 
@@ -247,5 +247,6 @@
   }
 
   global.SJElement = SJElement;
+  global.SJRenderer = SJRenderer;
 })(typeof global !== 'undefined'? global : window);
 
