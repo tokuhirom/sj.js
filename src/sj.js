@@ -156,10 +156,7 @@
           isModelAttribute = attr.value;
           IncrementalDOM.attr("onchange", (e) => {
             scope[attr.value] = e.target.value;
-            console.log(e.target.value);
-            console.log(attr.value);
-            console.log(scope);
-            this.render();
+            this.update();
           });
           if (!scope[attr.value]) {
             scope[attr.value] = elem.value;
