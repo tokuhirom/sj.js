@@ -4,7 +4,7 @@
   };
 
   function parseLeaf(scope, path, origPath) {
-    const m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
+    const m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
     if (m) {
       const [ident, rest] = [m[1], m[2]];
       trace(`rest: ${rest}`);
@@ -17,7 +17,7 @@
   // namespace = ( ident '.' )? ident
   function parsePath(scope, path, origPath) {
     trace(`parsePath: ${path}`);
-    const m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
+    const m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
     if (m) {
       const [namespace, rest] = [m[1], m[2]];
       trace(`parsePath: ${namespace}, ${rest}`);

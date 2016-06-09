@@ -132,6 +132,31 @@ customElements.define('test-for', class extends SJElement {
   }
 });
 
+customElements.define('test-for-index', class extends SJElement {
+  template() {
+    return `
+    <h1>For index</h1>
+    <div sj-for="x in bar">
+    <div class="item">{{x.boo}}:{{$index}}</div>
+    </div>
+    `;
+  }
+
+  initialize() {
+    this.scope.bar = [
+      {boo: 4649},
+      {boo: 1},
+      {boo: 2},
+      {boo: 3}
+    ];
+  }
+
+  runTest() {
+    var elems = this.querySelectorAll('div.item');
+    return elems.length == 4 && elems[0].textContent == "4649:0" && elems[1].textContent === '1:1' && elems[2].textContent === '2:2' && elems[3].textContent === '3:3';
+  }
+});
+
 customElements.define('test-for-empty', class extends SJElement {
   template() {
     return `

@@ -172,10 +172,13 @@
           const container = m[2];
 
           const e = elem.querySelector('*');
+          let i = 0;
           for (const item of scope[container]) {
             // TODO: optimize this
             const currentScope = Object.assign({}, scope);
             currentScope[varName] = item;
+            currentScope['$index'] = i++;
+            console.log(currentScope);
             this.renderDOM(e, currentScope);
           }
         }
@@ -187,8 +190,12 @@
     }
 
     replaceVariables(label, scope) {
-      return label.replace(/\{\{(\w+)\}\}/g, (m, s) => {
-        return scope[s];
+      return label.replace(/\{\{([$A-Za-z0-9_.-]+)\}\}/g, (m, s) => {
+        if (s === '$_') {
+          return JSON.stringify(scope);
+        } else {
+          return sjExpression.getValueByPath(scope, s);
+        }
       });
     }
 
