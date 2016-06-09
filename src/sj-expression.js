@@ -64,25 +64,25 @@
       params.push(m[0]);
 
       path = path.replace(/^\s*/, '');
-if (!path.startsWith(',')) {
-  trace(`No more comma. break. ${path}`);
-  break;
-}
-path = path.substr(1);
-path = path.replace(/^\s*/, '');
+      if (!path.startsWith(',')) {
+        trace(`No more comma. break. ${path}`);
+        break;
+      }
+      path = path.substr(1);
+      path = path.replace(/^\s*/, '');
     }
 
     path = path.replace(/^\s*/, '');
-if (!path.startsWith(')')) {
-  throw `Paren missmatch: '${path}': '${origPath}'`;
-}
-path = path.substr(1);
-path = path.replace(/^\s*/, '');
-if (path.length > 0) {
-  throw `There's trailing trash: ${origPath}`;
-}
+    if (!path.startsWith(')')) {
+      throw `Paren missmatch: '${path}': '${origPath}'`;
+    }
+    path = path.substr(1);
+    path = path.replace(/^\s*/, '');
+    if (path.length > 0) {
+      throw `There's trailing trash: ${origPath}`;
+    }
 
-return [params, path];
+    return [params, path];
   }
 
   function parseFuncall(scope, path, origPath) {
@@ -121,11 +121,26 @@ return [params, path];
         return m[0];
       }
     } else {
+      throw `Cannot parse expression: '${path}'`;
     }
   }
 
+  function setValueByPath(scope, path, value) {
+    while (true) {
+      const m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
+      if (m) {
+        const namespace = m[1];
+        scope = scope[namespace];
+        path = m[2];
+      } else {
+        break;
+      }
+    }
+    scope[path] = value;
+  }
 
   global.sjExpression = {
-    getValueByPath: getValueByPath
+    getValueByPath: getValueByPath,
+    setValueByPath: setValueByPath
   };
-})(typeof global !== 'undefined' ? global : window);
+})(typeof global !== 'undefined'? global : window);

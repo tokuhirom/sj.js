@@ -58,6 +58,40 @@ customElements.define('test-input', class extends SJElement {
   }
 });
 
+customElements.define('test-input-nested', class extends SJElement {
+  template() {
+    return `
+    <h1>Input</h1>
+    <input type="text" name="name" sj-model="x.y" id="myInput">
+    Hello, <span sj-model="name"></span>
+    `;
+  }
+
+  initialize() {
+    this.scope.x = {
+      y: 3
+    };
+  }
+
+  runTest() {
+    var input = this.querySelector('input');
+    input.value = 'foo';
+
+    // simulate onchange event
+    // http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
+    if ("createEvent" in document) {
+      var evt = document.createEvent("HTMLEvents");
+      evt.initEvent("change", false, true);
+      input.dispatchEvent(evt);
+    } else {
+      input.fireEvent("onchange");
+    }
+
+    return this.scope.x.y === 'foo';
+  }
+})
+;
+
 customElements.define('test-textarea', class extends SJElement {
   template() {
     return `
@@ -302,6 +336,7 @@ window.addEventListener("load", function () {
   var tags = [
     "test-events",
     "test-input",
+    "test-input-nested",
     "test-textarea",
     "test-from-controller",
     "test-select",

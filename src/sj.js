@@ -66,12 +66,9 @@
       }
 
       try {
-        ;
         this.rendering = true;
-        console.log(this)
 
         IncrementalDOM.patch(this.targetElement, () => {
-          console.log(this)
           const children = this.templateElement.children;
           for (let i = 0; i < children.length; ++i) {
             this.renderDOM(children[i], this.scope);
@@ -163,7 +160,7 @@
         } else if (attr.name === 'sj-model') {
           isModelAttribute = attr.value;
           IncrementalDOM.attr("onchange", (e) => {
-            scope[attr.value] = e.target.value;
+            sjExpression.setValueByPath(scope, attr.value, e.target.value);
             this.render();
           });
           if (!scope[attr.value]) {

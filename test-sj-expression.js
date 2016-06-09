@@ -14,9 +14,20 @@ assert.equal(e.getValueByPath(
       }
     }, 'x()'), 3);
 assert.equal(e.getValueByPath(
-    {
-      "add": (x,y) => {
-        return x+y;
-      }
-    }, 'add(3,5)'), 8);
+  {
+    "add": (x, y) => {
+      return x + y;
+    }
+  }, 'add(3,5)'), 8);
+{
+  const o = {
+    "x": {
+      "y": 3
+    }
+  };
+  e.setValueByPath(o, 'x.y', 8);
+  e.setValueByPath(o, 'o', 9);
+  assert.equal(o.x.y, 8);
+  assert.equal(o.o, 9);
+}
 
