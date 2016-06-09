@@ -2,6 +2,23 @@
 
 Tiny javascript view for custom elements based on incremental-dom.
 
+This library supports angular1 like templating.
+
+## SYNOPSIS
+
+    customElement.define('x-foo', sjtag({
+        template: '<div>{{foo}}</div>',
+        accessors: {
+            foo: {
+                set: function (v) {
+                    this.scope.foo = v;
+                }
+            }
+        }
+    }));
+
+## attributes
+
 ## Supported syntax
 
 ### sj-repeat
