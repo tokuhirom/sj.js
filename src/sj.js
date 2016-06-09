@@ -221,18 +221,6 @@
     }
 
     attributeChangedCallback(key) {
-      if (this.accessors) {
-        const accessorConf = this.accessors[key];
-        if (accessorConf) {
-          const accessor = accessorConf.set;
-          if (accessor) {
-            accessor.apply(this, [this.getAttribute(key)]);
-            this.update();
-            return;
-          }
-        }
-      }
-
       this[key] = this.getAttribute(key);
       this.update();
     }

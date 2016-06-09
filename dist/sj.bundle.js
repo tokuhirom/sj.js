@@ -1,3 +1,187 @@
+'use strict';
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+(function (global) {
+  var trace = function trace(msg) {
+    // console.log(msg);
+  };
+
+  var Parser = function () {
+    function Parser(origPath, self) {
+      _classCallCheck(this, Parser);
+
+      this.origPath = origPath;
+      this.self = self;
+    }
+
+    _createClass(Parser, [{
+      key: 'parseLeaf',
+      value: function parseLeaf(scope, path) {
+        var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
+        if (m) {
+          var ident = m[1];
+          var rest = m[2];
+
+          trace('rest: ' + rest);
+          return [scope[ident], rest];
+        } else {
+          return;
+        }
+      }
+
+      // namespace = ( ident '.' )? ident
+
+    }, {
+      key: 'parsePath',
+      value: function parsePath(scope, path) {
+        trace('parsePath: ' + path);
+        var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
+        if (m) {
+          var namespace = m[1];
+          var rest = m[2];
+
+          trace('parsePath: ' + namespace + ', ' + rest);
+          return this.parsePath(scope[namespace], rest);
+        } else {
+          return this.parseLeaf(scope, path);
+        }
+      }
+    }, {
+      key: 'parseNumber',
+      value: function parseNumber(scope, path) {
+        var m = path.match(/^([1-9][0-9]*(?:\.[0-9]+)?)(.*)$/);
+        if (m) {
+          trace('parseNumber: ' + path + '. ' + m + '. ok');
+          return [parseFloat(m[1], 10), m[2]];
+        } else {
+          trace('parseNumber: ' + path + '. fail');
+        }
+      }
+    }, {
+      key: 'parseTerm',
+      value: function parseTerm(scope, path) {
+        var m = this.parsePath(scope, path);
+        if (m) {
+          return m;
+        }
+        return this.parseNumber(scope, path);
+      }
+    }, {
+      key: 'parseParams',
+      value: function parseParams(scope, path) {
+        if (!path.startsWith('(')) {
+          return;
+        }
+        path = path.substr(1);
+
+        var params = [];
+        while (true) {
+          var m = this.parseFuncall(scope, path);
+          if (!m) {
+            trace('No param: \'' + path + '\'');
+            break;
+          }
+          path = m[1];
+          trace('Got param: \'' + m + '\'');
+          params.push(m[0]);
+
+          path = path.replace(/^\s*/, '');
+          if (!path.startsWith(',')) {
+            trace('No more comma. break. ' + path);
+            break;
+          }
+          path = path.substr(1);
+          path = path.replace(/^\s*/, '');
+        }
+
+        path = path.replace(/^\s*/, '');
+        if (!path.startsWith(')')) {
+          throw 'Paren missmatch: \'' + path + '\': \'' + this.origPath + '\'';
+        }
+        path = path.substr(1);
+        path = path.replace(/^\s*/, '');
+        if (path.length > 0) {
+          throw 'There\'s trailing trash: ' + this.origPath;
+        }
+
+        return [params, path];
+      }
+    }, {
+      key: 'parseFuncall',
+      value: function parseFuncall(scope, path) {
+        if (!path) {
+          throw "Missing path";
+        }
+        var m = this.parseTerm(scope, path);
+        if (!m) {
+          return;
+        }
+
+        var _m = _slicedToArray(m, 2);
+
+        var got = _m[0];
+        var rest = _m[1];
+
+        if (rest) {
+          trace('got:' + got + ', ' + rest);
+          var _m2 = this.parseParams(scope, rest);
+          if (_m2) {
+            trace('apply: ' + rest);
+            return [got.apply(this.self, _m2[0]), _m2[1]];
+          } else {
+            return [got, rest];
+          }
+        } else {
+          return [got, rest];
+        }
+      }
+    }]);
+
+    return Parser;
+  }();
+
+  function getValueByPath(scope, path, self) {
+    if (!path) {
+      throw "Missing path";
+    }
+    trace('getValueByPath: ' + path);
+    var parser = new Parser(path, self);
+    var m = parser.parseFuncall(scope, path, path);
+    if (m) {
+      if (m[1]) {
+        throw 'Trailing trash: \'' + m[1] + '\' in \'' + path + '\'';
+      } else {
+        return m[0];
+      }
+    } else {
+      throw 'Cannot parse expression: \'' + path + '\'';
+    }
+  }
+
+  function setValueByPath(scope, path, value) {
+    while (true) {
+      var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
+      if (m) {
+        var namespace = m[1];
+        scope = scope[namespace];
+        path = m[2];
+      } else {
+        break;
+      }
+    }
+    scope[path] = value;
+  }
+
+  global.sjExpression = {
+    getValueByPath: getValueByPath,
+    setValueByPath: setValueByPath
+  };
+})(typeof global !== 'undefined' ? global : window);
 /**
  * @license
  * Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
@@ -1033,183 +1217,323 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 (function (global) {
-  var trace = function trace(msg) {
-    // console.log(msg);
+  var sj_attr2event = {
+    'sj-click': 'onclick',
+    'sj-blur': 'onblur',
+    'sj-checked': 'onchecked',
+    'sj-dblclick': 'ondblclick',
+    'sj-focus': 'onfocus',
+    'sj-keydown': 'onkeydown',
+    'sj-keypress': 'onkeypress',
+    'sj-keyup': 'onkeyup',
+    'sj-mousedown': 'onmousedown',
+    'sj-mouseenter': 'onmouseenter',
+    'sj-mouseleave': 'onmouseleave',
+    'sj-mousemove': 'onmousemove',
+    'sj-mouseover': 'onmouseover',
+    'sj-mouseup': 'onmouseup',
+    'sj-paste': 'onpaste',
+    'sj-selected': 'onselected',
+    'sj-submit': 'onsubmit'
   };
 
-  var Parser = function () {
-    function Parser(origPath, self) {
-      _classCallCheck(this, Parser);
+  function isFormElement(elem) {
+    return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
+  }
 
-      this.origPath = origPath;
-      this.self = self;
+  // babel hacks
+  // See https://phabricator.babeljs.io/T1548
+  if (typeof HTMLElement !== 'function') {
+    var _HTMLElement = function _HTMLElement() {};
+    _HTMLElement.prototype = HTMLElement.prototype;
+    HTMLElement = _HTMLElement;
+  }
+
+  var ForRenderer = function () {
+    function ForRenderer(renderer, element, items, scope, varName) {
+      _classCallCheck(this, ForRenderer);
+
+      this.renderer = renderer;
+      this.element = element;
+      this.items = items;
+      this.scope = scope;
+      this.varName = varName;
     }
 
-    _createClass(Parser, [{
-      key: 'parseLeaf',
-      value: function parseLeaf(scope, path) {
-        var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
-        if (m) {
-          var ident = m[1];
-          var rest = m[2];
+    _createClass(ForRenderer, [{
+      key: 'render',
+      value: function render() {
+        var i = 0;
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
 
-          trace('rest: ' + rest);
-          return [scope[ident], rest];
-        } else {
-          return;
-        }
-      }
+        try {
+          for (var _iterator = this.items[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var item = _step.value;
 
-      // namespace = ( ident '.' )? ident
-
-    }, {
-      key: 'parsePath',
-      value: function parsePath(scope, path) {
-        trace('parsePath: ' + path);
-        var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
-        if (m) {
-          var namespace = m[1];
-          var rest = m[2];
-
-          trace('parsePath: ' + namespace + ', ' + rest);
-          return this.parsePath(scope[namespace], rest);
-        } else {
-          return this.parseLeaf(scope, path);
-        }
-      }
-    }, {
-      key: 'parseNumber',
-      value: function parseNumber(scope, path) {
-        var m = path.match(/^([1-9][0-9]*(?:\.[0-9]+)?)(.*)$/);
-        if (m) {
-          trace('parseNumber: ' + path + '. ' + m + '. ok');
-          return [parseFloat(m[1], 10), m[2]];
-        } else {
-          trace('parseNumber: ' + path + '. fail');
-        }
-      }
-    }, {
-      key: 'parseTerm',
-      value: function parseTerm(scope, path) {
-        var m = this.parsePath(scope, path);
-        if (m) {
-          return m;
-        }
-        return this.parseNumber(scope, path);
-      }
-    }, {
-      key: 'parseParams',
-      value: function parseParams(scope, path) {
-        if (!path.startsWith('(')) {
-          return;
-        }
-        path = path.substr(1);
-
-        var params = [];
-        while (true) {
-          var m = this.parseFuncall(scope, path);
-          if (!m) {
-            trace('No param: \'' + path + '\'');
-            break;
+            var currentScope = Object.assign({}, this.scope);
+            currentScope[this.varName] = item;
+            currentScope['$index'] = i++;
+            this.renderer.renderDOM(this.element, currentScope);
           }
-          path = m[1];
-          trace('Got param: \'' + m + '\'');
-          params.push(m[0]);
-
-          path = path.replace(/^\s*/, '');
-          if (!path.startsWith(',')) {
-            trace('No more comma. break. ' + path);
-            break;
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
           }
-          path = path.substr(1);
-          path = path.replace(/^\s*/, '');
-        }
-
-        path = path.replace(/^\s*/, '');
-        if (!path.startsWith(')')) {
-          throw 'Paren missmatch: \'' + path + '\': \'' + this.origPath + '\'';
-        }
-        path = path.substr(1);
-        path = path.replace(/^\s*/, '');
-        if (path.length > 0) {
-          throw 'There\'s trailing trash: ' + this.origPath;
-        }
-
-        return [params, path];
-      }
-    }, {
-      key: 'parseFuncall',
-      value: function parseFuncall(scope, path) {
-        if (!path) {
-          throw "Missing path";
-        }
-        var m = this.parseTerm(scope, path);
-        if (!m) {
-          return;
-        }
-
-        var _m = _slicedToArray(m, 2);
-
-        var got = _m[0];
-        var rest = _m[1];
-
-        if (rest) {
-          trace('got:' + got + ', ' + rest);
-          var _m2 = this.parseParams(scope, rest);
-          if (_m2) {
-            trace('apply: ' + rest);
-            return [got.apply(this.self, _m2[0]), _m2[1]];
-          } else {
-            return [got, rest];
-          }
-        } else {
-          return [got, rest];
         }
       }
     }]);
 
-    return Parser;
+    return ForRenderer;
   }();
 
-  function getValueByPath(scope, path, self) {
-    if (!path) {
-      throw "Missing path";
-    }
-    trace('getValueByPath: ' + path);
-    var parser = new Parser(path, self);
-    var m = parser.parseFuncall(scope, path, path);
-    if (m) {
-      if (m[1]) {
-        throw 'Trailing trash: \'' + m[1] + '\' in \'' + path + '\'';
-      } else {
-        return m[0];
-      }
-    } else {
-      throw 'Cannot parse expression: \'' + path + '\'';
-    }
-  }
+  var SJRenderer = function () {
+    function SJRenderer(targetElement, templateElement, scope) {
+      _classCallCheck(this, SJRenderer);
 
-  function setValueByPath(scope, path, value) {
-    while (true) {
-      var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
-      if (m) {
-        var namespace = m[1];
-        scope = scope[namespace];
-        path = m[2];
-      } else {
-        break;
-      }
+      this.targetElement = targetElement;
+      this.templateElement = templateElement;
+      this.scope = scope;
     }
-    scope[path] = value;
-  }
 
-  global.sjExpression = {
-    getValueByPath: getValueByPath,
-    setValueByPath: setValueByPath
-  };
+    _createClass(SJRenderer, [{
+      key: 'render',
+      value: function render() {
+        var _this = this;
+
+        if (this.rendering) {
+          return;
+        }
+
+        try {
+          this.rendering = true;
+
+          IncrementalDOM.patch(this.targetElement, function () {
+            var children = _this.templateElement.children;
+            for (var i = 0; i < children.length; ++i) {
+              _this.renderDOM(children[i], _this.scope);
+            }
+          });
+        } finally {
+          this.rendering = false;
+        }
+      }
+    }, {
+      key: 'renderDOM',
+      value: function renderDOM(elem, scope) {
+        if (elem.nodeType === Node.TEXT_NODE) {
+          IncrementalDOM.text(this.replaceVariables(elem.textContent, scope));
+          return;
+        }
+        if (this.shouldHideElement(elem, scope)) {
+          return;
+        }
+
+        var tagName = elem.tagName.toLowerCase();
+
+        IncrementalDOM.elementOpenStart(tagName);
+
+        var _renderAttributes = this.renderAttributes(elem, scope);
+
+        var _renderAttributes2 = _slicedToArray(_renderAttributes, 2);
+
+        var modelName = _renderAttributes2[0];
+        var forRenderer = _renderAttributes2[1];
+
+        var modelValue = modelName ? sjExpression.getValueByPath(scope, modelName, this.targetElement) : null;
+        var isForm = isFormElement(elem);
+        if (modelName && modelValue && scope[modelName] && isForm) {
+          IncrementalDOM.attr("value", modelValue);
+        }
+        IncrementalDOM.elementOpenEnd(tagName);
+        var children = elem.childNodes;
+        if (forRenderer) {
+          forRenderer.render();
+        } else {
+          for (var i = 0, l = children.length; i < l; ++i) {
+            var child = children[i];
+            if (child.nodeType === Node.TEXT_NODE) {
+              if (!modelName) {
+                IncrementalDOM.text(this.replaceVariables(child.textContent, scope));
+              }
+            } else {
+              this.renderDOM(child, scope);
+            }
+          }
+        }
+        if (modelName && modelValue && !isForm) {
+          IncrementalDOM.text(modelValue);
+        }
+        IncrementalDOM.elementClose(tagName);
+      }
+    }, {
+      key: 'shouldHideElement',
+      value: function shouldHideElement(elem, scope) {
+        var cond = elem.getAttribute('sj-if');
+        if (cond) {
+          var val = sjExpression.getValueByPath(scope, cond, this.targetElement);
+          if (!val) {
+            return true;
+          }
+        }
+        return false;
+      }
+    }, {
+      key: 'renderAttributes',
+      value: function renderAttributes(elem, scope) {
+        var modelName = void 0;
+        var attrs = elem.attributes;
+        var forRenderer = void 0;
+        for (var i = 0, l = attrs.length; i < l; ++i) {
+          var attr = attrs[i];
+          var attrName = attr.name;
+          var hasModelAttribute = void 0;
+
+          var _renderAttribute = this.renderAttribute(attrName, attr, elem, scope);
+
+          var _renderAttribute2 = _slicedToArray(_renderAttribute, 2);
+
+          hasModelAttribute = _renderAttribute2[0];
+          forRenderer = _renderAttribute2[1];
+
+          if (hasModelAttribute) {
+            modelName = attr.value;
+          }
+        }
+        return [modelName, forRenderer];
+      }
+    }, {
+      key: 'renderAttribute',
+      value: function renderAttribute(attrName, attr, elem, scope) {
+        var _this2 = this;
+
+        var isModelAttribute = void 0;
+        var forRenderer = void 0;
+        if (attrName.startsWith('sj-')) {
+          var event = sj_attr2event[attrName];
+          if (event) {
+            IncrementalDOM.attr(event, function (e) {
+              var currentScope = Object.assign({}, scope);
+              currentScope['$event'] = e;
+              sjExpression.getValueByPath(currentScope, attr.value, _this2.targetElement);
+            });
+          } else if (attr.name === 'sj-model') {
+            isModelAttribute = attr.value;
+            IncrementalDOM.attr("onchange", function (e) {
+              sjExpression.setValueByPath(scope, attr.value, e.target.value);
+              _this2.render();
+            });
+            if (!scope[attr.value]) {
+              scope[attr.value] = elem.value;
+            }
+          } else if (attr.name === 'sj-repeat') {
+            var m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
+            if (!m) {
+              throw "Invalid sj-repeat value: " + m;
+            }
+
+            var varName = m[1];
+            var container = m[2];
+
+            var e = elem.querySelector('*');
+            forRenderer = new ForRenderer(this, e, scope[container], scope, varName);
+          }
+        } else {
+          var labelValue = this.replaceVariables(attr.value, scope);
+          IncrementalDOM.attr(attr.name, labelValue);
+        }
+        return [isModelAttribute, forRenderer];
+      }
+    }, {
+      key: 'replaceVariables',
+      value: function replaceVariables(label, scope) {
+        var _this3 = this;
+
+        return label.replace(/\{\{([$A-Za-z0-9_.-]+)\}\}/g, function (m, s) {
+          if (s === '$_') {
+            return JSON.stringify(scope);
+          } else {
+            return sjExpression.getValueByPath(scope, s, _this3.targetElement);
+          }
+        });
+      }
+    }]);
+
+    return SJRenderer;
+  }();
+
+  var SJElement = function (_HTMLElement2) {
+    _inherits(SJElement, _HTMLElement2);
+
+    function SJElement() {
+      _classCallCheck(this, SJElement);
+
+      return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
+    }
+
+    _createClass(SJElement, [{
+      key: 'createdCallback',
+      value: function createdCallback() {
+        this.scope = {};
+
+        // parse template
+        var template = this.template();
+        if (template instanceof Function) {
+          template = template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+        }
+        var html = document.createElement("div");
+        html.innerHTML = template;
+        this.renderer = new SJRenderer(this, html, this.scope);
+
+        this.initialize();
+
+        this.update();
+      }
+    }, {
+      key: 'template',
+      value: function template() {
+        throw "Please implement 'template' method";
+      }
+    }, {
+      key: 'attributeChangedCallback',
+      value: function attributeChangedCallback(key) {
+        this[key] = this.getAttribute(key);
+        this.update();
+      }
+    }, {
+      key: 'initialize',
+      value: function initialize() {
+        // nop. abstract method.
+      }
+    }, {
+      key: 'update',
+      value: function update() {
+        this.renderer.render();
+      }
+    }]);
+
+    return SJElement;
+  }(HTMLElement);
+
+  global.SJElement = SJElement;
+  global.SJRenderer = SJRenderer;
 })(typeof global !== 'undefined' ? global : window);
 
 /**
@@ -2285,342 +2609,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 }));
 
 //# sourceMappingURL=incremental-dom.js.map
-'use strict';
-
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-(function (global) {
-  var sj_attr2event = {
-    'sj-click': 'onclick',
-    'sj-blur': 'onblur',
-    'sj-checked': 'onchecked',
-    'sj-dblclick': 'ondblclick',
-    'sj-focus': 'onfocus',
-    'sj-keydown': 'onkeydown',
-    'sj-keypress': 'onkeypress',
-    'sj-keyup': 'onkeyup',
-    'sj-mousedown': 'onmousedown',
-    'sj-mouseenter': 'onmouseenter',
-    'sj-mouseleave': 'onmouseleave',
-    'sj-mousemove': 'onmousemove',
-    'sj-mouseover': 'onmouseover',
-    'sj-mouseup': 'onmouseup',
-    'sj-paste': 'onpaste',
-    'sj-selected': 'onselected',
-    'sj-submit': 'onsubmit'
-  };
-
-  function isFormElement(elem) {
-    return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
-  }
-
-  // babel hacks
-  // See https://phabricator.babeljs.io/T1548
-  if (typeof HTMLElement !== 'function') {
-    var _HTMLElement = function _HTMLElement() {};
-    _HTMLElement.prototype = HTMLElement.prototype;
-    HTMLElement = _HTMLElement;
-  }
-
-  var ForRenderer = function () {
-    function ForRenderer(renderer, element, items, scope, varName) {
-      _classCallCheck(this, ForRenderer);
-
-      this.renderer = renderer;
-      this.element = element;
-      this.items = items;
-      this.scope = scope;
-      this.varName = varName;
-    }
-
-    _createClass(ForRenderer, [{
-      key: 'render',
-      value: function render() {
-        var i = 0;
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
-        try {
-          for (var _iterator = this.items[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var item = _step.value;
-
-            var currentScope = Object.assign({}, this.scope);
-            currentScope[this.varName] = item;
-            currentScope['$index'] = i++;
-            this.renderer.renderDOM(this.element, currentScope);
-          }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator.return) {
-              _iterator.return();
-            }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
-          }
-        }
-      }
-    }]);
-
-    return ForRenderer;
-  }();
-
-  var SJRenderer = function () {
-    function SJRenderer(targetElement, templateElement, scope) {
-      _classCallCheck(this, SJRenderer);
-
-      this.targetElement = targetElement;
-      this.templateElement = templateElement;
-      this.scope = scope;
-    }
-
-    _createClass(SJRenderer, [{
-      key: 'render',
-      value: function render() {
-        var _this = this;
-
-        if (this.rendering) {
-          return;
-        }
-
-        try {
-          this.rendering = true;
-
-          IncrementalDOM.patch(this.targetElement, function () {
-            var children = _this.templateElement.children;
-            for (var i = 0; i < children.length; ++i) {
-              _this.renderDOM(children[i], _this.scope);
-            }
-          });
-        } finally {
-          this.rendering = false;
-        }
-      }
-    }, {
-      key: 'renderDOM',
-      value: function renderDOM(elem, scope) {
-        if (elem.nodeType === Node.TEXT_NODE) {
-          IncrementalDOM.text(this.replaceVariables(elem.textContent, scope));
-          return;
-        }
-        if (this.shouldHideElement(elem, scope)) {
-          return;
-        }
-
-        var tagName = elem.tagName.toLowerCase();
-
-        IncrementalDOM.elementOpenStart(tagName);
-
-        var _renderAttributes = this.renderAttributes(elem, scope);
-
-        var _renderAttributes2 = _slicedToArray(_renderAttributes, 2);
-
-        var modelName = _renderAttributes2[0];
-        var forRenderer = _renderAttributes2[1];
-
-        var modelValue = modelName ? sjExpression.getValueByPath(scope, modelName, this.targetElement) : null;
-        var isForm = isFormElement(elem);
-        if (modelName && modelValue && scope[modelName] && isForm) {
-          IncrementalDOM.attr("value", modelValue);
-        }
-        IncrementalDOM.elementOpenEnd(tagName);
-        var children = elem.childNodes;
-        if (forRenderer) {
-          forRenderer.render();
-        } else {
-          for (var i = 0, l = children.length; i < l; ++i) {
-            var child = children[i];
-            if (child.nodeType === Node.TEXT_NODE) {
-              if (!modelName) {
-                IncrementalDOM.text(this.replaceVariables(child.textContent, scope));
-              }
-            } else {
-              this.renderDOM(child, scope);
-            }
-          }
-        }
-        if (modelName && modelValue && !isForm) {
-          IncrementalDOM.text(modelValue);
-        }
-        IncrementalDOM.elementClose(tagName);
-      }
-    }, {
-      key: 'shouldHideElement',
-      value: function shouldHideElement(elem, scope) {
-        var cond = elem.getAttribute('sj-if');
-        if (cond) {
-          var val = sjExpression.getValueByPath(scope, cond, this.targetElement);
-          if (!val) {
-            return true;
-          }
-        }
-        return false;
-      }
-    }, {
-      key: 'renderAttributes',
-      value: function renderAttributes(elem, scope) {
-        var modelName = void 0;
-        var attrs = elem.attributes;
-        var forRenderer = void 0;
-        for (var i = 0, l = attrs.length; i < l; ++i) {
-          var attr = attrs[i];
-          var attrName = attr.name;
-          var hasModelAttribute = void 0;
-
-          var _renderAttribute = this.renderAttribute(attrName, attr, elem, scope);
-
-          var _renderAttribute2 = _slicedToArray(_renderAttribute, 2);
-
-          hasModelAttribute = _renderAttribute2[0];
-          forRenderer = _renderAttribute2[1];
-
-          if (hasModelAttribute) {
-            modelName = attr.value;
-          }
-        }
-        return [modelName, forRenderer];
-      }
-    }, {
-      key: 'renderAttribute',
-      value: function renderAttribute(attrName, attr, elem, scope) {
-        var _this2 = this;
-
-        var isModelAttribute = void 0;
-        var forRenderer = void 0;
-        if (attrName.startsWith('sj-')) {
-          var event = sj_attr2event[attrName];
-          if (event) {
-            IncrementalDOM.attr(event, function (e) {
-              var currentScope = Object.assign({}, scope);
-              currentScope['$event'] = e;
-              sjExpression.getValueByPath(currentScope, attr.value, _this2.targetElement);
-            });
-          } else if (attr.name === 'sj-model') {
-            isModelAttribute = attr.value;
-            IncrementalDOM.attr("onchange", function (e) {
-              sjExpression.setValueByPath(scope, attr.value, e.target.value);
-              _this2.render();
-            });
-            if (!scope[attr.value]) {
-              scope[attr.value] = elem.value;
-            }
-          } else if (attr.name === 'sj-repeat') {
-            var m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
-            if (!m) {
-              throw "Invalid sj-repeat value: " + m;
-            }
-
-            var varName = m[1];
-            var container = m[2];
-
-            var e = elem.querySelector('*');
-            forRenderer = new ForRenderer(this, e, scope[container], scope, varName);
-          }
-        } else {
-          var labelValue = this.replaceVariables(attr.value, scope);
-          IncrementalDOM.attr(attr.name, labelValue);
-        }
-        return [isModelAttribute, forRenderer];
-      }
-    }, {
-      key: 'replaceVariables',
-      value: function replaceVariables(label, scope) {
-        var _this3 = this;
-
-        return label.replace(/\{\{([$A-Za-z0-9_.-]+)\}\}/g, function (m, s) {
-          if (s === '$_') {
-            return JSON.stringify(scope);
-          } else {
-            return sjExpression.getValueByPath(scope, s, _this3.targetElement);
-          }
-        });
-      }
-    }]);
-
-    return SJRenderer;
-  }();
-
-  var SJElement = function (_HTMLElement2) {
-    _inherits(SJElement, _HTMLElement2);
-
-    function SJElement() {
-      _classCallCheck(this, SJElement);
-
-      return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
-    }
-
-    _createClass(SJElement, [{
-      key: 'createdCallback',
-      value: function createdCallback() {
-        this.scope = {};
-
-        // parse template
-        var template = this.template();
-        if (template instanceof Function) {
-          template = template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
-        }
-        var html = document.createElement("div");
-        html.innerHTML = template;
-        this.renderer = new SJRenderer(this, html, this.scope);
-
-        this.initialize();
-
-        this.update();
-      }
-    }, {
-      key: 'template',
-      value: function template() {
-        throw "Please implement 'template' method";
-      }
-    }, {
-      key: 'attributeChangedCallback',
-      value: function attributeChangedCallback(key) {
-        if (this.accessors) {
-          var accessorConf = this.accessors[key];
-          if (accessorConf) {
-            var accessor = accessorConf.set;
-            if (accessor) {
-              accessor.apply(this, [this.getAttribute(key)]);
-              this.update();
-              return;
-            }
-          }
-        }
-
-        this[key] = this.getAttribute(key);
-        this.update();
-      }
-    }, {
-      key: 'initialize',
-      value: function initialize() {
-        // nop. abstract method.
-      }
-    }, {
-      key: 'update',
-      value: function update() {
-        this.renderer.render();
-      }
-    }]);
-
-    return SJElement;
-  }(HTMLElement);
-
-  global.SJElement = SJElement;
-  global.SJRenderer = SJRenderer;
-})(typeof global !== 'undefined' ? global : window);
 // polyfill
 if (!window.customElements) {
     window.customElements = {
