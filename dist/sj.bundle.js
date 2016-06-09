@@ -1,3 +1,178 @@
+/*
+ * Copyright 2016 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+(function (scope) {
+  if (scope['Proxy']) {
+    return;
+  }
+  var lastRevokeFn = null;
+
+  /**
+   * @param {*} o
+   * @return {boolean} whether this is probably a (non-null) Object
+   */
+  function isObject(o) {
+    return o ? (typeof o === 'undefined' ? 'undefined' : _typeof(o)) == 'object' || typeof o == 'function' : false;
+  }
+
+  /**
+   * @constructor
+   * @param {!Object} target
+   * @param {{apply, construct, get, set}} handler
+   */
+  scope.Proxy = function (target, handler) {
+    if (!isObject(target) || !isObject(handler)) {
+      throw new TypeError('Cannot create proxy with a non-object as target or handler');
+    }
+
+    // Construct revoke function, and set lastRevokeFn so that Proxy.revocable can steal it.
+    // The caller might get the wrong revoke function if a user replaces or wraps scope.Proxy
+    // to call itself, but that seems unlikely especially when using the polyfill.
+    var throwRevoked = function throwRevoked() {};
+    lastRevokeFn = function lastRevokeFn() {
+      throwRevoked = function throwRevoked(trap) {
+        throw new TypeError('Cannot perform \'' + trap + '\' on a proxy that has been revoked');
+      };
+    };
+
+    // Fail on unsupported traps: Chrome doesn't do this, but ensure that users of the polyfill
+    // are a bit more careful. Copy the internal parts of handler to prevent user changes.
+    var unsafeHandler = handler;
+    handler = { 'get': null, 'set': null, 'apply': null, 'construct': null };
+    for (var k in unsafeHandler) {
+      if (!(k in handler)) {
+        throw new TypeError('Proxy polyfill does not support trap \'' + k + '\'');
+      }
+      handler[k] = unsafeHandler[k];
+    }
+    if (typeof unsafeHandler == 'function') {
+      // Allow handler to be a function (which has an 'apply' method). This matches what is
+      // probably a bug in native versions. It treats the apply call as a trap to be configured.
+      handler.apply = unsafeHandler.apply.bind(unsafeHandler);
+    }
+
+    // Define proxy as this, or a Function (if either it's callable, or apply is set).
+    // TODO(samthor): Closure compiler doesn't know about 'construct', attempts to rename it.
+    var proxy = this;
+    var isMethod = false;
+    var targetIsFunction = typeof target == 'function';
+    if (handler.apply || handler['construct'] || targetIsFunction) {
+      proxy = function Proxy() {
+        var usingNew = this && this.constructor === proxy;
+        throwRevoked(usingNew ? 'construct' : 'apply');
+
+        if (usingNew && handler['construct']) {
+          return handler['construct'].call(this, target, arguments);
+        } else if (!usingNew && handler.apply) {
+          return handler.apply(target, this, arguments);
+        } else if (targetIsFunction) {
+          // since the target was a function, fallback to calling it directly.
+          if (usingNew) {
+            // inspired by answers to https://stackoverflow.com/q/1606797
+            var all = Array.prototype.slice.call(arguments);
+            all.unshift(target); // pass class as first arg to constructor, although irrelevant
+            // nb. cast to convince Closure compiler that this is a constructor
+            var f = /** @type {!Function} */target.bind.apply(target, all);
+            return new f();
+          }
+          return target.apply(this, arguments);
+        }
+        throw new TypeError(usingNew ? 'not a constructor' : 'not a function');
+      };
+      isMethod = true;
+    }
+
+    // Create default getters/setters. Create different code paths as handler.get/handler.set can't
+    // change after creation.
+    var getter = handler.get ? function (prop) {
+      throwRevoked('get');
+      return handler.get(this, prop, proxy);
+    } : function (prop) {
+      throwRevoked('get');
+      return this[prop];
+    };
+    var setter = handler.set ? function (prop, value) {
+      throwRevoked('set');
+      var status = handler.set(this, prop, value, proxy);
+      if (!status) {
+        // TODO(samthor): If the calling code is in strict mode, throw TypeError.
+        // It's (sometimes) possible to work this out, if this code isn't strict- try to load the
+        // callee, and if it's available, that code is non-strict. However, this isn't exhaustive.
+      }
+    } : function (prop, value) {
+      throwRevoked('set');
+      this[prop] = value;
+    };
+
+    // Clone direct properties (i.e., not part of a prototype).
+    var propertyNames = Object.getOwnPropertyNames(target);
+    var propertyMap = {};
+    propertyNames.forEach(function (prop) {
+      if (isMethod && prop in proxy) {
+        return; // ignore properties already here, e.g. 'bind', 'prototype' etc
+      }
+      var real = Object.getOwnPropertyDescriptor(target, prop);
+      var desc = {
+        enumerable: !!real.enumerable,
+        get: getter.bind(target, prop),
+        set: setter.bind(target, prop)
+      };
+      Object.defineProperty(proxy, prop, desc);
+      propertyMap[prop] = true;
+    });
+
+    // Set the prototype, or clone all prototype methods (always required if a getter is provided).
+    // TODO(samthor): We don't allow prototype methods to be set. It's (even more) awkward.
+    // An alternative here would be to _just_ clone methods to keep behavior consistent.
+    var prototypeOk = true;
+    if (Object.setPrototypeOf) {
+      Object.setPrototypeOf(proxy, Object.getPrototypeOf(target));
+    } else if (proxy.__proto__) {
+      proxy.__proto__ = target.__proto__;
+    } else {
+      prototypeOk = false;
+    }
+    if (handler.get || !prototypeOk) {
+      for (var _k in target) {
+        if (propertyMap[_k]) {
+          continue;
+        }
+        Object.defineProperty(proxy, _k, { get: getter.bind(target, _k) });
+      }
+    }
+
+    // The Proxy polyfill cannot handle adding new properties. Seal the target and proxy.
+    Object.seal(target);
+    Object.seal(proxy);
+
+    return proxy; // nb. if isMethod is true, proxy != this
+  };
+
+  scope.Proxy.revocable = function (target, handler) {
+    var p = new scope.Proxy(target, handler);
+    return { 'proxy': p, 'revoke': lastRevokeFn };
+  };
+
+  scope.Proxy['revocable'] = scope.Proxy.revocable;
+  scope['Proxy'] = scope.Proxy;
+})(window);
 /**
  * @license
  * Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
@@ -1027,181 +1202,6 @@ window.CustomElements.addModule(function(scope) {
     window.addEventListener(loadEvent, bootstrap);
   }
 })(window.CustomElements);
-/*
- * Copyright 2016 Google Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
-
-'use strict';
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-(function (scope) {
-  if (scope['Proxy']) {
-    return;
-  }
-  var lastRevokeFn = null;
-
-  /**
-   * @param {*} o
-   * @return {boolean} whether this is probably a (non-null) Object
-   */
-  function isObject(o) {
-    return o ? (typeof o === 'undefined' ? 'undefined' : _typeof(o)) == 'object' || typeof o == 'function' : false;
-  }
-
-  /**
-   * @constructor
-   * @param {!Object} target
-   * @param {{apply, construct, get, set}} handler
-   */
-  scope.Proxy = function (target, handler) {
-    if (!isObject(target) || !isObject(handler)) {
-      throw new TypeError('Cannot create proxy with a non-object as target or handler');
-    }
-
-    // Construct revoke function, and set lastRevokeFn so that Proxy.revocable can steal it.
-    // The caller might get the wrong revoke function if a user replaces or wraps scope.Proxy
-    // to call itself, but that seems unlikely especially when using the polyfill.
-    var throwRevoked = function throwRevoked() {};
-    lastRevokeFn = function lastRevokeFn() {
-      throwRevoked = function throwRevoked(trap) {
-        throw new TypeError('Cannot perform \'' + trap + '\' on a proxy that has been revoked');
-      };
-    };
-
-    // Fail on unsupported traps: Chrome doesn't do this, but ensure that users of the polyfill
-    // are a bit more careful. Copy the internal parts of handler to prevent user changes.
-    var unsafeHandler = handler;
-    handler = { 'get': null, 'set': null, 'apply': null, 'construct': null };
-    for (var k in unsafeHandler) {
-      if (!(k in handler)) {
-        throw new TypeError('Proxy polyfill does not support trap \'' + k + '\'');
-      }
-      handler[k] = unsafeHandler[k];
-    }
-    if (typeof unsafeHandler == 'function') {
-      // Allow handler to be a function (which has an 'apply' method). This matches what is
-      // probably a bug in native versions. It treats the apply call as a trap to be configured.
-      handler.apply = unsafeHandler.apply.bind(unsafeHandler);
-    }
-
-    // Define proxy as this, or a Function (if either it's callable, or apply is set).
-    // TODO(samthor): Closure compiler doesn't know about 'construct', attempts to rename it.
-    var proxy = this;
-    var isMethod = false;
-    var targetIsFunction = typeof target == 'function';
-    if (handler.apply || handler['construct'] || targetIsFunction) {
-      proxy = function Proxy() {
-        var usingNew = this && this.constructor === proxy;
-        throwRevoked(usingNew ? 'construct' : 'apply');
-
-        if (usingNew && handler['construct']) {
-          return handler['construct'].call(this, target, arguments);
-        } else if (!usingNew && handler.apply) {
-          return handler.apply(target, this, arguments);
-        } else if (targetIsFunction) {
-          // since the target was a function, fallback to calling it directly.
-          if (usingNew) {
-            // inspired by answers to https://stackoverflow.com/q/1606797
-            var all = Array.prototype.slice.call(arguments);
-            all.unshift(target); // pass class as first arg to constructor, although irrelevant
-            // nb. cast to convince Closure compiler that this is a constructor
-            var f = /** @type {!Function} */target.bind.apply(target, all);
-            return new f();
-          }
-          return target.apply(this, arguments);
-        }
-        throw new TypeError(usingNew ? 'not a constructor' : 'not a function');
-      };
-      isMethod = true;
-    }
-
-    // Create default getters/setters. Create different code paths as handler.get/handler.set can't
-    // change after creation.
-    var getter = handler.get ? function (prop) {
-      throwRevoked('get');
-      return handler.get(this, prop, proxy);
-    } : function (prop) {
-      throwRevoked('get');
-      return this[prop];
-    };
-    var setter = handler.set ? function (prop, value) {
-      throwRevoked('set');
-      var status = handler.set(this, prop, value, proxy);
-      if (!status) {
-        // TODO(samthor): If the calling code is in strict mode, throw TypeError.
-        // It's (sometimes) possible to work this out, if this code isn't strict- try to load the
-        // callee, and if it's available, that code is non-strict. However, this isn't exhaustive.
-      }
-    } : function (prop, value) {
-      throwRevoked('set');
-      this[prop] = value;
-    };
-
-    // Clone direct properties (i.e., not part of a prototype).
-    var propertyNames = Object.getOwnPropertyNames(target);
-    var propertyMap = {};
-    propertyNames.forEach(function (prop) {
-      if (isMethod && prop in proxy) {
-        return; // ignore properties already here, e.g. 'bind', 'prototype' etc
-      }
-      var real = Object.getOwnPropertyDescriptor(target, prop);
-      var desc = {
-        enumerable: !!real.enumerable,
-        get: getter.bind(target, prop),
-        set: setter.bind(target, prop)
-      };
-      Object.defineProperty(proxy, prop, desc);
-      propertyMap[prop] = true;
-    });
-
-    // Set the prototype, or clone all prototype methods (always required if a getter is provided).
-    // TODO(samthor): We don't allow prototype methods to be set. It's (even more) awkward.
-    // An alternative here would be to _just_ clone methods to keep behavior consistent.
-    var prototypeOk = true;
-    if (Object.setPrototypeOf) {
-      Object.setPrototypeOf(proxy, Object.getPrototypeOf(target));
-    } else if (proxy.__proto__) {
-      proxy.__proto__ = target.__proto__;
-    } else {
-      prototypeOk = false;
-    }
-    if (handler.get || !prototypeOk) {
-      for (var _k in target) {
-        if (propertyMap[_k]) {
-          continue;
-        }
-        Object.defineProperty(proxy, _k, { get: getter.bind(target, _k) });
-      }
-    }
-
-    // The Proxy polyfill cannot handle adding new properties. Seal the target and proxy.
-    Object.seal(target);
-    Object.seal(proxy);
-
-    return proxy; // nb. if isMethod is true, proxy != this
-  };
-
-  scope.Proxy.revocable = function (target, handler) {
-    var p = new scope.Proxy(target, handler);
-    return { 'proxy': p, 'revoke': lastRevokeFn };
-  };
-
-  scope.Proxy['revocable'] = scope.Proxy.revocable;
-  scope['Proxy'] = scope.Proxy;
-})(window);
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1344,25 +1344,6 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
     getValueByPath: getValueByPath
   };
 })(typeof global !== 'undefined' ? global : window);
-/**
- * @license
- * Copyright 2015 The Incremental DOM Authors. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS-IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t(e.IncrementalDOM={})}(this,function(e){"use strict";function t(e,t){this.attrs=o(),this.attrsArr=[],this.newAttrs=o(),this.key=t,this.keyMap=null,this.keyMapValid=!0,this.nodeName=e,this.text=null}function n(){this.created=M.nodesCreated&&[],this.deleted=M.nodesDeleted&&[]}var r=Object.prototype.hasOwnProperty,i=Object.create,l=function(e,t){return r.call(e,t)},o=function(){return i(null)},a=function(e,n,r){var i=new t(n,r);return e.__incrementalDOMData=i,i},u=function(e){var t=e.__incrementalDOMData;if(!t){var n=e.nodeName.toLowerCase(),r=null;e instanceof Element&&(r=e.getAttribute("key")),t=a(e,n,r)}return t},f={"default":"__default",placeholder:"__placeholder"},c=function(e){return 0===e.lastIndexOf("xml:",0)?"http://www.w3.org/XML/1998/namespace":0===e.lastIndexOf("xlink:",0)?"http://www.w3.org/1999/xlink":void 0},d=function(e,t,n){if(null==n)e.removeAttribute(t);else{var r=c(t);r?e.setAttributeNS(r,t,n):e.setAttribute(t,n)}},s=function(e,t,n){e[t]=n},p=function(e,t,n){if("string"==typeof n)e.style.cssText=n;else{e.style.cssText="";var r=e.style,i=n;for(var o in i)l(i,o)&&(r[o]=i[o])}},h=function(e,t,n){var r=typeof n;"object"===r||"function"===r?s(e,t,n):d(e,t,n)},v=function(e,t,n){var r=u(e),i=r.attrs;if(i[t]!==n){var l=y[t]||y[f["default"]];l(e,t,n),i[t]=n}},y=o();y[f["default"]]=h,y[f.placeholder]=function(){},y.style=p;var m=function(e,t){return"svg"===e?"http://www.w3.org/2000/svg":"foreignObject"===u(t).nodeName?null:t.namespaceURI},k=function(e,t,n,r,i){var l=m(n,t),o=void 0;if(o=l?e.createElementNS(l,n):e.createElement(n),a(o,n,r),i)for(var u=0;u<i.length;u+=2)v(o,i[u],i[u+1]);return o},g=function(e){var t=e.createTextNode("");return a(t,"#text",null),t},x=function(e){for(var t=o(),n=e.firstElementChild;n;){var r=u(n).key;r&&(t[r]=n),n=n.nextElementSibling}return t},w=function(e){var t=u(e);return t.keyMap||(t.keyMap=x(e)),t.keyMap},C=function(e,t){return t?w(e)[t]:null},b=function(e,t,n){w(e)[t]=n},M={nodesCreated:null,nodesDeleted:null};n.prototype.markCreated=function(e){this.created&&this.created.push(e)},n.prototype.markDeleted=function(e){this.deleted&&this.deleted.push(e)},n.prototype.notifyChanges=function(){this.created&&this.created.length>0&&M.nodesCreated(this.created),this.deleted&&this.deleted.length>0&&M.nodesDeleted(this.deleted)};var O=null,D=null,N=null,A=null,_=null,E=function(e){var t=function(t,r,i){var l=O,o=A,a=_,u=D,f=N;O=new n,A=t,_=t.ownerDocument,N=t.parentNode,e(t,r,i),O.notifyChanges(),O=l,A=o,_=a,D=u,N=f};return t},S=E(function(e,t,n){D=e,T(),t(n),B()}),j=E(function(e,t,n){D={nextSibling:e},t(n)}),I=function(e,t){var n=u(D);return e===n.nodeName&&t==n.key},V=function(e,t,n){if(!D||!I(e,t)){var r=void 0;t&&(r=C(N,t)),r||(r="#text"===e?g(_):k(_,N,e,t,n),t&&b(N,t,r),O.markCreated(r)),D&&u(D).key?(N.replaceChild(r,D),u(N).keyMapValid=!1):N.insertBefore(r,D),D=r}},P=function(){var e=N,t=u(e),n=t.keyMap,r=t.keyMapValid,i=e.lastChild,l=void 0;if(!(i===D&&r||t.attrs[f.placeholder]&&e!==A)){for(;i!==D;)e.removeChild(i),O.markDeleted(i),l=u(i).key,l&&delete n[l],i=e.lastChild;if(!r){for(l in n)i=n[l],i.parentNode!==e&&(O.markDeleted(i),delete n[l]);t.keyMapValid=!0}}},T=function(){N=D,D=null},L=function(){D=D?D.nextSibling:N.firstChild},B=function(){P(),D=N,N=N.parentNode},R=function(e,t,n){return L(),V(e,t,n),T(),N},U=function(){return B(),D},X=function(){return L(),V("#text",null,null),D},q=function(){return N},z=function(){D=N.lastChild},F=3,G=[],H=function(e,t,n){for(var r=R(e,t,n),i=u(r),l=i.attrsArr,o=i.newAttrs,a=!1,f=F,c=0;f<arguments.length;f+=1,c+=1)if(l[c]!==arguments[f]){a=!0;break}for(;f<arguments.length;f+=1,c+=1)l[c]=arguments[f];if(c<l.length&&(a=!0,l.length=c),a){for(f=F;f<arguments.length;f+=2)o[arguments[f]]=arguments[f+1];for(var d in o)v(r,d,o[d]),o[d]=void 0}return r},J=function(e,t,n){G[0]=e,G[1]=t,G[2]=n},K=function(e,t){G.push(e,t)},Q=function(){var e=H.apply(null,G);return G.length=0,e},W=function(){var e=U();return e},Y=function(e){return H.apply(null,arguments),W(e)},Z=function(e){return H.apply(null,arguments),z(),W(e)},$=function(e){var t=X(),n=u(t);if(n.text!==e){n.text=e;for(var r=e,i=1;i<arguments.length;i+=1){var l=arguments[i];r=l(r)}t.data=r}return t};e.patch=S,e.patchInner=S,e.patchOuter=j,e.currentElement=q,e.skip=z,e.elementVoid=Y,e.elementOpenStart=J,e.elementOpenEnd=Q,e.elementOpen=H,e.elementClose=W,e.elementPlaceholder=Z,e.text=$,e.attr=K,e.symbols=f,e.attributes=y,e.applyAttr=d,e.applyProp=s,e.notifications=M});
-
-//# sourceMappingURL=incremental-dom-min.js.map
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1433,7 +1414,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
         this.initialize();
         this.initialized = true;
 
-        this.render();
+        this.update();
       }
     }, {
       key: 'template',
@@ -1446,8 +1427,8 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
         // nop. abstract method.
       }
     }, {
-      key: 'render',
-      value: function render() {
+      key: 'update',
+      value: function update() {
         var _this2 = this;
 
         if (this.rendering) {
@@ -1633,6 +1614,25 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
   global.SJElement = SJElement;
 })(typeof global !== 'undefined' ? global : window);
+/**
+ * @license
+ * Copyright 2015 The Incremental DOM Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS-IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t(e.IncrementalDOM={})}(this,function(e){"use strict";function t(e,t){this.attrs=o(),this.attrsArr=[],this.newAttrs=o(),this.key=t,this.keyMap=null,this.keyMapValid=!0,this.nodeName=e,this.text=null}function n(){this.created=M.nodesCreated&&[],this.deleted=M.nodesDeleted&&[]}var r=Object.prototype.hasOwnProperty,i=Object.create,l=function(e,t){return r.call(e,t)},o=function(){return i(null)},a=function(e,n,r){var i=new t(n,r);return e.__incrementalDOMData=i,i},u=function(e){var t=e.__incrementalDOMData;if(!t){var n=e.nodeName.toLowerCase(),r=null;e instanceof Element&&(r=e.getAttribute("key")),t=a(e,n,r)}return t},f={"default":"__default",placeholder:"__placeholder"},c=function(e){return 0===e.lastIndexOf("xml:",0)?"http://www.w3.org/XML/1998/namespace":0===e.lastIndexOf("xlink:",0)?"http://www.w3.org/1999/xlink":void 0},d=function(e,t,n){if(null==n)e.removeAttribute(t);else{var r=c(t);r?e.setAttributeNS(r,t,n):e.setAttribute(t,n)}},s=function(e,t,n){e[t]=n},p=function(e,t,n){if("string"==typeof n)e.style.cssText=n;else{e.style.cssText="";var r=e.style,i=n;for(var o in i)l(i,o)&&(r[o]=i[o])}},h=function(e,t,n){var r=typeof n;"object"===r||"function"===r?s(e,t,n):d(e,t,n)},v=function(e,t,n){var r=u(e),i=r.attrs;if(i[t]!==n){var l=y[t]||y[f["default"]];l(e,t,n),i[t]=n}},y=o();y[f["default"]]=h,y[f.placeholder]=function(){},y.style=p;var m=function(e,t){return"svg"===e?"http://www.w3.org/2000/svg":"foreignObject"===u(t).nodeName?null:t.namespaceURI},k=function(e,t,n,r,i){var l=m(n,t),o=void 0;if(o=l?e.createElementNS(l,n):e.createElement(n),a(o,n,r),i)for(var u=0;u<i.length;u+=2)v(o,i[u],i[u+1]);return o},g=function(e){var t=e.createTextNode("");return a(t,"#text",null),t},x=function(e){for(var t=o(),n=e.firstElementChild;n;){var r=u(n).key;r&&(t[r]=n),n=n.nextElementSibling}return t},w=function(e){var t=u(e);return t.keyMap||(t.keyMap=x(e)),t.keyMap},C=function(e,t){return t?w(e)[t]:null},b=function(e,t,n){w(e)[t]=n},M={nodesCreated:null,nodesDeleted:null};n.prototype.markCreated=function(e){this.created&&this.created.push(e)},n.prototype.markDeleted=function(e){this.deleted&&this.deleted.push(e)},n.prototype.notifyChanges=function(){this.created&&this.created.length>0&&M.nodesCreated(this.created),this.deleted&&this.deleted.length>0&&M.nodesDeleted(this.deleted)};var O=null,D=null,N=null,A=null,_=null,E=function(e){var t=function(t,r,i){var l=O,o=A,a=_,u=D,f=N;O=new n,A=t,_=t.ownerDocument,N=t.parentNode,e(t,r,i),O.notifyChanges(),O=l,A=o,_=a,D=u,N=f};return t},S=E(function(e,t,n){D=e,T(),t(n),B()}),j=E(function(e,t,n){D={nextSibling:e},t(n)}),I=function(e,t){var n=u(D);return e===n.nodeName&&t==n.key},V=function(e,t,n){if(!D||!I(e,t)){var r=void 0;t&&(r=C(N,t)),r||(r="#text"===e?g(_):k(_,N,e,t,n),t&&b(N,t,r),O.markCreated(r)),D&&u(D).key?(N.replaceChild(r,D),u(N).keyMapValid=!1):N.insertBefore(r,D),D=r}},P=function(){var e=N,t=u(e),n=t.keyMap,r=t.keyMapValid,i=e.lastChild,l=void 0;if(!(i===D&&r||t.attrs[f.placeholder]&&e!==A)){for(;i!==D;)e.removeChild(i),O.markDeleted(i),l=u(i).key,l&&delete n[l],i=e.lastChild;if(!r){for(l in n)i=n[l],i.parentNode!==e&&(O.markDeleted(i),delete n[l]);t.keyMapValid=!0}}},T=function(){N=D,D=null},L=function(){D=D?D.nextSibling:N.firstChild},B=function(){P(),D=N,N=N.parentNode},R=function(e,t,n){return L(),V(e,t,n),T(),N},U=function(){return B(),D},X=function(){return L(),V("#text",null,null),D},q=function(){return N},z=function(){D=N.lastChild},F=3,G=[],H=function(e,t,n){for(var r=R(e,t,n),i=u(r),l=i.attrsArr,o=i.newAttrs,a=!1,f=F,c=0;f<arguments.length;f+=1,c+=1)if(l[c]!==arguments[f]){a=!0;break}for(;f<arguments.length;f+=1,c+=1)l[c]=arguments[f];if(c<l.length&&(a=!0,l.length=c),a){for(f=F;f<arguments.length;f+=2)o[arguments[f]]=arguments[f+1];for(var d in o)v(r,d,o[d]),o[d]=void 0}return r},J=function(e,t,n){G[0]=e,G[1]=t,G[2]=n},K=function(e,t){G.push(e,t)},Q=function(){var e=H.apply(null,G);return G.length=0,e},W=function(){var e=U();return e},Y=function(e){return H.apply(null,arguments),W(e)},Z=function(e){return H.apply(null,arguments),z(),W(e)},$=function(e){var t=X(),n=u(t);if(n.text!==e){n.text=e;for(var r=e,i=1;i<arguments.length;i+=1){var l=arguments[i];r=l(r)}t.data=r}return t};e.patch=S,e.patchInner=S,e.patchOuter=j,e.currentElement=q,e.skip=z,e.elementVoid=Y,e.elementOpenStart=J,e.elementOpenEnd=Q,e.elementOpen=H,e.elementClose=W,e.elementPlaceholder=Z,e.text=$,e.attr=K,e.symbols=f,e.attributes=y,e.applyAttr=d,e.applyProp=s,e.notifications=M});
+
+//# sourceMappingURL=incremental-dom-min.js.map
 // polyfill
 if (!window.customElements) {
     window.customElements = {

@@ -48,7 +48,7 @@
       this.initialize();
       this.initialized = true;
 
-      this.render();
+      this.update();
     }
 
     template() {
@@ -59,7 +59,7 @@
       // nop. abstract method.
     }
 
-    render() {
+    update() {
       if (this.rendering) {
         return;
       }
