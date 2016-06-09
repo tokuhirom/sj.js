@@ -1,1 +1,1 @@
-window.SJElement = require('./sj.js').SJElement;
+module.exports.sj = require('./sj.js');
