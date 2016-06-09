@@ -12,12 +12,15 @@
 customElements.define('test-events', class extends SJElement {
   template() {
     return `
-    <button id="clickTest" sj-click="btnclick">yay</button>
+    <button id="clickTest" sj-click="btnclick($event)">yay</button>
     `;
   }
 
-  btnclick() {
-    this.scope.clicked = true;
+  initialize() {
+    this.scope.btnclick = e => {
+      console.log(e);
+      this.scope.clicked = true;
+    };
   }
 
   runTest() {

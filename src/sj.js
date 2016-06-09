@@ -53,41 +53,25 @@
     }
   }
 
-  class SJElement extends HTMLElement {
-    createdCallback() {
-      this.initialized = false;
-
-      this.scope = {};
-
-      // parse template
-      const template = this.template();
-      const html = document.createElement("div");
-      html.innerHTML = template;
-      this.templateElement = html;
-
-      this.initialize();
-      this.initialized = true;
-
-      this.update();
+  class Renderer {
+    constructor(targetElement, templateElement, scope) {
+      this.targetElement = targetElement;
+      this.templateElement = templateElement;
+      this.scope = scope;
     }
 
-    template() {
-      throw "Please implement 'template' method";
-    }
-
-    initialize() {
-      // nop. abstract method.
-    }
-
-    update() {
+    render() {
       if (this.rendering) {
         return;
       }
 
       try {
+        ;
         this.rendering = true;
+        console.log(this)
 
-        IncrementalDOM.patch(this, () => {
+        IncrementalDOM.patch(this.targetElement, () => {
+          console.log(this)
           const children = this.templateElement.children;
           for (let i = 0; i < children.length; ++i) {
             this.renderDOM(children[i], this.scope);
@@ -172,13 +156,15 @@
         const event = sj_attr2event[attrName];
         if (event) {
           IncrementalDOM.attr(event, (e) => {
-            this[attr.value](e);
+            const currentScope = Object.assign({}, scope);
+            currentScope['$event'] = e;
+            sjExpression.getValueByPath(currentScope, attr.value);
           });
         } else if (attr.name === 'sj-model') {
           isModelAttribute = attr.value;
           IncrementalDOM.attr("onchange", (e) => {
             scope[attr.value] = e.target.value;
-            this.update();
+            this.render();
           });
           if (!scope[attr.value]) {
             scope[attr.value] = elem.value;
@@ -214,6 +200,34 @@
       });
     }
 
+  }
+
+  class SJElement extends HTMLElement {
+    createdCallback() {
+      this.scope = {};
+
+      // parse template
+      const template = this.template();
+      const html = document.createElement("div");
+      html.innerHTML = template;
+      this.renderer = new Renderer(this, html, this.scope);
+
+      this.initialize();
+
+      this.update();
+    }
+
+    template() {
+      throw "Please implement 'template' method";
+    }
+
+    initialize() {
+      // nop. abstract method.
+    }
+
+    update() {
+      this.renderer.render();
+    }
   }
 
   global.SJElement = SJElement;
