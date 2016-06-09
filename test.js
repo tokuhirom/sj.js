@@ -61,8 +61,8 @@ window.addEventListener("load", function () {
 
   runTest('test-events', sjtag({
     template: function() {/*
-        <button id="clickTest" sj-click="btnclick($event)">yay</button>
-    */},
+                             <button id="clickTest" sj-click="btnclick($event)">yay</button>
+                             */},
     initialize: function() {
       this.scope.btnclick = function (e) {
         this.scope.clicked = true;
@@ -90,15 +90,13 @@ window.addEventListener("load", function () {
     t.ok(this.querySelector('div').textContent, 'bar');
   });
 
-  runTest('test-input', class extends SJElement {
-    template() {
-      return `
-      <h1>Input</h1>
-      <input type="text" name="name" sj-model="name" id="myInput">
-      Hello, <span sj-model="name"></span>
-      `;
-    }
-  }, function (t, tagName) {
+  runTest('test-input', sjtag({
+    template: function () {/*
+                              <h1>Input</h1>
+                              <input type="text" name="name" sj-model="name" id="myInput">
+                              Hello, <span sj-model="name"></span>
+                              */}
+  }), function (t, tagName) {
     var input = this.querySelector('input');
     input.value = 'foo';
 
@@ -115,46 +113,41 @@ window.addEventListener("load", function () {
     t.ok(this.querySelector('span').textContent === "foo", tagName);
   });
 
-  runTest('test-input-nested', class extends SJElement {
-    template() {
-      return `
+  runTest('test-input-nested', sjtag({
+    template: function () {/*
       <h1>Input</h1>
       <input type="text" name="name" sj-model="x.y" id="myInput">
       Hello, <span sj-model="name"></span>
-      `;
-    }
-
-    initialize() {
+    */},
+    initialize: function() {
       this.scope.x = {
         y: 3
       };
     }
-  }, function (t, tagName) {
-      var input = this.querySelector('input');
-      input.value = 'foo';
+  }), function (t, tagName) {
+    var input = this.querySelector('input');
+    input.value = 'foo';
 
-      // simulate onchange event
-      // http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
-      if ("createEvent" in document) {
-        var evt = document.createEvent("HTMLEvents");
-        evt.initEvent("change", false, true);
-        input.dispatchEvent(evt);
-      } else {
-        input.fireEvent("onchange");
-      }
+    // simulate onchange event
+    // http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
+    if ("createEvent" in document) {
+      var evt = document.createEvent("HTMLEvents");
+      evt.initEvent("change", false, true);
+      input.dispatchEvent(evt);
+    } else {
+      input.fireEvent("onchange");
+    }
 
-      t.ok(this.scope.x.y === 'foo', tagName);
+    t.ok(this.scope.x.y === 'foo', tagName);
   });
 
-  runTest('test-textarea', class extends SJElement {
-    template() {
-      return `
+  runTest('test-textarea', sjtag({
+    template: function () {/*
       <h1>Textarea</h1>
       <textarea name="hoge" sj-model="hoge"></textarea>
       Hello, <span sj-model="hoge"></span>
-      `;
-    }
-  }, function (t, tagName) {
+    */}
+  }), function (t, tagName) {
     var input = this.querySelector('textarea');
     input.value = "foo";
     input.dispatchEvent(new Event("change"));
@@ -162,47 +155,39 @@ window.addEventListener("load", function () {
     t.ok(this.querySelector('span').textContent === "foo", tagName);
   });
 
-  runTest('test-from-controller', class extends SJElement {
-    initialize() {
+  runTest('test-from-controller', sjtag({
+    initialize: function() {
       this.scope.hogehoge = "foo";
-    }
-
-    template() {
-      return `
+    },
+    template: function() {/*
       <h1>Passed from controller</h1>
       <input type="text" name="bar" sj-model="hogehoge">
-      `;
-    }
-  }, function (t, tagName) {
+    */}
+  }), function (t, tagName) {
     t.ok(this.querySelector('input').value === "foo", tagName);
   });
 
-  runTest('test-select', class extends SJElement {
-    template() {
-      return `
+  runTest('test-select', sjtag({
+    template: function () {/*
       <h1>Select</h1>
       <select sj-model="sss">
       <option value="ppp">ppp</option>
       <option value="qqq">qqq</option>
       </select>
       SSS: <span sj-model="sss"></span>
-      `;
-    }
-  }, function (t, tagName) {
+    */}
+  }), function (t, tagName) {
     return this.querySelector('span').textContent === "ppp";
   });
 
-  runTest('test-for', class extends SJElement {
-    template() {
-      return `
+  runTest('test-for', sjtag({
+    template: function() {/*
       <h1>bar</h1>
       <div sj-repeat="x in bar">
       <div class="item" sj-model="x.boo">replace here</div>
       </div>
-      `;
-    }
-
-    initialize() {
+    */},
+    initialize: function () {
       this.scope.bar = [
         {boo: 4649},
         {boo: 1},
@@ -210,23 +195,20 @@ window.addEventListener("load", function () {
         {boo: 3}
       ];
     }
-  }, function (t, tagName) {
-      var elems = this.querySelectorAll('div.item');
-      t.ok(elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' &&
-        elems[2].textContent === '2' && elems[3].textContent === '3', tagName);
+  }), function (t, tagName) {
+    var elems = this.querySelectorAll('div.item');
+    t.ok(elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' &&
+         elems[2].textContent === '2' && elems[3].textContent === '3', tagName);
   });
 
-  runTest('test-for-index', class extends SJElement {
-    template() {
-      return `
+  runTest('test-for-index', sjtag({
+    template: function () {/*
       <h1>For index</h1>
       <div sj-repeat="x in bar">
       <div class="item">{{x.boo}}:{{$index}}</div>
       </div>
-      `;
-    }
-
-    initialize() {
+    */},
+    initialize: function () {
       this.scope.bar = [
         {boo: 4649},
         {boo: 1},
@@ -234,55 +216,47 @@ window.addEventListener("load", function () {
         {boo: 3}
       ];
     }
-  }, function (t, tagName) {
+  }), function (t, tagName) {
     var elems = this.querySelectorAll('div.item');
     t.ok(elems.length == 4 && elems[0].textContent == "4649:0" && elems[1].textContent === '1:1' &&
-        elems[2].textContent === '2:2' && elems[3].textContent === '3:3', tagName);
+         elems[2].textContent === '2:2' && elems[3].textContent === '3:3', tagName);
   });
 
-  runTest('test-for-empty', class extends SJElement {
-    template() {
-      return `
+  runTest('test-for-empty', sjtag({
+    template: function () {/*
       <h1>sj-repeat with empty value</h1>
       <div sj-repeat="x in bar">
       <div class="item" sj-model="x.boo">replace here</div>
       </div>
-      `;
-    }
-
-    initialize() {
+    */},
+    initialize: function() {
       this.scope.bar = [];
     }
-
-  }, function (t, tagName) {
+  }), function (t, tagName) {
     var elems = this.querySelectorAll('div.item');
     t.ok(elems.length == 0, tagName);
   });
 
-  runTest('test-attr-var', class extends SJElement {
-    template() {
-      return `
+  runTest('test-attr-var', sjtag({
+    template: function () {/*
       <h1>Attr variable</h1>
       <div style="color: {{ccc}}">CONTENT</div>`;
-    }
-
-    initialize() {
+    */},
+    initialize: function () {
       this.scope.ccc = "green";
     }
-  }, function (t, tagName) {
+  }), function (t, tagName) {
     var elems = this.querySelector('div');
     t.ok(elems.style.color === 'green', tagName);
   });
 
-  runTest('test-if', class extends SJElement {
-    template() {
-      return `
+  runTest('test-if', sjtag({
+    template: function () {/*
       <h1>Test if</h1>
       <div sj-if="getFalse()">FALSE</div>
-      <div sj-if="getTrue()">TRUE</div>`;
-    }
-
-    initialize() {
+      <div sj-if="getTrue()">TRUE</div>
+    */},
+    initialize: function () {
       this.scope.getTrue = function (e) {
         return true
       };
@@ -290,7 +264,7 @@ window.addEventListener("load", function () {
         return false
       };
     }
-  }, function (t, tagName) {
+  }), function (t, tagName) {
     var elems = this.querySelectorAll('div');
     t.ok(elems.length == 1 && elems[0].textContent === 'TRUE', tagName);
   });
@@ -362,7 +336,7 @@ window.addEventListener("load", function () {
       `;
     }
   }, function (t, tagName) {
-      t.ok(this.querySelector('h1'), tagName);
+    t.ok(this.querySelector('h1'), tagName);
   });
 
   var resultElem = document.getElementById("testResult");
