@@ -8,3 +8,11 @@ assert.equal(e.getValueByPath(
         return 3
       }
     }, 'x()'), 3);
+    /*
+assert.equal(e.getValueByPath(
+    {
+      "add": (x,y) => {
+        return x+y;
+      }
+    }, 'x(3,5)'), 8);
+    */

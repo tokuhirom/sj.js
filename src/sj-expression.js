@@ -1,32 +1,43 @@
 const trace = function (msg) {
-  // console.log(msg);
+  console.log(msg);
 };
 
-function _get(scope, path, origPath) {
-  if (!scope) {
-    return;
-  }
-
-  trace(`_get: ${path}`);
-  const m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)($|\.|\(\))(.*)/);
+function parseTerm(scope, path, origPath) {
+  const m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
   if (m) {
-    if (m[2]) {
-      if (m[2] === '.') {
-        trace(`hit: ${m[1]}`);
-        // m[2] equals '.'. We should lookup child.
-        return _get(scope[m[1]], m[3], origPath);
-      } else if (m[2].endsWith('()')) {
-        trace(`hit: ${m}`);
-        return scope[m[1]]();
-      } else {
-        throw "Should not reach here";
-      }
-    } else {
-      trace('hit');
-      return scope[m[1]];
-    }
+    const [ident, rest] = [m[1], m[2]];
+    trace(`rest: ${rest}`);
+    return [scope[ident], rest];
   } else {
     throw "Invalid path: " + origPath + " : " + path;
+  }
+}
+
+// namespace = ( ident '.' )? ident
+function parsePath(scope, path, origPath) {
+  trace(`parsePath: ${path}`);
+  const m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
+  if (m) {
+    const [namespace, rest] = [m[1], m[2]];
+    trace(`parsePath: ${namespace}, ${rest}`);
+    return parsePath(scope[namespace], rest, origPath);
+  } else {
+    return parseTerm(scope, path, origPath);
+  }
+}
+
+function parseFuncall(scope, path, origPath) {
+  if (!path) {
+    throw "Missing path";
+  }
+  const [got, rest] = parsePath(scope, path, origPath);
+  if (rest) {
+    trace(`got:${got}, ${rest}`);
+    if (rest === '()') {
+      return got();
+    }
+  } else {
+    return got;
   }
 }
 
@@ -35,7 +46,7 @@ function getValueByPath(scope, path) {
     throw "Missing path";
   }
   trace(`getValueByPath: ${path}`);
-  return _get(scope, path, path);
+  return parseFuncall(scope, path, path);
 }
 
 
