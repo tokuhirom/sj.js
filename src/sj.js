@@ -35,16 +35,17 @@
   }
 
   class ForRenderer {
-    constructor(renderer, element, scope, varName) {
+    constructor(renderer, element, items, scope, varName) {
       this.renderer = renderer;
       this.element = element;
+      this.items = items;
       this.scope = scope;
       this.varName = varName;
     }
 
     render() {
       let i = 0;
-      for (const item of this.scope) {
+      for (const item of this.items) {
         const currentScope = Object.assign({}, this.scope);
         currentScope[this.varName] = item;
         currentScope['$index'] = i++;
@@ -178,7 +179,7 @@
           const e = elem.querySelector('*');
           forRenderer = new ForRenderer((elem, scope) => {
             this.renderDOM(elem, scope)
-          }, e, scope[container], varName);
+          }, e, scope[container], scope, varName);
         }
       } else {
         const labelValue = this.replaceVariables(attr.value, scope);

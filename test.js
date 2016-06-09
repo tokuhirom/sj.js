@@ -256,6 +256,28 @@ customElements.define('test-if', class extends SJElement {
   }
 });
 
+customElements.define('test-if-array', class extends SJElement {
+  template() {
+    return `
+    <h1>Test if</h1>
+    <div sj-repeat="x in bar">
+    <div sj-if="matched(x)" sj-model="x.foo" class="target"></div>
+    </div>`
+  }
+
+  initialize() {
+    this.scope.bar = [{"foo":1}]
+    this.scope.matched = function(x) {
+      return x.foo == 1;
+    };
+  }
+
+  runTest() {
+    var elems = this.querySelectorAll('div.target');
+    return elems.length === 1 && elems[0].textContent === '1';
+  }
+});
+
 customElements.define('test-text-var', class extends SJElement {
   template() {
     return `
@@ -345,6 +367,7 @@ window.addEventListener("load", function () {
     "test-for-empty",
     "test-attr-var",
     "test-if",
+    "test-if-array",
     "test-text-var",
 //    "test-2way", //     Proxy doesn't work on safari.
     "test-filter",
