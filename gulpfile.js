@@ -12,7 +12,13 @@ function jsStream() {
         .pipe(webpack())
         .pipe(babel());
 
-    const bundleStream = gulp.src(["node_modules/webcomponents.js/CustomElements.js", "node_modules/incremental-dom/dist/incremental-dom-min.js", 'src/polyfill.js', 'node_modules/whatwg-fetch/fetch.js'])
+    const bundleStream = gulp.src([
+        "node_modules/webcomponents.js/CustomElements.js",
+        "node_modules/incremental-dom/dist/incremental-dom-min.js",
+        'src/polyfill.js',
+        'node_modules/whatwg-fetch/fetch.js',
+        'node_modules/proxy-polyfill/proxy.min.js'
+    ])
         .pipe(plumber());
 
     return merge(bundleStream, srcStream);
@@ -32,5 +38,5 @@ gulp.task("js.bundle", function() {
 });
 
 gulp.task("default", function(){
-    gulp.watch("src/*.js", ["js.bundle.min", "js.bundle"]);
+    gulp.watch(["src/*.js", 'guplfile.js'], ["js.bundle.min", "js.bundle"]);
 });

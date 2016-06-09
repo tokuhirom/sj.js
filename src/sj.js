@@ -28,7 +28,17 @@ function isFormElement(elem) {
 
 class SJElement extends HTMLElement {
   createdCallback() {
-    this.scope = {};
+    this.initialized = false;
+
+    this.scope = new Proxy({}, {
+        set: (target, property, value) => {
+            target[property] = value;
+            if (this.initialized) {
+                this.render();
+            }
+            return true;
+        }
+    });
 
     // parse template
     const template = this.template();
@@ -37,6 +47,7 @@ class SJElement extends HTMLElement {
     this.templateElement = html;
 
     this.initialize();
+    this.initialized = true;
 
     this.render();
   }
@@ -50,13 +61,23 @@ class SJElement extends HTMLElement {
   }
 
   render() {
-    IncrementalDOM.patch(this, () => {
-      const children = this.templateElement.children;
-      for (let i = 0; i < children.length; ++i) {
+    if (this.rendering) {
+      return;
+    }
 
-        this.renderDOM(children[i], this.scope);
-      }
-    });
+    try {
+        this.rendering = true;
+
+        IncrementalDOM.patch(this, () => {
+        const children = this.templateElement.children;
+        for (let i = 0; i < children.length; ++i) {
+
+            this.renderDOM(children[i], this.scope);
+        }
+        });
+    } finally {
+      this.rendering = false;
+    }
   }
 
   renderDOM(elem, scope) {

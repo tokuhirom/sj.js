@@ -159,29 +159,10 @@ customElements.define('test-if', class extends SJElement {
   }
 });
 
-customElements.define('test-var', class extends SJElement {
-  template() {
-    return `
-    <h1>Test if</h1>
-    <div sj-if="getFalse()">FALSE</div>
-    <div sj-if="getTrue()">TRUE</div>`;
-  }
-
-  initialize() {
-    this.scope.getTrue = function (e) { return true };
-    this.scope.getFalse = function (e) { return false };
-  }
-
-  runTest() {
-    var elems = this.querySelectorAll('div');
-    return elems.length == 1 && elems[0].textContent === 'TRUE';
-  }
-});
-
 customElements.define('test-text-var', class extends SJElement {
   template() {
     return `
-    <h1>Test if</h1>
+    <h1>Test text var</h1>
     <div>Hello, {{name}}</div>
     `;
   }
@@ -193,6 +174,25 @@ customElements.define('test-text-var', class extends SJElement {
   runTest() {
     var elem = this.querySelector('div');
     return elem.textContent === 'Hello, John';
+  }
+});
+
+customElements.define('test-2way', class extends SJElement {
+  template() {
+    return `
+    <h1>Test 2way binding</h1>
+    <div>Hello, {{name}}</div>
+    `;
+  }
+
+  initialize() {
+    this.scope.name = 'John';
+  }
+
+  runTest() {
+    var elem = this.querySelector('div');
+    this.scope.name = 'Nick';
+    return elem.textContent === 'Hello, Nick';
   }
 });
 

@@ -1490,6 +1490,11 @@ if (!window.customElements) {
   self.fetch.polyfill = true
 })(typeof self !== 'undefined' ? self : this);
 
+(function(d){function k(a){return a?"object"==typeof a||"function"==typeof a:!1}if(!d.Proxy){var l=null;d.Proxy=function(a,b){if(!k(a)||!k(b))throw new TypeError("Cannot create proxy with a non-object as target or handler");var d=function(){};l=function(){d=function(c){throw new TypeError("Cannot perform '"+c+"' on a proxy that has been revoked");}};var f=b;b={get:null,set:null,apply:null,construct:null};for(var g in f){if(!(g in b))throw new TypeError("Proxy polyfill does not support trap '"+g+"'");
+b[g]=f[g]}"function"==typeof f&&(b.apply=f.apply.bind(f));var e=this,m=!1,n="function"==typeof a;if(b.apply||b.construct||n)e=function(){var c=this&&this.constructor===e;d(c?"construct":"apply");if(c&&b.construct)return b.construct.call(this,a,arguments);if(!c&&b.apply)return b.apply(a,this,arguments);if(n)return c?(c=Array.prototype.slice.call(arguments),c.unshift(a),new (a.bind.apply(a,c))):a.apply(this,arguments);throw new TypeError(c?"not a constructor":"not a function");},m=!0;var p=b.get?function(c){d("get");
+return b.get(this,c,e)}:function(c){d("get");return this[c]},r=b.set?function(c,a){d("set");b.set(this,c,a,e)}:function(a,b){d("set");this[a]=b},q={};Object.getOwnPropertyNames(a).forEach(function(c){if(!(m&&c in e)){var b={enumerable:!!Object.getOwnPropertyDescriptor(a,c).enumerable,get:p.bind(a,c),set:r.bind(a,c)};Object.defineProperty(e,c,b);q[c]=!0}});f=!0;Object.setPrototypeOf?Object.setPrototypeOf(e,Object.getPrototypeOf(a)):e.__proto__?e.__proto__=a.__proto__:f=!1;if(b.get||!f)for(var h in a)q[h]||
+Object.defineProperty(e,h,{get:p.bind(a,h)});Object.seal(a);Object.seal(e);return e};d.Proxy.revocable=function(a,b){return{proxy:new d.Proxy(a,b),revoke:l}};d.Proxy.revocable=d.Proxy.revocable;d.Proxy=d.Proxy}})(window);
+
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1595,7 +1600,19 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 		_createClass(SJElement, [{
 			key: 'createdCallback',
 			value: function createdCallback() {
-				this.scope = {};
+				var _this2 = this;
+
+				this.initialized = false;
+
+				this.scope = new Proxy({}, {
+					set: function set(target, property, value) {
+						target[property] = value;
+						if (_this2.initialized) {
+							_this2.render();
+						}
+						return true;
+					}
+				});
 
 				// parse template
 				var template = this.template();
@@ -1604,6 +1621,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 				this.templateElement = html;
 
 				this.initialize();
+				this.initialized = true;
 
 				this.render();
 			}
@@ -1620,15 +1638,25 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 		}, {
 			key: 'render',
 			value: function render() {
-				var _this2 = this;
+				var _this3 = this;
 
-				IncrementalDOM.patch(this, function () {
-					var children = _this2.templateElement.children;
-					for (var i = 0; i < children.length; ++i) {
+				if (this.rendering) {
+					return;
+				}
 
-						_this2.renderDOM(children[i], _this2.scope);
-					}
-				});
+				try {
+					this.rendering = true;
+
+					IncrementalDOM.patch(this, function () {
+						var children = _this3.templateElement.children;
+						for (var i = 0; i < children.length; ++i) {
+
+							_this3.renderDOM(children[i], _this3.scope);
+						}
+					});
+				} finally {
+					this.rendering = false;
+				}
 			}
 		}, {
 			key: 'renderDOM',
@@ -1713,7 +1741,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 		}, {
 			key: 'renderAttribute',
 			value: function renderAttribute(attrName, attr, elem, scope) {
-				var _this3 = this;
+				var _this4 = this;
 
 				var isModelAttribute = void 0;
 				var hasForAttribute = void 0;
@@ -1722,13 +1750,13 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 					var event = sj_attr2event[attrName];
 					if (event) {
 						IncrementalDOM.attr(event, function (e) {
-							_this3[attr.value](e);
+							_this4[attr.value](e);
 						});
 					} else if (attr.name === 'sj-model') {
 						isModelAttribute = attr.value;
 						IncrementalDOM.attr("onchange", function (e) {
 							scope[attr.value] = e.target.value;
-							_this3.render();
+							_this4.render();
 						});
 						if (!scope[attr.value]) {
 							scope[attr.value] = elem.value;
