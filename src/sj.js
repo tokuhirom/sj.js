@@ -93,7 +93,7 @@
 
       IncrementalDOM.elementOpenStart(tagName);
       const [modelName, forRenderer] = this.renderAttributes(elem, scope);
-      const modelValue = modelName? sjExpression.getValueByPath(scope, modelName) : null;
+      const modelValue = modelName? sjExpression.getValueByPath(scope, modelName, this) : null;
       const isForm = isFormElement(elem);
       if (modelName && modelValue && scope[modelName] && isForm) {
         IncrementalDOM.attr("value", modelValue);
@@ -123,7 +123,7 @@
     shouldHideElement(elem, scope) {
       const cond = elem.getAttribute('sj-if');
       if (cond) {
-        const val = sjExpression.getValueByPath(scope, cond);
+        const val = sjExpression.getValueByPath(scope, cond, this);
         if (!val) {
           return true;
         }
@@ -156,7 +156,7 @@
           IncrementalDOM.attr(event, (e) => {
             const currentScope = Object.assign({}, scope);
             currentScope['$event'] = e;
-            sjExpression.getValueByPath(currentScope, attr.value);
+            sjExpression.getValueByPath(currentScope, attr.value, this);
           });
         } else if (attr.name === 'sj-model') {
           isModelAttribute = attr.value;
@@ -191,7 +191,7 @@
         if (s === '$_') {
           return JSON.stringify(scope);
         } else {
-          return sjExpression.getValueByPath(scope, s);
+          return sjExpression.getValueByPath(scope, s, this);
         }
       });
     }

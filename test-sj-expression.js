@@ -19,6 +19,12 @@ assert.equal(e.getValueByPath(
       return x + y;
     }
   }, 'add(3,5)'), 8);
+assert.equal(e.getValueByPath(
+  {
+    "yy": function () {
+      return this.y * 3;
+    }
+  }, 'yy()', {"y":6}), 18);
 {
   const o = {
     "x": {
