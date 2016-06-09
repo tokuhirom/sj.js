@@ -90,7 +90,7 @@ window.addEventListener("load", function () {
     t.ok(this.querySelector('div').textContent, 'bar');
   });
 
-  customElements.define('test-input', class extends SJElement {
+  runTest('test-input', class extends SJElement {
     template() {
       return `
       <h1>Input</h1>
@@ -98,26 +98,24 @@ window.addEventListener("load", function () {
       Hello, <span sj-model="name"></span>
       `;
     }
+  }, function (t, tagName) {
+    var input = this.querySelector('input');
+    input.value = 'foo';
 
-    runTest() {
-      var input = this.querySelector('input');
-      input.value = 'foo';
-
-      // simulate onchange event
-      // http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
-      if ("createEvent" in document) {
-        var evt = document.createEvent("HTMLEvents");
-        evt.initEvent("change", false, true);
-        input.dispatchEvent(evt);
-      } else {
-        input.fireEvent("onchange");
-      }
-
-      return this.querySelector('span').textContent === "foo";
+    // simulate onchange event
+    // http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
+    if ("createEvent" in document) {
+      var evt = document.createEvent("HTMLEvents");
+      evt.initEvent("change", false, true);
+      input.dispatchEvent(evt);
+    } else {
+      input.fireEvent("onchange");
     }
+
+    t.ok(this.querySelector('span').textContent === "foo", tagName);
   });
 
-  customElements.define('test-input-nested', class extends SJElement {
+  runTest('test-input-nested', class extends SJElement {
     template() {
       return `
       <h1>Input</h1>
@@ -131,8 +129,7 @@ window.addEventListener("load", function () {
         y: 3
       };
     }
-
-    runTest() {
+  }, function (t, tagName) {
       var input = this.querySelector('input');
       input.value = 'foo';
 
@@ -146,12 +143,10 @@ window.addEventListener("load", function () {
         input.fireEvent("onchange");
       }
 
-      return this.scope.x.y === 'foo';
-    }
-  })
-  ;
+      t.ok(this.scope.x.y === 'foo', tagName);
+  });
 
-  customElements.define('test-textarea', class extends SJElement {
+  runTest('test-textarea', class extends SJElement {
     template() {
       return `
       <h1>Textarea</h1>
@@ -159,17 +154,15 @@ window.addEventListener("load", function () {
       Hello, <span sj-model="hoge"></span>
       `;
     }
+  }, function (t, tagName) {
+    var input = this.querySelector('textarea');
+    input.value = "foo";
+    input.dispatchEvent(new Event("change"));
 
-    runTest() {
-      var input = this.querySelector('textarea');
-      input.value = "foo";
-      input.dispatchEvent(new Event("change"));
-
-      return this.querySelector('span').textContent === "foo";
-    }
+    t.ok(this.querySelector('span').textContent === "foo", tagName);
   });
 
-  customElements.define('test-from-controller', class extends SJElement {
+  runTest('test-from-controller', class extends SJElement {
     initialize() {
       this.scope.hogehoge = "foo";
     }
@@ -180,13 +173,11 @@ window.addEventListener("load", function () {
       <input type="text" name="bar" sj-model="hogehoge">
       `;
     }
-
-    runTest() {
-      return this.querySelector('input').value === "foo";
-    }
+  }, function (t, tagName) {
+    t.ok(this.querySelector('input').value === "foo", tagName);
   });
 
-  customElements.define('test-select', class extends SJElement {
+  runTest('test-select', class extends SJElement {
     template() {
       return `
       <h1>Select</h1>
@@ -197,13 +188,11 @@ window.addEventListener("load", function () {
       SSS: <span sj-model="sss"></span>
       `;
     }
-
-    runTest() {
-      return this.querySelector('span').textContent === "ppp";
-    }
+  }, function (t, tagName) {
+    return this.querySelector('span').textContent === "ppp";
   });
 
-  customElements.define('test-for', class extends SJElement {
+  runTest('test-for', class extends SJElement {
     template() {
       return `
       <h1>bar</h1>
@@ -221,15 +210,13 @@ window.addEventListener("load", function () {
         {boo: 3}
       ];
     }
-
-    runTest() {
+  }, function (t, tagName) {
       var elems = this.querySelectorAll('div.item');
-      return elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' &&
-        elems[2].textContent === '2' && elems[3].textContent === '3';
-    }
+      t.ok(elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' &&
+        elems[2].textContent === '2' && elems[3].textContent === '3', tagName);
   });
 
-  customElements.define('test-for-index', class extends SJElement {
+  runTest('test-for-index', class extends SJElement {
     template() {
       return `
       <h1>For index</h1>
@@ -247,15 +234,13 @@ window.addEventListener("load", function () {
         {boo: 3}
       ];
     }
-
-    runTest() {
-      var elems = this.querySelectorAll('div.item');
-      return elems.length == 4 && elems[0].textContent == "4649:0" && elems[1].textContent === '1:1' &&
-        elems[2].textContent === '2:2' && elems[3].textContent === '3:3';
-    }
+  }, function (t, tagName) {
+    var elems = this.querySelectorAll('div.item');
+    t.ok(elems.length == 4 && elems[0].textContent == "4649:0" && elems[1].textContent === '1:1' &&
+        elems[2].textContent === '2:2' && elems[3].textContent === '3:3', tagName);
   });
 
-  customElements.define('test-for-empty', class extends SJElement {
+  runTest('test-for-empty', class extends SJElement {
     template() {
       return `
       <h1>sj-repeat with empty value</h1>
@@ -269,13 +254,12 @@ window.addEventListener("load", function () {
       this.scope.bar = [];
     }
 
-    runTest() {
-      var elems = this.querySelectorAll('div.item');
-      return elems.length == 0;
-    }
+  }, function (t, tagName) {
+    var elems = this.querySelectorAll('div.item');
+    t.ok(elems.length == 0, tagName);
   });
 
-  customElements.define('test-attr-var', class extends SJElement {
+  runTest('test-attr-var', class extends SJElement {
     template() {
       return `
       <h1>Attr variable</h1>
@@ -285,14 +269,12 @@ window.addEventListener("load", function () {
     initialize() {
       this.scope.ccc = "green";
     }
-
-    runTest() {
-      var elems = this.querySelector('div');
-      return elems.style.color === 'green';
-    }
+  }, function (t, tagName) {
+    var elems = this.querySelector('div');
+    t.ok(elems.style.color === 'green', tagName);
   });
 
-  customElements.define('test-if', class extends SJElement {
+  runTest('test-if', class extends SJElement {
     template() {
       return `
       <h1>Test if</h1>
@@ -308,14 +290,12 @@ window.addEventListener("load", function () {
         return false
       };
     }
-
-    runTest() {
-      var elems = this.querySelectorAll('div');
-      return elems.length == 1 && elems[0].textContent === 'TRUE';
-    }
+  }, function (t, tagName) {
+    var elems = this.querySelectorAll('div');
+    t.ok(elems.length == 1 && elems[0].textContent === 'TRUE', tagName);
   });
 
-  customElements.define('test-if-array', class extends SJElement {
+  runTest('test-if-array', class extends SJElement {
     template() {
       return `
       <h1>Test if</h1>
@@ -330,14 +310,12 @@ window.addEventListener("load", function () {
         return x.foo == 1;
       };
     }
-
-    runTest() {
-      var elems = this.querySelectorAll('div.target');
-      return elems.length === 1 && elems[0].textContent === '1';
-    }
+  }, function (t, tagName) {
+    var elems = this.querySelectorAll('div.target');
+    t.ok(elems.length === 1 && elems[0].textContent === '1', tagName);
   });
 
-  customElements.define('test-text-var', class extends SJElement {
+  runTest('test-text-var', class extends SJElement {
     template() {
       return `
       <h1>Test text var</h1>
@@ -348,33 +326,12 @@ window.addEventListener("load", function () {
     initialize() {
       this.scope.name = 'John';
     }
-
-    runTest() {
-      var elem = this.querySelector('div');
-      return elem.textContent === 'Hello, John';
-    }
+  }, function (t, tagName) {
+    var elem = this.querySelector('div');
+    t.ok(elem.textContent === 'Hello, John', tagName);
   });
 
-  customElements.define('test-2way', class extends SJElement {
-    template() {
-      return `
-      <h1>Test 2way binding</h1>
-      <div>Hello, {{name}}</div>
-      `;
-    }
-
-    initialize() {
-      this.scope.name = 'John';
-    }
-
-    runTest() {
-      var elem = this.querySelector('div');
-      this.scope.name = 'Nick';
-      return elem.textContent === 'Hello, Nick';
-    }
-  });
-
-  customElements.define('test-filter', class extends SJElement {
+  runTest('test-filter', class extends SJElement {
     template() {
       return `
       <h1>Test filter</h1>
@@ -392,62 +349,21 @@ window.addEventListener("load", function () {
         return e;
       };
     }
-
-    runTest() {
-      var elems = this.querySelectorAll('div');
-      return elems.length === 1 && elems[0].textContent === 'Hello';
-    }
+  }, function (t, tagName) {
+    var elems = this.querySelectorAll('div');
+    t.ok(elems.length === 1 && elems[0].textContent === 'Hello', tagName);
   });
 
-  customElements.define('test-comment', class extends SJElement {
+  runTest('test-comment', class extends SJElement {
     template() {
       return `
       <h1>Test comment</h1>
       <!-- foo -->
       `;
     }
-
-    runTest() {
-      return this.querySelector('h1');
-    }
+  }, function (t, tagName) {
+      t.ok(this.querySelector('h1'), tagName);
   });
-
-  // test case runner
-  var tags = [
-    "test-input",
-    "test-input-nested",
-    "test-textarea",
-    "test-from-controller",
-    "test-select",
-    "test-for",
-    "test-for-index",
-    "test-for-empty",
-    "test-attr-var",
-    "test-if",
-    "test-if-array",
-    "test-text-var",
-    //    "test-2way", //     Proxy doesn't work on safari.
-    "test-filter",
-    "test-comment"
-  ];
-
-  for (var tag of tags) {
-    if (location.hash && tag !== location.hash.substr(1)) {
-      t.skip(tag);
-      continue;
-    }
-    try {
-      var elem = document.createElement(tag);
-      var ret = elem.runTest();
-      t.ok(ret, tag);
-      if (!ret) {
-        console.log(elem.innerHTML);
-      }
-    } catch (e) {
-      console.log(e);
-      t.fail(`${tag} - ${e}`);
-    }
-  }
 
   var resultElem = document.getElementById("testResult");
   resultElem.textContent = `Success: ${t.successCount} Fail: ${t.failCount}`;
