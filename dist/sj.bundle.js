@@ -1490,11 +1490,6 @@ if (!window.customElements) {
   self.fetch.polyfill = true
 })(typeof self !== 'undefined' ? self : this);
 
-(function(d){function k(a){return a?"object"==typeof a||"function"==typeof a:!1}if(!d.Proxy){var l=null;d.Proxy=function(a,b){if(!k(a)||!k(b))throw new TypeError("Cannot create proxy with a non-object as target or handler");var d=function(){};l=function(){d=function(c){throw new TypeError("Cannot perform '"+c+"' on a proxy that has been revoked");}};var f=b;b={get:null,set:null,apply:null,construct:null};for(var g in f){if(!(g in b))throw new TypeError("Proxy polyfill does not support trap '"+g+"'");
-b[g]=f[g]}"function"==typeof f&&(b.apply=f.apply.bind(f));var e=this,m=!1,n="function"==typeof a;if(b.apply||b.construct||n)e=function(){var c=this&&this.constructor===e;d(c?"construct":"apply");if(c&&b.construct)return b.construct.call(this,a,arguments);if(!c&&b.apply)return b.apply(a,this,arguments);if(n)return c?(c=Array.prototype.slice.call(arguments),c.unshift(a),new (a.bind.apply(a,c))):a.apply(this,arguments);throw new TypeError(c?"not a constructor":"not a function");},m=!0;var p=b.get?function(c){d("get");
-return b.get(this,c,e)}:function(c){d("get");return this[c]},r=b.set?function(c,a){d("set");b.set(this,c,a,e)}:function(a,b){d("set");this[a]=b},q={};Object.getOwnPropertyNames(a).forEach(function(c){if(!(m&&c in e)){var b={enumerable:!!Object.getOwnPropertyDescriptor(a,c).enumerable,get:p.bind(a,c),set:r.bind(a,c)};Object.defineProperty(e,c,b);q[c]=!0}});f=!0;Object.setPrototypeOf?Object.setPrototypeOf(e,Object.getPrototypeOf(a)):e.__proto__?e.__proto__=a.__proto__:f=!1;if(b.get||!f)for(var h in a)q[h]||
-Object.defineProperty(e,h,{get:p.bind(a,h)});Object.seal(a);Object.seal(e);return e};d.Proxy.revocable=function(a,b){return{proxy:new d.Proxy(a,b),revoke:l}};d.Proxy.revocable=d.Proxy.revocable;d.Proxy=d.Proxy}})(window);
-
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -1830,31 +1825,117 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 		// console.log(msg);
 	};
 
-	function _get(scope, path, origPath) {
-		if (!scope) {
+	function parseLeaf(scope, path, origPath) {
+		var m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
+		if (m) {
+			var ident = m[1];
+			var rest = m[2];
+
+			trace('rest: ' + rest);
+			return [scope[ident], rest];
+		} else {
+			return;
+		}
+	}
+
+	// namespace = ( ident '.' )? ident
+	function parsePath(scope, path, origPath) {
+		trace('parsePath: ' + path);
+		var m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
+		if (m) {
+			var namespace = m[1];
+			var rest = m[2];
+
+			trace('parsePath: ' + namespace + ', ' + rest);
+			return parsePath(scope[namespace], rest, origPath);
+		} else {
+			return parseLeaf(scope, path, origPath);
+		}
+	}
+
+	function parseNumber(scope, path, origPath) {
+		var m = path.match(/^([1-9][0-9]*(?:\.[0-9]+)?)(.*)$/);
+		if (m) {
+			trace('parseNumber: ' + path + '. ' + m + '. ok');
+			return [parseFloat(m[1], 10), m[2]];
+		} else {
+			trace('parseNumber: ' + path + '. fail');
+			return;
+		}
+	}
+
+	function parseTerm(scope, path, origPath) {
+		var m = parsePath(scope, path, origPath);
+		if (m) {
+			return m;
+		}
+		return parseNumber(scope, path, origPath);
+	}
+
+	function parseParams(scope, path, origPath) {
+		if (!path.startsWith('(')) {
+			return;
+		}
+		path = path.substr(1);
+
+		var params = [];
+		while (true) {
+			var m = parseFuncall(scope, path, origPath);
+			if (!m) {
+				trace('No param: \'' + path + '\'');
+				break;
+			}
+			path = m[1];
+			trace('Got param: \'' + m + '\'');
+			params.push(m[0]);
+
+			path = path.replace(/^\s*/, '');
+			if (!path.startsWith(',')) {
+				trace('No more comma. break. ' + path);
+				break;
+			}
+			path = path.substr(1);
+			path = path.replace(/^\s*/, '');
+		}
+
+		path = path.replace(/^\s*/, '');
+		if (!path.startsWith(')')) {
+			throw 'Paren missmatch: \'' + path + '\': \'' + origPath + '\'';
+		}
+		path = path.substr(1);
+		path = path.replace(/^\s*/, '');
+		if (path.length > 0) {
+			throw 'There\'s trailing trash: ' + origPath;
+		}
+
+		return [params, path];
+	}
+
+	function parseFuncall(scope, path, origPath) {
+		if (!path) {
+			throw "Missing path";
+		}
+		var m = parseTerm(scope, path, origPath);
+		if (!m) {
 			return;
 		}
 
-		trace('_get: ' + path);
-		var m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)($|\.|\(\))(.*)/);
-		if (m) {
-			if (m[2]) {
-				if (m[2] === '.') {
-					trace('hit: ' + m[1]);
-					// m[2] equals '.'. We should lookup child.
-					return _get(scope[m[1]], m[3], origPath);
-				} else if (m[2].endsWith('()')) {
-					trace('hit: ' + m);
-					return scope[m[1]]();
-				} else {
-					throw "Should not reach here";
-				}
+		var _m = _slicedToArray(m, 2);
+
+		var got = _m[0];
+		var rest = _m[1];
+
+		if (rest) {
+			trace('got:' + got + ', ' + rest);
+			var _m2 = parseParams(scope, rest, origPath);
+			if (_m2) {
+				trace('apply: ' + rest);
+				return [got.apply(undefined, _m2[0]), _m2[1]];
 			} else {
-				trace('hit');
-				return scope[m[1]];
+				return [got, rest];
 			}
 		} else {
-			throw "Invalid path: " + origPath + " : " + path;
+			return [got, rest];
 		}
 	}
 
@@ -1863,7 +1944,14 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 			throw "Missing path";
 		}
 		trace('getValueByPath: ' + path);
-		return _get(scope, path, path);
+		var m = parseFuncall(scope, path, path);
+		if (m) {
+			if (m[1]) {
+				throw 'Trailing trash: \'' + m[1] + '\' in \'' + path + '\'';
+			} else {
+				return m[0];
+			}
+		} else {}
 	}
 
 	module.exports = {
@@ -1873,3 +1961,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 	/***/
 }
 /******/]);
+(function(d){function k(a){return a?"object"==typeof a||"function"==typeof a:!1}if(!d.Proxy){var l=null;d.Proxy=function(a,b){if(!k(a)||!k(b))throw new TypeError("Cannot create proxy with a non-object as target or handler");var d=function(){};l=function(){d=function(c){throw new TypeError("Cannot perform '"+c+"' on a proxy that has been revoked");}};var f=b;b={get:null,set:null,apply:null,construct:null};for(var g in f){if(!(g in b))throw new TypeError("Proxy polyfill does not support trap '"+g+"'");
+b[g]=f[g]}"function"==typeof f&&(b.apply=f.apply.bind(f));var e=this,m=!1,n="function"==typeof a;if(b.apply||b.construct||n)e=function(){var c=this&&this.constructor===e;d(c?"construct":"apply");if(c&&b.construct)return b.construct.call(this,a,arguments);if(!c&&b.apply)return b.apply(a,this,arguments);if(n)return c?(c=Array.prototype.slice.call(arguments),c.unshift(a),new (a.bind.apply(a,c))):a.apply(this,arguments);throw new TypeError(c?"not a constructor":"not a function");},m=!0;var p=b.get?function(c){d("get");
+return b.get(this,c,e)}:function(c){d("get");return this[c]},r=b.set?function(c,a){d("set");b.set(this,c,a,e)}:function(a,b){d("set");this[a]=b},q={};Object.getOwnPropertyNames(a).forEach(function(c){if(!(m&&c in e)){var b={enumerable:!!Object.getOwnPropertyDescriptor(a,c).enumerable,get:p.bind(a,c),set:r.bind(a,c)};Object.defineProperty(e,c,b);q[c]=!0}});f=!0;Object.setPrototypeOf?Object.setPrototypeOf(e,Object.getPrototypeOf(a)):e.__proto__?e.__proto__=a.__proto__:f=!1;if(b.get||!f)for(var h in a)q[h]||
+Object.defineProperty(e,h,{get:p.bind(a,h)});Object.seal(a);Object.seal(e);return e};d.Proxy.revocable=function(a,b){return{proxy:new d.Proxy(a,b),revoke:l}};d.Proxy.revocable=d.Proxy.revocable;d.Proxy=d.Proxy}})(window);

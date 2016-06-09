@@ -216,6 +216,31 @@ customElements.define('test-2way', class extends SJElement {
   }
 });
 
+customElements.define('test-filter', class extends SJElement {
+  template() {
+    return `
+    <h1>Test filter</h1>
+    <div sj-if="filter(x.y)">Hello</div>
+    <div sj-if="filter(x.z)">Hi</div>
+    `;
+  }
+
+  initialize() {
+    this.scope.x = {
+      y: true,
+      z: false
+    };
+    this.scope.filter = function (e) {
+      return e;
+    };
+  }
+
+  runTest() {
+    var elems = this.querySelectorAll('div');
+    return elems.length === 1 && elems[0].textContent === 'Hello';
+  }
+});
+
 // test case runner
 window.addEventListener("load", function () {
   var tests = document.getElementsByClassName("test");
