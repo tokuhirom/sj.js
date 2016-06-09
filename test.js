@@ -281,6 +281,19 @@ customElements.define('test-filter', class extends SJElement {
   }
 });
 
+customElements.define('test-comment', class extends SJElement {
+  template() {
+    return `
+    <h1>Test comment</h1>
+    <!-- foo -->
+    `;
+  }
+
+  runTest() {
+    return this.querySelector('h1');
+  }
+});
+
 // test case runner
 window.addEventListener("load", function () {
   var tags = [
@@ -296,7 +309,8 @@ window.addEventListener("load", function () {
     "test-if",
     "test-text-var",
 //    "test-2way", //     Proxy doesn't work on safari.
-    "test-filter"
+    "test-filter",
+    "test-comment"
   ];
   var logs = document.getElementById("logs");
   var successCount = 0;

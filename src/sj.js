@@ -116,7 +116,6 @@
       if (modelName && modelValue && scope[modelName] && isForm) {
         IncrementalDOM.attr("value", modelValue);
       }
-      console.log(elem.tagName);
       IncrementalDOM.elementOpenEnd(tagName);
       const children = elem.childNodes;
       if (forRenderer) {
@@ -124,7 +123,7 @@
       } else {
         for (let i = 0, l = children.length; i < l; ++i) {
           const child = children[i];
-          if (child instanceof Text) {
+          if (child.nodeType === Node.TEXT_NODE) {
             if (!modelName) {
               IncrementalDOM.text(this.replaceVariables(child.textContent, scope));
             }
