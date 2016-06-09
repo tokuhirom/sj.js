@@ -1186,6 +1186,318 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
     setValueByPath: setValueByPath
   };
 })(typeof global !== 'undefined' ? global : window);
+'use strict';
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+(function (global) {
+  var sj_attr2event = {
+    'sj-click': 'onclick',
+    'sj-blur': 'onblur',
+    'sj-checked': 'onchecked',
+    'sj-dblclick': 'ondblclick',
+    'sj-focus': 'onfocus',
+    'sj-keydown': 'onkeydown',
+    'sj-keypress': 'onkeypress',
+    'sj-keyup': 'onkeyup',
+    'sj-mousedown': 'onmousedown',
+    'sj-mouseenter': 'onmouseenter',
+    'sj-mouseleave': 'onmouseleave',
+    'sj-mousemove': 'onmousemove',
+    'sj-mouseover': 'onmouseover',
+    'sj-mouseup': 'onmouseup',
+    'sj-paste': 'onpaste',
+    'sj-selected': 'onselected',
+    'sj-submit': 'onsubmit'
+  };
+
+  function isFormElement(elem) {
+    return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
+  }
+
+  // babel hacks
+  // See https://phabricator.babeljs.io/T1548
+  if (typeof HTMLElement !== 'function') {
+    var _HTMLElement = function _HTMLElement() {};
+    _HTMLElement.prototype = HTMLElement.prototype;
+    HTMLElement = _HTMLElement;
+  }
+
+  var ForRenderer = function () {
+    function ForRenderer(renderer, element, items, scope, varName) {
+      _classCallCheck(this, ForRenderer);
+
+      this.renderer = renderer;
+      this.element = element;
+      this.items = items;
+      this.scope = scope;
+      this.varName = varName;
+    }
+
+    _createClass(ForRenderer, [{
+      key: 'render',
+      value: function render() {
+        var i = 0;
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = this.items[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var item = _step.value;
+
+            var currentScope = Object.assign({}, this.scope);
+            currentScope[this.varName] = item;
+            currentScope['$index'] = i++;
+            this.renderer.renderDOM(this.element, currentScope);
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+      }
+    }]);
+
+    return ForRenderer;
+  }();
+
+  var Renderer = function () {
+    function Renderer(targetElement, templateElement, scope) {
+      _classCallCheck(this, Renderer);
+
+      this.targetElement = targetElement;
+      this.templateElement = templateElement;
+      this.scope = scope;
+    }
+
+    _createClass(Renderer, [{
+      key: 'render',
+      value: function render() {
+        var _this = this;
+
+        if (this.rendering) {
+          return;
+        }
+
+        try {
+          this.rendering = true;
+
+          IncrementalDOM.patch(this.targetElement, function () {
+            var children = _this.templateElement.children;
+            for (var i = 0; i < children.length; ++i) {
+              _this.renderDOM(children[i], _this.scope);
+            }
+          });
+        } finally {
+          this.rendering = false;
+        }
+      }
+    }, {
+      key: 'renderDOM',
+      value: function renderDOM(elem, scope) {
+        if (elem.nodeType === Node.TEXT_NODE) {
+          IncrementalDOM.text(this.replaceVariables(elem.textContent, scope));
+          return;
+        }
+        if (this.shouldHideElement(elem, scope)) {
+          return;
+        }
+
+        var tagName = elem.tagName.toLowerCase();
+
+        IncrementalDOM.elementOpenStart(tagName);
+
+        var _renderAttributes = this.renderAttributes(elem, scope);
+
+        var _renderAttributes2 = _slicedToArray(_renderAttributes, 2);
+
+        var modelName = _renderAttributes2[0];
+        var forRenderer = _renderAttributes2[1];
+
+        var modelValue = modelName ? sjExpression.getValueByPath(scope, modelName) : null;
+        var isForm = isFormElement(elem);
+        if (modelName && modelValue && scope[modelName] && isForm) {
+          IncrementalDOM.attr("value", modelValue);
+        }
+        IncrementalDOM.elementOpenEnd(tagName);
+        var children = elem.childNodes;
+        if (forRenderer) {
+          forRenderer.render();
+        } else {
+          for (var i = 0, l = children.length; i < l; ++i) {
+            var child = children[i];
+            if (child.nodeType === Node.TEXT_NODE) {
+              if (!modelName) {
+                IncrementalDOM.text(this.replaceVariables(child.textContent, scope));
+              }
+            } else {
+              this.renderDOM(child, scope);
+            }
+          }
+        }
+        if (modelName && modelValue && !isForm) {
+          IncrementalDOM.text(modelValue);
+        }
+        IncrementalDOM.elementClose(tagName);
+      }
+    }, {
+      key: 'shouldHideElement',
+      value: function shouldHideElement(elem, scope) {
+        var cond = elem.getAttribute('sj-if');
+        if (cond) {
+          var val = sjExpression.getValueByPath(scope, cond);
+          if (!val) {
+            return true;
+          }
+        }
+        return false;
+      }
+    }, {
+      key: 'renderAttributes',
+      value: function renderAttributes(elem, scope) {
+        var modelName = void 0;
+        var attrs = elem.attributes;
+        var forRenderer = void 0;
+        for (var i = 0, l = attrs.length; i < l; ++i) {
+          var attr = attrs[i];
+          var attrName = attr.name;
+          var hasModelAttribute = void 0;
+
+          var _renderAttribute = this.renderAttribute(attrName, attr, elem, scope);
+
+          var _renderAttribute2 = _slicedToArray(_renderAttribute, 2);
+
+          hasModelAttribute = _renderAttribute2[0];
+          forRenderer = _renderAttribute2[1];
+
+          if (hasModelAttribute) {
+            modelName = attr.value;
+          }
+        }
+        return [modelName, forRenderer];
+      }
+    }, {
+      key: 'renderAttribute',
+      value: function renderAttribute(attrName, attr, elem, scope) {
+        var _this2 = this;
+
+        var isModelAttribute = void 0;
+        var forRenderer = void 0;
+        if (attrName.startsWith('sj-')) {
+          var event = sj_attr2event[attrName];
+          if (event) {
+            IncrementalDOM.attr(event, function (e) {
+              var currentScope = Object.assign({}, scope);
+              currentScope['$event'] = e;
+              sjExpression.getValueByPath(currentScope, attr.value);
+            });
+          } else if (attr.name === 'sj-model') {
+            isModelAttribute = attr.value;
+            IncrementalDOM.attr("onchange", function (e) {
+              sjExpression.setValueByPath(scope, attr.value, e.target.value);
+              _this2.render();
+            });
+            if (!scope[attr.value]) {
+              scope[attr.value] = elem.value;
+            }
+          } else if (attr.name === 'sj-repeat') {
+            var m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
+            if (!m) {
+              throw "Invalid sj-repeat value: " + m;
+            }
+
+            var varName = m[1];
+            var container = m[2];
+
+            var e = elem.querySelector('*');
+            forRenderer = new ForRenderer(this, e, scope[container], scope, varName);
+          }
+        } else {
+          var labelValue = this.replaceVariables(attr.value, scope);
+          IncrementalDOM.attr(attr.name, labelValue);
+        }
+        return [isModelAttribute, forRenderer];
+      }
+    }, {
+      key: 'replaceVariables',
+      value: function replaceVariables(label, scope) {
+        return label.replace(/\{\{([$A-Za-z0-9_.-]+)\}\}/g, function (m, s) {
+          if (s === '$_') {
+            return JSON.stringify(scope);
+          } else {
+            return sjExpression.getValueByPath(scope, s);
+          }
+        });
+      }
+    }]);
+
+    return Renderer;
+  }();
+
+  var SJElement = function (_HTMLElement2) {
+    _inherits(SJElement, _HTMLElement2);
+
+    function SJElement() {
+      _classCallCheck(this, SJElement);
+
+      return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
+    }
+
+    _createClass(SJElement, [{
+      key: 'createdCallback',
+      value: function createdCallback() {
+        this.scope = {};
+
+        // parse template
+        var template = this.template();
+        var html = document.createElement("div");
+        html.innerHTML = template;
+        this.renderer = new Renderer(this, html, this.scope);
+
+        this.initialize();
+
+        this.update();
+      }
+    }, {
+      key: 'template',
+      value: function template() {
+        throw "Please implement 'template' method";
+      }
+    }, {
+      key: 'initialize',
+      value: function initialize() {
+        // nop. abstract method.
+      }
+    }, {
+      key: 'update',
+      value: function update() {
+        this.renderer.render();
+      }
+    }]);
+
+    return SJElement;
+  }(HTMLElement);
+
+  global.SJElement = SJElement;
+})(typeof global !== 'undefined' ? global : window);
 
 /**
  * @license
@@ -2260,318 +2572,6 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
 }));
 
 //# sourceMappingURL=incremental-dom.js.map
-'use strict';
-
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-(function (global) {
-  var sj_attr2event = {
-    'sj-click': 'onclick',
-    'sj-blur': 'onblur',
-    'sj-checked': 'onchecked',
-    'sj-dblclick': 'ondblclick',
-    'sj-focus': 'onfocus',
-    'sj-keydown': 'onkeydown',
-    'sj-keypress': 'onkeypress',
-    'sj-keyup': 'onkeyup',
-    'sj-mousedown': 'onmousedown',
-    'sj-mouseenter': 'onmouseenter',
-    'sj-mouseleave': 'onmouseleave',
-    'sj-mousemove': 'onmousemove',
-    'sj-mouseover': 'onmouseover',
-    'sj-mouseup': 'onmouseup',
-    'sj-paste': 'onpaste',
-    'sj-selected': 'onselected',
-    'sj-submit': 'onsubmit'
-  };
-
-  function isFormElement(elem) {
-    return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
-  }
-
-  // babel hacks
-  // See https://phabricator.babeljs.io/T1548
-  if (typeof HTMLElement !== 'function') {
-    var _HTMLElement = function _HTMLElement() {};
-    _HTMLElement.prototype = HTMLElement.prototype;
-    HTMLElement = _HTMLElement;
-  }
-
-  var ForRenderer = function () {
-    function ForRenderer(renderer, element, items, scope, varName) {
-      _classCallCheck(this, ForRenderer);
-
-      this.renderer = renderer;
-      this.element = element;
-      this.items = items;
-      this.scope = scope;
-      this.varName = varName;
-    }
-
-    _createClass(ForRenderer, [{
-      key: 'render',
-      value: function render() {
-        var i = 0;
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
-        try {
-          for (var _iterator = this.items[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var item = _step.value;
-
-            var currentScope = Object.assign({}, this.scope);
-            currentScope[this.varName] = item;
-            currentScope['$index'] = i++;
-            this.renderer.render(this.element, currentScope);
-          }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator.return) {
-              _iterator.return();
-            }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
-          }
-        }
-      }
-    }]);
-
-    return ForRenderer;
-  }();
-
-  var Renderer = function () {
-    function Renderer(targetElement, templateElement, scope) {
-      _classCallCheck(this, Renderer);
-
-      this.targetElement = targetElement;
-      this.templateElement = templateElement;
-      this.scope = scope;
-    }
-
-    _createClass(Renderer, [{
-      key: 'render',
-      value: function render() {
-        var _this = this;
-
-        if (this.rendering) {
-          return;
-        }
-
-        try {
-          this.rendering = true;
-
-          IncrementalDOM.patch(this.targetElement, function () {
-            var children = _this.templateElement.children;
-            for (var i = 0; i < children.length; ++i) {
-              _this.renderDOM(children[i], _this.scope);
-            }
-          });
-        } finally {
-          this.rendering = false;
-        }
-      }
-    }, {
-      key: 'renderDOM',
-      value: function renderDOM(elem, scope) {
-        if (elem.nodeType === Node.TEXT_NODE) {
-          IncrementalDOM.text(this.replaceVariables(elem.textContent, scope));
-          return;
-        }
-        if (this.shouldHideElement(elem, scope)) {
-          return;
-        }
-
-        var tagName = elem.tagName.toLowerCase();
-
-        IncrementalDOM.elementOpenStart(tagName);
-
-        var _renderAttributes = this.renderAttributes(elem, scope);
-
-        var _renderAttributes2 = _slicedToArray(_renderAttributes, 2);
-
-        var modelName = _renderAttributes2[0];
-        var forRenderer = _renderAttributes2[1];
-
-        var modelValue = modelName ? sjExpression.getValueByPath(scope, modelName) : null;
-        var isForm = isFormElement(elem);
-        if (modelName && modelValue && scope[modelName] && isForm) {
-          IncrementalDOM.attr("value", modelValue);
-        }
-        IncrementalDOM.elementOpenEnd(tagName);
-        var children = elem.childNodes;
-        if (forRenderer) {
-          forRenderer.render();
-        } else {
-          for (var i = 0, l = children.length; i < l; ++i) {
-            var child = children[i];
-            if (child.nodeType === Node.TEXT_NODE) {
-              if (!modelName) {
-                IncrementalDOM.text(this.replaceVariables(child.textContent, scope));
-              }
-            } else {
-              this.renderDOM(child, scope);
-            }
-          }
-        }
-        if (modelName && modelValue && !isForm) {
-          IncrementalDOM.text(modelValue);
-        }
-        IncrementalDOM.elementClose(tagName);
-      }
-    }, {
-      key: 'shouldHideElement',
-      value: function shouldHideElement(elem, scope) {
-        var cond = elem.getAttribute('sj-if');
-        if (cond) {
-          var val = sjExpression.getValueByPath(scope, cond);
-          if (!val) {
-            return true;
-          }
-        }
-        return false;
-      }
-    }, {
-      key: 'renderAttributes',
-      value: function renderAttributes(elem, scope) {
-        var modelName = void 0;
-        var attrs = elem.attributes;
-        var forRenderer = void 0;
-        for (var i = 0, l = attrs.length; i < l; ++i) {
-          var attr = attrs[i];
-          var attrName = attr.name;
-          var hasModelAttribute = void 0;
-
-          var _renderAttribute = this.renderAttribute(attrName, attr, elem, scope);
-
-          var _renderAttribute2 = _slicedToArray(_renderAttribute, 2);
-
-          hasModelAttribute = _renderAttribute2[0];
-          forRenderer = _renderAttribute2[1];
-
-          if (hasModelAttribute) {
-            modelName = attr.value;
-          }
-        }
-        return [modelName, forRenderer];
-      }
-    }, {
-      key: 'renderAttribute',
-      value: function renderAttribute(attrName, attr, elem, scope) {
-        var _this2 = this;
-
-        var isModelAttribute = void 0;
-        var forRenderer = void 0;
-        if (attrName.startsWith('sj-')) {
-          var event = sj_attr2event[attrName];
-          if (event) {
-            IncrementalDOM.attr(event, function (e) {
-              var currentScope = Object.assign({}, scope);
-              currentScope['$event'] = e;
-              sjExpression.getValueByPath(currentScope, attr.value);
-            });
-          } else if (attr.name === 'sj-model') {
-            isModelAttribute = attr.value;
-            IncrementalDOM.attr("onchange", function (e) {
-              sjExpression.setValueByPath(scope, attr.value, e.target.value);
-              _this2.render();
-            });
-            if (!scope[attr.value]) {
-              scope[attr.value] = elem.value;
-            }
-          } else if (attr.name === 'sj-repeat') {
-            var m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
-            if (!m) {
-              throw "Invalid sj-repeat value: " + m;
-            }
-
-            var varName = m[1];
-            var container = m[2];
-
-            var e = elem.querySelector('*');
-            forRenderer = new ForRenderer(this, e, scope[container], scope, varName);
-          }
-        } else {
-          var labelValue = this.replaceVariables(attr.value, scope);
-          IncrementalDOM.attr(attr.name, labelValue);
-        }
-        return [isModelAttribute, forRenderer];
-      }
-    }, {
-      key: 'replaceVariables',
-      value: function replaceVariables(label, scope) {
-        return label.replace(/\{\{([$A-Za-z0-9_.-]+)\}\}/g, function (m, s) {
-          if (s === '$_') {
-            return JSON.stringify(scope);
-          } else {
-            return sjExpression.getValueByPath(scope, s);
-          }
-        });
-      }
-    }]);
-
-    return Renderer;
-  }();
-
-  var SJElement = function (_HTMLElement2) {
-    _inherits(SJElement, _HTMLElement2);
-
-    function SJElement() {
-      _classCallCheck(this, SJElement);
-
-      return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
-    }
-
-    _createClass(SJElement, [{
-      key: 'createdCallback',
-      value: function createdCallback() {
-        this.scope = {};
-
-        // parse template
-        var template = this.template();
-        var html = document.createElement("div");
-        html.innerHTML = template;
-        this.renderer = new Renderer(this, html, this.scope);
-
-        this.initialize();
-
-        this.update();
-      }
-    }, {
-      key: 'template',
-      value: function template() {
-        throw "Please implement 'template' method";
-      }
-    }, {
-      key: 'initialize',
-      value: function initialize() {
-        // nop. abstract method.
-      }
-    }, {
-      key: 'update',
-      value: function update() {
-        this.renderer.render();
-      }
-    }]);
-
-    return SJElement;
-  }(HTMLElement);
-
-  global.SJElement = SJElement;
-})(typeof global !== 'undefined' ? global : window);
 // polyfill
 if (!window.customElements) {
     window.customElements = {
