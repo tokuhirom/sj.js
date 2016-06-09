@@ -17,14 +17,14 @@ customElements.define('test-events', class extends SJElement {
   }
 
   btnclick() {
-    this.clicked = true;
+    this.scope.clicked = true;
   }
 
   runTest() {
-    var elem = document.getElementById("clickTest");
+    var elem = this.querySelector("#clickTest");
     elem.click();
 
-    return !!this.clicked;
+    return !!this.scope.clicked;
   }
 });
 
@@ -128,7 +128,8 @@ customElements.define('test-for', class extends SJElement {
 
   runTest() {
     var elems = this.querySelectorAll('div.item');
-    return elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' && elems[2].textContent === '2' && elems[3].textContent === '3';
+    return elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' &&
+           elems[2].textContent === '2' && elems[3].textContent === '3';
   }
 });
 
@@ -153,7 +154,8 @@ customElements.define('test-for-index', class extends SJElement {
 
   runTest() {
     var elems = this.querySelectorAll('div.item');
-    return elems.length == 4 && elems[0].textContent == "4649:0" && elems[1].textContent === '1:1' && elems[2].textContent === '2:2' && elems[3].textContent === '3:3';
+    return elems.length == 4 && elems[0].textContent == "4649:0" && elems[1].textContent === '1:1' &&
+           elems[2].textContent === '2:2' && elems[3].textContent === '3:3';
   }
 });
 
@@ -168,7 +170,7 @@ customElements.define('test-for-empty', class extends SJElement {
   }
 
   initialize() {
-    this.scope.bar = [ ];
+    this.scope.bar = [];
   }
 
   runTest() {
@@ -203,8 +205,12 @@ customElements.define('test-if', class extends SJElement {
   }
 
   initialize() {
-    this.scope.getTrue = function (e) { return true };
-    this.scope.getFalse = function (e) { return false };
+    this.scope.getTrue = function (e) {
+      return true
+    };
+    this.scope.getFalse = function (e) {
+      return false
+    };
   }
 
   runTest() {
@@ -277,25 +283,38 @@ customElements.define('test-filter', class extends SJElement {
 
 // test case runner
 window.addEventListener("load", function () {
-  var tests = document.getElementsByClassName("test");
+  var tags = [
+    "test-events",
+    "test-input",
+    "test-textarea",
+    "test-from-controller",
+    "test-select",
+    "test-for",
+    "test-for-index",
+    "test-for-empty",
+    "test-attr-var",
+    "test-if",
+    "test-text-var",
+//    "test-2way", //     Proxy doesn't work on safari.
+    "test-filter"
+  ];
+  var logs = document.getElementById("logs");
   var successCount = 0;
   var failCount = 0;
-  for (var i = 0, l = tests.length; i < l; i++) {
-    var success = tests[i].runTest();
-    if (success) {
+  for (var tag of tags) {
+    var elem = document.createElement(tag);
+    if (elem.runTest()) {
+      logs.textContent += `ok ${tag}\n`;
       successCount++;
-
-      tests[i].style.backgroundColor = "green";
     } else {
+      logs.textContent += `not ok ${tag}\n`;
       failCount++;
-
-      tests[i].style.backgroundColor = "red";
     }
   }
 
   var resultElem = document.getElementById("testResult");
-  resultElem.textContent = `Success: ${successCount} Fail: ${failCount} Total: ${tests.length}`;
-  if (successCount === tests.length) {
+  resultElem.textContent = `Success: ${successCount} Fail: ${failCount} Total: ${tags.length}`;
+  if (successCount === tags.length) {
     resultElem.style.color = "green";
   } else {
     resultElem.style.color = "red";
