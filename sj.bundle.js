@@ -1,3 +1,145 @@
+'use strict';
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+(function (global) {
+  var trace = function trace(msg) {
+    // console.log(msg);
+  };
+
+  function parseLeaf(scope, path, origPath) {
+    var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
+    if (m) {
+      var ident = m[1];
+      var rest = m[2];
+
+      trace('rest: ' + rest);
+      return [scope[ident], rest];
+    } else {
+      return;
+    }
+  }
+
+  // namespace = ( ident '.' )? ident
+  function parsePath(scope, path, origPath) {
+    trace('parsePath: ' + path);
+    var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
+    if (m) {
+      var namespace = m[1];
+      var rest = m[2];
+
+      trace('parsePath: ' + namespace + ', ' + rest);
+      return parsePath(scope[namespace], rest, origPath);
+    } else {
+      return parseLeaf(scope, path, origPath);
+    }
+  }
+
+  function parseNumber(scope, path, origPath) {
+    var m = path.match(/^([1-9][0-9]*(?:\.[0-9]+)?)(.*)$/);
+    if (m) {
+      trace('parseNumber: ' + path + '. ' + m + '. ok');
+      return [parseFloat(m[1], 10), m[2]];
+    } else {
+      trace('parseNumber: ' + path + '. fail');
+      return;
+    }
+  }
+
+  function parseTerm(scope, path, origPath) {
+    var m = parsePath(scope, path, origPath);
+    if (m) {
+      return m;
+    }
+    return parseNumber(scope, path, origPath);
+  }
+
+  function parseParams(scope, path, origPath) {
+    if (!path.startsWith('(')) {
+      return;
+    }
+    path = path.substr(1);
+
+    var params = [];
+    while (true) {
+      var m = parseFuncall(scope, path, origPath);
+      if (!m) {
+        trace('No param: \'' + path + '\'');
+        break;
+      }
+      path = m[1];
+      trace('Got param: \'' + m + '\'');
+      params.push(m[0]);
+
+      path = path.replace(/^\s*/, '');
+      if (!path.startsWith(',')) {
+        trace('No more comma. break. ' + path);
+        break;
+      }
+      path = path.substr(1);
+      path = path.replace(/^\s*/, '');
+    }
+
+    path = path.replace(/^\s*/, '');
+    if (!path.startsWith(')')) {
+      throw 'Paren missmatch: \'' + path + '\': \'' + origPath + '\'';
+    }
+    path = path.substr(1);
+    path = path.replace(/^\s*/, '');
+    if (path.length > 0) {
+      throw 'There\'s trailing trash: ' + origPath;
+    }
+
+    return [params, path];
+  }
+
+  function parseFuncall(scope, path, origPath) {
+    if (!path) {
+      throw "Missing path";
+    }
+    var m = parseTerm(scope, path, origPath);
+    if (!m) {
+      return;
+    }
+
+    var _m = _slicedToArray(m, 2);
+
+    var got = _m[0];
+    var rest = _m[1];
+
+    if (rest) {
+      trace('got:' + got + ', ' + rest);
+      var _m2 = parseParams(scope, rest, origPath);
+      if (_m2) {
+        trace('apply: ' + rest);
+        return [got.apply(undefined, _m2[0]), _m2[1]];
+      } else {
+        return [got, rest];
+      }
+    } else {
+      return [got, rest];
+    }
+  }
+
+  function getValueByPath(scope, path) {
+    if (!path) {
+      throw "Missing path";
+    }
+    trace('getValueByPath: ' + path);
+    var m = parseFuncall(scope, path, path);
+    if (m) {
+      if (m[1]) {
+        throw 'Trailing trash: \'' + m[1] + '\' in \'' + path + '\'';
+      } else {
+        return m[0];
+      }
+    } else {}
+  }
+
+  global.sjExpression = {
+    getValueByPath: getValueByPath
+  };
+})(typeof global !== 'undefined' ? global : window);
 /**
  * @license
  * Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
@@ -1031,148 +1173,6 @@ window.CustomElements.addModule(function(scope) {
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
-(function (global) {
-  var trace = function trace(msg) {
-    // console.log(msg);
-  };
-
-  function parseLeaf(scope, path, origPath) {
-    var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
-    if (m) {
-      var ident = m[1];
-      var rest = m[2];
-
-      trace('rest: ' + rest);
-      return [scope[ident], rest];
-    } else {
-      return;
-    }
-  }
-
-  // namespace = ( ident '.' )? ident
-  function parsePath(scope, path, origPath) {
-    trace('parsePath: ' + path);
-    var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
-    if (m) {
-      var namespace = m[1];
-      var rest = m[2];
-
-      trace('parsePath: ' + namespace + ', ' + rest);
-      return parsePath(scope[namespace], rest, origPath);
-    } else {
-      return parseLeaf(scope, path, origPath);
-    }
-  }
-
-  function parseNumber(scope, path, origPath) {
-    var m = path.match(/^([1-9][0-9]*(?:\.[0-9]+)?)(.*)$/);
-    if (m) {
-      trace('parseNumber: ' + path + '. ' + m + '. ok');
-      return [parseFloat(m[1], 10), m[2]];
-    } else {
-      trace('parseNumber: ' + path + '. fail');
-      return;
-    }
-  }
-
-  function parseTerm(scope, path, origPath) {
-    var m = parsePath(scope, path, origPath);
-    if (m) {
-      return m;
-    }
-    return parseNumber(scope, path, origPath);
-  }
-
-  function parseParams(scope, path, origPath) {
-    if (!path.startsWith('(')) {
-      return;
-    }
-    path = path.substr(1);
-
-    var params = [];
-    while (true) {
-      var m = parseFuncall(scope, path, origPath);
-      if (!m) {
-        trace('No param: \'' + path + '\'');
-        break;
-      }
-      path = m[1];
-      trace('Got param: \'' + m + '\'');
-      params.push(m[0]);
-
-      path = path.replace(/^\s*/, '');
-      if (!path.startsWith(',')) {
-        trace('No more comma. break. ' + path);
-        break;
-      }
-      path = path.substr(1);
-      path = path.replace(/^\s*/, '');
-    }
-
-    path = path.replace(/^\s*/, '');
-    if (!path.startsWith(')')) {
-      throw 'Paren missmatch: \'' + path + '\': \'' + origPath + '\'';
-    }
-    path = path.substr(1);
-    path = path.replace(/^\s*/, '');
-    if (path.length > 0) {
-      throw 'There\'s trailing trash: ' + origPath;
-    }
-
-    return [params, path];
-  }
-
-  function parseFuncall(scope, path, origPath) {
-    if (!path) {
-      throw "Missing path";
-    }
-    var m = parseTerm(scope, path, origPath);
-    if (!m) {
-      return;
-    }
-
-    var _m = _slicedToArray(m, 2);
-
-    var got = _m[0];
-    var rest = _m[1];
-
-    if (rest) {
-      trace('got:' + got + ', ' + rest);
-      var _m2 = parseParams(scope, rest, origPath);
-      if (_m2) {
-        trace('apply: ' + rest);
-        return [got.apply(undefined, _m2[0]), _m2[1]];
-      } else {
-        return [got, rest];
-      }
-    } else {
-      return [got, rest];
-    }
-  }
-
-  function getValueByPath(scope, path) {
-    if (!path) {
-      throw "Missing path";
-    }
-    trace('getValueByPath: ' + path);
-    var m = parseFuncall(scope, path, path);
-    if (m) {
-      if (m[1]) {
-        throw 'Trailing trash: \'' + m[1] + '\' in \'' + path + '\'';
-      } else {
-        return m[0];
-      }
-    } else {}
-  }
-
-  global.sjExpression = {
-    getValueByPath: getValueByPath
-  };
-})(typeof global !== 'undefined' ? global : window);
-'use strict';
-
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -1261,59 +1261,34 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
     return ForRenderer;
   }();
 
-  var SJElement = function (_HTMLElement2) {
-    _inherits(SJElement, _HTMLElement2);
+  var Renderer = function () {
+    function Renderer(targetElement, templateElement, scope) {
+      _classCallCheck(this, Renderer);
 
-    function SJElement() {
-      _classCallCheck(this, SJElement);
-
-      return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
+      this.targetElement = targetElement;
+      this.templateElement = templateElement;
+      this.scope = scope;
     }
 
-    _createClass(SJElement, [{
-      key: 'createdCallback',
-      value: function createdCallback() {
-        this.initialized = false;
-
-        this.scope = {};
-
-        // parse template
-        var template = this.template();
-        var html = document.createElement("div");
-        html.innerHTML = template;
-        this.templateElement = html;
-
-        this.initialize();
-        this.initialized = true;
-
-        this.update();
-      }
-    }, {
-      key: 'template',
-      value: function template() {
-        throw "Please implement 'template' method";
-      }
-    }, {
-      key: 'initialize',
-      value: function initialize() {
-        // nop. abstract method.
-      }
-    }, {
-      key: 'update',
-      value: function update() {
-        var _this2 = this;
+    _createClass(Renderer, [{
+      key: 'render',
+      value: function render() {
+        var _this = this;
 
         if (this.rendering) {
           return;
         }
 
         try {
+          ;
           this.rendering = true;
+          console.log(this);
 
-          IncrementalDOM.patch(this, function () {
-            var children = _this2.templateElement.children;
+          IncrementalDOM.patch(this.targetElement, function () {
+            console.log(_this);
+            var children = _this.templateElement.children;
             for (var i = 0; i < children.length; ++i) {
-              _this2.renderDOM(children[i], _this2.scope);
+              _this.renderDOM(children[i], _this.scope);
             }
           });
         } finally {
@@ -1407,7 +1382,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
     }, {
       key: 'renderAttribute',
       value: function renderAttribute(attrName, attr, elem, scope) {
-        var _this3 = this;
+        var _this2 = this;
 
         var isModelAttribute = void 0;
         var forRenderer = void 0;
@@ -1415,13 +1390,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
           var event = sj_attr2event[attrName];
           if (event) {
             IncrementalDOM.attr(event, function (e) {
-              _this3[attr.value](e);
+              var currentScope = Object.assign({}, scope);
+              currentScope['$event'] = e;
+              sjExpression.getValueByPath(currentScope, attr.value);
             });
           } else if (attr.name === 'sj-model') {
             isModelAttribute = attr.value;
             IncrementalDOM.attr("onchange", function (e) {
               scope[attr.value] = e.target.value;
-              _this3.update();
+              _this2.render();
             });
             if (!scope[attr.value]) {
               scope[attr.value] = elem.value;
@@ -1437,7 +1414,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
             var e = elem.querySelector('*');
             forRenderer = new ForRenderer(function (elem, scope) {
-              _this3.renderDOM(elem, scope);
+              _this2.renderDOM(elem, scope);
             }, e, scope[container], varName);
           }
         } else {
@@ -1456,6 +1433,50 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             return sjExpression.getValueByPath(scope, s);
           }
         });
+      }
+    }]);
+
+    return Renderer;
+  }();
+
+  var SJElement = function (_HTMLElement2) {
+    _inherits(SJElement, _HTMLElement2);
+
+    function SJElement() {
+      _classCallCheck(this, SJElement);
+
+      return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
+    }
+
+    _createClass(SJElement, [{
+      key: 'createdCallback',
+      value: function createdCallback() {
+        this.scope = {};
+
+        // parse template
+        var template = this.template();
+        var html = document.createElement("div");
+        html.innerHTML = template;
+        this.renderer = new Renderer(this, html, this.scope);
+
+        this.initialize();
+
+        this.update();
+      }
+    }, {
+      key: 'template',
+      value: function template() {
+        throw "Please implement 'template' method";
+      }
+    }, {
+      key: 'initialize',
+      value: function initialize() {
+        // nop. abstract method.
+      }
+    }, {
+      key: 'update',
+      value: function update() {
+        this.renderer.render();
       }
     }]);
 
