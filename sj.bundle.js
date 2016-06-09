@@ -1027,6 +1027,148 @@ window.CustomElements.addModule(function(scope) {
     window.addEventListener(loadEvent, bootstrap);
   }
 })(window.CustomElements);
+'use strict';
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+(function (global) {
+  var trace = function trace(msg) {
+    // console.log(msg);
+  };
+
+  function parseLeaf(scope, path, origPath) {
+    var m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
+    if (m) {
+      var ident = m[1];
+      var rest = m[2];
+
+      trace('rest: ' + rest);
+      return [scope[ident], rest];
+    } else {
+      return;
+    }
+  }
+
+  // namespace = ( ident '.' )? ident
+  function parsePath(scope, path, origPath) {
+    trace('parsePath: ' + path);
+    var m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
+    if (m) {
+      var namespace = m[1];
+      var rest = m[2];
+
+      trace('parsePath: ' + namespace + ', ' + rest);
+      return parsePath(scope[namespace], rest, origPath);
+    } else {
+      return parseLeaf(scope, path, origPath);
+    }
+  }
+
+  function parseNumber(scope, path, origPath) {
+    var m = path.match(/^([1-9][0-9]*(?:\.[0-9]+)?)(.*)$/);
+    if (m) {
+      trace('parseNumber: ' + path + '. ' + m + '. ok');
+      return [parseFloat(m[1], 10), m[2]];
+    } else {
+      trace('parseNumber: ' + path + '. fail');
+      return;
+    }
+  }
+
+  function parseTerm(scope, path, origPath) {
+    var m = parsePath(scope, path, origPath);
+    if (m) {
+      return m;
+    }
+    return parseNumber(scope, path, origPath);
+  }
+
+  function parseParams(scope, path, origPath) {
+    if (!path.startsWith('(')) {
+      return;
+    }
+    path = path.substr(1);
+
+    var params = [];
+    while (true) {
+      var m = parseFuncall(scope, path, origPath);
+      if (!m) {
+        trace('No param: \'' + path + '\'');
+        break;
+      }
+      path = m[1];
+      trace('Got param: \'' + m + '\'');
+      params.push(m[0]);
+
+      path = path.replace(/^\s*/, '');
+      if (!path.startsWith(',')) {
+        trace('No more comma. break. ' + path);
+        break;
+      }
+      path = path.substr(1);
+      path = path.replace(/^\s*/, '');
+    }
+
+    path = path.replace(/^\s*/, '');
+    if (!path.startsWith(')')) {
+      throw 'Paren missmatch: \'' + path + '\': \'' + origPath + '\'';
+    }
+    path = path.substr(1);
+    path = path.replace(/^\s*/, '');
+    if (path.length > 0) {
+      throw 'There\'s trailing trash: ' + origPath;
+    }
+
+    return [params, path];
+  }
+
+  function parseFuncall(scope, path, origPath) {
+    if (!path) {
+      throw "Missing path";
+    }
+    var m = parseTerm(scope, path, origPath);
+    if (!m) {
+      return;
+    }
+
+    var _m = _slicedToArray(m, 2);
+
+    var got = _m[0];
+    var rest = _m[1];
+
+    if (rest) {
+      trace('got:' + got + ', ' + rest);
+      var _m2 = parseParams(scope, rest, origPath);
+      if (_m2) {
+        trace('apply: ' + rest);
+        return [got.apply(undefined, _m2[0]), _m2[1]];
+      } else {
+        return [got, rest];
+      }
+    } else {
+      return [got, rest];
+    }
+  }
+
+  function getValueByPath(scope, path) {
+    if (!path) {
+      throw "Missing path";
+    }
+    trace('getValueByPath: ' + path);
+    var m = parseFuncall(scope, path, path);
+    if (m) {
+      if (m[1]) {
+        throw 'Trailing trash: \'' + m[1] + '\' in \'' + path + '\'';
+      } else {
+        return m[0];
+      }
+    } else {}
+  }
+
+  global.sjExpression = {
+    getValueByPath: getValueByPath
+  };
+})(typeof global !== 'undefined' ? global : window);
 /**
  * @license
  * Copyright 2015 The Incremental DOM Authors. All Rights Reserved.
@@ -1046,6 +1188,284 @@ window.CustomElements.addModule(function(scope) {
 !function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t(e.IncrementalDOM={})}(this,function(e){"use strict";function t(e,t){this.attrs=o(),this.attrsArr=[],this.newAttrs=o(),this.key=t,this.keyMap=null,this.keyMapValid=!0,this.nodeName=e,this.text=null}function n(){this.created=M.nodesCreated&&[],this.deleted=M.nodesDeleted&&[]}var r=Object.prototype.hasOwnProperty,i=Object.create,l=function(e,t){return r.call(e,t)},o=function(){return i(null)},a=function(e,n,r){var i=new t(n,r);return e.__incrementalDOMData=i,i},u=function(e){var t=e.__incrementalDOMData;if(!t){var n=e.nodeName.toLowerCase(),r=null;e instanceof Element&&(r=e.getAttribute("key")),t=a(e,n,r)}return t},f={"default":"__default",placeholder:"__placeholder"},c=function(e){return 0===e.lastIndexOf("xml:",0)?"http://www.w3.org/XML/1998/namespace":0===e.lastIndexOf("xlink:",0)?"http://www.w3.org/1999/xlink":void 0},d=function(e,t,n){if(null==n)e.removeAttribute(t);else{var r=c(t);r?e.setAttributeNS(r,t,n):e.setAttribute(t,n)}},s=function(e,t,n){e[t]=n},p=function(e,t,n){if("string"==typeof n)e.style.cssText=n;else{e.style.cssText="";var r=e.style,i=n;for(var o in i)l(i,o)&&(r[o]=i[o])}},h=function(e,t,n){var r=typeof n;"object"===r||"function"===r?s(e,t,n):d(e,t,n)},v=function(e,t,n){var r=u(e),i=r.attrs;if(i[t]!==n){var l=y[t]||y[f["default"]];l(e,t,n),i[t]=n}},y=o();y[f["default"]]=h,y[f.placeholder]=function(){},y.style=p;var m=function(e,t){return"svg"===e?"http://www.w3.org/2000/svg":"foreignObject"===u(t).nodeName?null:t.namespaceURI},k=function(e,t,n,r,i){var l=m(n,t),o=void 0;if(o=l?e.createElementNS(l,n):e.createElement(n),a(o,n,r),i)for(var u=0;u<i.length;u+=2)v(o,i[u],i[u+1]);return o},g=function(e){var t=e.createTextNode("");return a(t,"#text",null),t},x=function(e){for(var t=o(),n=e.firstElementChild;n;){var r=u(n).key;r&&(t[r]=n),n=n.nextElementSibling}return t},w=function(e){var t=u(e);return t.keyMap||(t.keyMap=x(e)),t.keyMap},C=function(e,t){return t?w(e)[t]:null},b=function(e,t,n){w(e)[t]=n},M={nodesCreated:null,nodesDeleted:null};n.prototype.markCreated=function(e){this.created&&this.created.push(e)},n.prototype.markDeleted=function(e){this.deleted&&this.deleted.push(e)},n.prototype.notifyChanges=function(){this.created&&this.created.length>0&&M.nodesCreated(this.created),this.deleted&&this.deleted.length>0&&M.nodesDeleted(this.deleted)};var O=null,D=null,N=null,A=null,_=null,E=function(e){var t=function(t,r,i){var l=O,o=A,a=_,u=D,f=N;O=new n,A=t,_=t.ownerDocument,N=t.parentNode,e(t,r,i),O.notifyChanges(),O=l,A=o,_=a,D=u,N=f};return t},S=E(function(e,t,n){D=e,T(),t(n),B()}),j=E(function(e,t,n){D={nextSibling:e},t(n)}),I=function(e,t){var n=u(D);return e===n.nodeName&&t==n.key},V=function(e,t,n){if(!D||!I(e,t)){var r=void 0;t&&(r=C(N,t)),r||(r="#text"===e?g(_):k(_,N,e,t,n),t&&b(N,t,r),O.markCreated(r)),D&&u(D).key?(N.replaceChild(r,D),u(N).keyMapValid=!1):N.insertBefore(r,D),D=r}},P=function(){var e=N,t=u(e),n=t.keyMap,r=t.keyMapValid,i=e.lastChild,l=void 0;if(!(i===D&&r||t.attrs[f.placeholder]&&e!==A)){for(;i!==D;)e.removeChild(i),O.markDeleted(i),l=u(i).key,l&&delete n[l],i=e.lastChild;if(!r){for(l in n)i=n[l],i.parentNode!==e&&(O.markDeleted(i),delete n[l]);t.keyMapValid=!0}}},T=function(){N=D,D=null},L=function(){D=D?D.nextSibling:N.firstChild},B=function(){P(),D=N,N=N.parentNode},R=function(e,t,n){return L(),V(e,t,n),T(),N},U=function(){return B(),D},X=function(){return L(),V("#text",null,null),D},q=function(){return N},z=function(){D=N.lastChild},F=3,G=[],H=function(e,t,n){for(var r=R(e,t,n),i=u(r),l=i.attrsArr,o=i.newAttrs,a=!1,f=F,c=0;f<arguments.length;f+=1,c+=1)if(l[c]!==arguments[f]){a=!0;break}for(;f<arguments.length;f+=1,c+=1)l[c]=arguments[f];if(c<l.length&&(a=!0,l.length=c),a){for(f=F;f<arguments.length;f+=2)o[arguments[f]]=arguments[f+1];for(var d in o)v(r,d,o[d]),o[d]=void 0}return r},J=function(e,t,n){G[0]=e,G[1]=t,G[2]=n},K=function(e,t){G.push(e,t)},Q=function(){var e=H.apply(null,G);return G.length=0,e},W=function(){var e=U();return e},Y=function(e){return H.apply(null,arguments),W(e)},Z=function(e){return H.apply(null,arguments),z(),W(e)},$=function(e){var t=X(),n=u(t);if(n.text!==e){n.text=e;for(var r=e,i=1;i<arguments.length;i+=1){var l=arguments[i];r=l(r)}t.data=r}return t};e.patch=S,e.patchInner=S,e.patchOuter=j,e.currentElement=q,e.skip=z,e.elementVoid=Y,e.elementOpenStart=J,e.elementOpenEnd=Q,e.elementOpen=H,e.elementClose=W,e.elementPlaceholder=Z,e.text=$,e.attr=K,e.symbols=f,e.attributes=y,e.applyAttr=d,e.applyProp=s,e.notifications=M});
 
 //# sourceMappingURL=incremental-dom-min.js.map
+'use strict';
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+(function (global) {
+  var sj_attr2event = {
+    'sj-click': 'onclick',
+    'sj-blur': 'onblur',
+    'sj-checked': 'onchecked',
+    'sj-dblclick': 'ondblclick',
+    'sj-focus': 'onfocus',
+    'sj-keydown': 'onkeydown',
+    'sj-keypress': 'onkeypress',
+    'sj-keyup': 'onkeyup',
+    'sj-mousedown': 'onmousedown',
+    'sj-mouseenter': 'onmouseenter',
+    'sj-mouseleave': 'onmouseleave',
+    'sj-mousemove': 'onmousemove',
+    'sj-mouseover': 'onmouseover',
+    'sj-mouseup': 'onmouseup',
+    'sj-paste': 'onpaste',
+    'sj-selected': 'onselected',
+    'sj-submit': 'onsubmit'
+  };
+
+  function isFormElement(elem) {
+    return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
+  }
+
+  // babel hacks
+  // See https://phabricator.babeljs.io/T1548
+  if (typeof HTMLElement !== 'function') {
+    var _HTMLElement = function _HTMLElement() {};
+    _HTMLElement.prototype = HTMLElement.prototype;
+    HTMLElement = _HTMLElement;
+  }
+
+  var SJElement = function (_HTMLElement2) {
+    _inherits(SJElement, _HTMLElement2);
+
+    function SJElement() {
+      _classCallCheck(this, SJElement);
+
+      return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
+    }
+
+    _createClass(SJElement, [{
+      key: 'createdCallback',
+      value: function createdCallback() {
+        var _this2 = this;
+
+        this.initialized = false;
+
+        this.scope = new Proxy({}, {
+          set: function set(target, property, value) {
+            target[property] = value;
+            if (_this2.initialized) {
+              _this2.render();
+            }
+            return true;
+          }
+        });
+
+        // parse template
+        var template = this.template();
+        var html = document.createElement("div");
+        html.innerHTML = template;
+        this.templateElement = html;
+
+        this.initialize();
+        this.initialized = true;
+
+        this.render();
+      }
+    }, {
+      key: 'template',
+      value: function template() {
+        throw "Please implement 'template' method";
+      }
+    }, {
+      key: 'initialize',
+      value: function initialize() {
+        // nop. abstract method.
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        var _this3 = this;
+
+        if (this.rendering) {
+          return;
+        }
+
+        try {
+          this.rendering = true;
+
+          IncrementalDOM.patch(this, function () {
+            var children = _this3.templateElement.children;
+            for (var i = 0; i < children.length; ++i) {
+
+              _this3.renderDOM(children[i], _this3.scope);
+            }
+          });
+        } finally {
+          this.rendering = false;
+        }
+      }
+    }, {
+      key: 'renderDOM',
+      value: function renderDOM(elem, scope) {
+        if (elem instanceof Text) {
+          IncrementalDOM.text(this.replaceVariables(elem.textContent, scope));
+          return;
+        }
+        if (this.shouldHideElement(elem, scope)) {
+          return;
+        }
+
+        IncrementalDOM.elementOpenStart(elem.tagName.toLowerCase());
+
+        var _renderAttributes = this.renderAttributes(elem, scope);
+
+        var _renderAttributes2 = _slicedToArray(_renderAttributes, 2);
+
+        var modelName = _renderAttributes2[0];
+        var hasForAttribute = _renderAttributes2[1];
+
+        var modelValue = modelName ? sjExpression.getValueByPath(scope, modelName) : null;
+        var isForm = isFormElement(elem);
+        if (modelName && modelValue && scope[modelName] && isForm) {
+          IncrementalDOM.attr("value", modelValue);
+        }
+        IncrementalDOM.elementOpenEnd(elem.tagName.toLowerCase());
+        var children = elem.childNodes;
+        if (!hasForAttribute) {
+          for (var i = 0, l = children.length; i < l; ++i) {
+            var child = children[i];
+            if (child instanceof Text) {
+              if (!modelName) {
+                IncrementalDOM.text(this.replaceVariables(child.textContent, scope));
+              }
+            } else {
+              this.renderDOM(child, scope);
+            }
+          }
+        }
+        if (modelName && modelValue && !isForm) {
+          IncrementalDOM.text(modelValue);
+        }
+        IncrementalDOM.elementClose(elem.tagName.toLowerCase());
+      }
+    }, {
+      key: 'shouldHideElement',
+      value: function shouldHideElement(elem, scope) {
+        var cond = elem.getAttribute('sj-if');
+        if (cond) {
+          var val = sjExpression.getValueByPath(scope, cond);
+          if (!val) {
+            return true;
+          }
+        }
+        return false;
+      }
+    }, {
+      key: 'renderAttributes',
+      value: function renderAttributes(elem, scope) {
+        var modelName = void 0;
+        var attrs = elem.attributes;
+        var hasForAttribute = void 0;
+        for (var i = 0, l = attrs.length; i < l; ++i) {
+          var attr = attrs[i];
+          var attrName = attr.name;
+          var hasModelAttribute = void 0;
+
+          var _renderAttribute = this.renderAttribute(attrName, attr, elem, scope);
+
+          var _renderAttribute2 = _slicedToArray(_renderAttribute, 2);
+
+          hasModelAttribute = _renderAttribute2[0];
+          hasForAttribute = _renderAttribute2[1];
+
+          if (hasModelAttribute) {
+            modelName = attr.value;
+          }
+        }
+        return [modelName, hasForAttribute];
+      }
+    }, {
+      key: 'renderAttribute',
+      value: function renderAttribute(attrName, attr, elem, scope) {
+        var _this4 = this;
+
+        var isModelAttribute = void 0;
+        var hasForAttribute = void 0;
+        var hideElement = void 0;
+        if (attrName.startsWith('sj-')) {
+          var event = sj_attr2event[attrName];
+          if (event) {
+            IncrementalDOM.attr(event, function (e) {
+              _this4[attr.value](e);
+            });
+          } else if (attr.name === 'sj-model') {
+            isModelAttribute = attr.value;
+            IncrementalDOM.attr("onchange", function (e) {
+              scope[attr.value] = e.target.value;
+              _this4.render();
+            });
+            if (!scope[attr.value]) {
+              scope[attr.value] = elem.value;
+            }
+          } else if (attr.name === 'sj-for') {
+            var m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
+            if (!m) {
+              throw "Invalid sj-for value: " + m;
+            }
+            hasForAttribute = true;
+
+            var varName = m[1];
+            var container = m[2];
+
+            var e = elem.querySelector('*');
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+              for (var _iterator = scope[container][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                var item = _step.value;
+
+                // TODO: optimize this
+                var currentScope = Object.assign({}, scope);
+                currentScope[varName] = item;
+                this.renderDOM(e, currentScope);
+              }
+            } catch (err) {
+              _didIteratorError = true;
+              _iteratorError = err;
+            } finally {
+              try {
+                if (!_iteratorNormalCompletion && _iterator.return) {
+                  _iterator.return();
+                }
+              } finally {
+                if (_didIteratorError) {
+                  throw _iteratorError;
+                }
+              }
+            }
+          }
+        } else {
+          var labelValue = this.replaceVariables(attr.value, scope);
+          IncrementalDOM.attr(attr.name, labelValue);
+        }
+        return [isModelAttribute, hasForAttribute];
+      }
+    }, {
+      key: 'replaceVariables',
+      value: function replaceVariables(label, scope) {
+        console.log(label);
+        return label.replace(/\{\{(\w+)\}\}/g, function (m, s) {
+          return scope[s];
+        });
+      }
+    }]);
+
+    return SJElement;
+  }(HTMLElement);
+
+  global.SJElement = SJElement;
+})(typeof global !== 'undefined' ? global : window);
 // polyfill
 if (!window.customElements) {
     window.customElements = {
@@ -1490,477 +1910,6 @@ if (!window.customElements) {
   self.fetch.polyfill = true
 })(typeof self !== 'undefined' ? self : this);
 
-'use strict';
-
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-/******/(function (modules) {
-	// webpackBootstrap
-	/******/ // The module cache
-	/******/var installedModules = {};
-
-	/******/ // The require function
-	/******/function __webpack_require__(moduleId) {
-
-		/******/ // Check if module is in cache
-		/******/if (installedModules[moduleId])
-			/******/return installedModules[moduleId].exports;
-
-		/******/ // Create a new module (and put it into the cache)
-		/******/var module = installedModules[moduleId] = {
-			/******/exports: {},
-			/******/id: moduleId,
-			/******/loaded: false
-			/******/ };
-
-		/******/ // Execute the module function
-		/******/modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-
-		/******/ // Flag the module as loaded
-		/******/module.loaded = true;
-
-		/******/ // Return the exports of the module
-		/******/return module.exports;
-		/******/
-	}
-
-	/******/ // expose the modules object (__webpack_modules__)
-	/******/__webpack_require__.m = modules;
-
-	/******/ // expose the module cache
-	/******/__webpack_require__.c = installedModules;
-
-	/******/ // __webpack_public_path__
-	/******/__webpack_require__.p = "";
-
-	/******/ // Load entry module and return exports
-	/******/return __webpack_require__(0);
-	/******/
-})(
-/************************************************************************/
-/******/[
-/* 0 */
-/***/function (module, exports, __webpack_require__) {
-
-	window.SJElement = __webpack_require__(1).SJElement;
-
-	/***/
-},
-/* 1 */
-/***/function (module, exports, __webpack_require__) {
-
-	var sjExpression = __webpack_require__(2);
-
-	var sj_attr2event = {
-		'sj-click': 'onclick',
-		'sj-blur': 'onblur',
-		'sj-checked': 'onchecked',
-		'sj-dblclick': 'ondblclick',
-		'sj-focus': 'onfocus',
-		'sj-keydown': 'onkeydown',
-		'sj-keypress': 'onkeypress',
-		'sj-keyup': 'onkeyup',
-		'sj-mousedown': 'onmousedown',
-		'sj-mouseenter': 'onmouseenter',
-		'sj-mouseleave': 'onmouseleave',
-		'sj-mousemove': 'onmousemove',
-		'sj-mouseover': 'onmouseover',
-		'sj-mouseup': 'onmouseup',
-		'sj-paste': 'onpaste',
-		'sj-selected': 'onselected',
-		'sj-submit': 'onsubmit'
-	};
-
-	function isFormElement(elem) {
-		return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
-	}
-
-	var SJElement = function (_HTMLElement) {
-		_inherits(SJElement, _HTMLElement);
-
-		function SJElement() {
-			_classCallCheck(this, SJElement);
-
-			return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
-		}
-
-		_createClass(SJElement, [{
-			key: 'createdCallback',
-			value: function createdCallback() {
-				var _this2 = this;
-
-				this.initialized = false;
-
-				this.scope = new Proxy({}, {
-					set: function set(target, property, value) {
-						target[property] = value;
-						if (_this2.initialized) {
-							_this2.render();
-						}
-						return true;
-					}
-				});
-
-				// parse template
-				var template = this.template();
-				var html = document.createElement("div");
-				html.innerHTML = template;
-				this.templateElement = html;
-
-				this.initialize();
-				this.initialized = true;
-
-				this.render();
-			}
-		}, {
-			key: 'template',
-			value: function template() {
-				throw "Please implement 'template' method";
-			}
-		}, {
-			key: 'initialize',
-			value: function initialize() {
-				// nop. abstract method.
-			}
-		}, {
-			key: 'render',
-			value: function render() {
-				var _this3 = this;
-
-				if (this.rendering) {
-					return;
-				}
-
-				try {
-					this.rendering = true;
-
-					IncrementalDOM.patch(this, function () {
-						var children = _this3.templateElement.children;
-						for (var i = 0; i < children.length; ++i) {
-
-							_this3.renderDOM(children[i], _this3.scope);
-						}
-					});
-				} finally {
-					this.rendering = false;
-				}
-			}
-		}, {
-			key: 'renderDOM',
-			value: function renderDOM(elem, scope) {
-				if (elem instanceof Text) {
-					IncrementalDOM.text(this.replaceVariables(elem.textContent, scope));
-					return;
-				}
-				if (this.shouldHideElement(elem, scope)) {
-					return;
-				}
-
-				IncrementalDOM.elementOpenStart(elem.tagName.toLowerCase());
-
-				var _renderAttributes = this.renderAttributes(elem, scope);
-
-				var _renderAttributes2 = _slicedToArray(_renderAttributes, 2);
-
-				var modelName = _renderAttributes2[0];
-				var hasForAttribute = _renderAttributes2[1];
-
-				var modelValue = modelName ? sjExpression.getValueByPath(scope, modelName) : null;
-				var isForm = isFormElement(elem);
-				if (modelName && modelValue && scope[modelName] && isForm) {
-					IncrementalDOM.attr("value", modelValue);
-				}
-				IncrementalDOM.elementOpenEnd(elem.tagName.toLowerCase());
-				var children = elem.childNodes;
-				if (!hasForAttribute) {
-					for (var i = 0, l = children.length; i < l; ++i) {
-						var child = children[i];
-						if (child instanceof Text) {
-							if (!modelName) {
-								IncrementalDOM.text(this.replaceVariables(child.textContent, scope));
-							}
-						} else {
-							this.renderDOM(child, scope);
-						}
-					}
-				}
-				if (modelName && modelValue && !isForm) {
-					IncrementalDOM.text(modelValue);
-				}
-				IncrementalDOM.elementClose(elem.tagName.toLowerCase());
-			}
-		}, {
-			key: 'shouldHideElement',
-			value: function shouldHideElement(elem, scope) {
-				var cond = elem.getAttribute('sj-if');
-				if (cond) {
-					var val = sjExpression.getValueByPath(scope, cond);
-					if (!val) {
-						return true;
-					}
-				}
-				return false;
-			}
-		}, {
-			key: 'renderAttributes',
-			value: function renderAttributes(elem, scope) {
-				var modelName = void 0;
-				var attrs = elem.attributes;
-				var hasForAttribute = void 0;
-				for (var i = 0, l = attrs.length; i < l; ++i) {
-					var attr = attrs[i];
-					var attrName = attr.name;
-					var hasModelAttribute = void 0;
-
-					var _renderAttribute = this.renderAttribute(attrName, attr, elem, scope);
-
-					var _renderAttribute2 = _slicedToArray(_renderAttribute, 2);
-
-					hasModelAttribute = _renderAttribute2[0];
-					hasForAttribute = _renderAttribute2[1];
-
-					if (hasModelAttribute) {
-						modelName = attr.value;
-					}
-				}
-				return [modelName, hasForAttribute];
-			}
-		}, {
-			key: 'renderAttribute',
-			value: function renderAttribute(attrName, attr, elem, scope) {
-				var _this4 = this;
-
-				var isModelAttribute = void 0;
-				var hasForAttribute = void 0;
-				var hideElement = void 0;
-				if (attrName.startsWith('sj-')) {
-					var event = sj_attr2event[attrName];
-					if (event) {
-						IncrementalDOM.attr(event, function (e) {
-							_this4[attr.value](e);
-						});
-					} else if (attr.name === 'sj-model') {
-						isModelAttribute = attr.value;
-						IncrementalDOM.attr("onchange", function (e) {
-							scope[attr.value] = e.target.value;
-							_this4.render();
-						});
-						if (!scope[attr.value]) {
-							scope[attr.value] = elem.value;
-						}
-					} else if (attr.name === 'sj-for') {
-						var m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
-						if (!m) {
-							throw "Invalid sj-for value: " + m;
-						}
-						hasForAttribute = true;
-
-						var varName = m[1];
-						var container = m[2];
-
-						var e = elem.querySelector('*');
-						var _iteratorNormalCompletion = true;
-						var _didIteratorError = false;
-						var _iteratorError = undefined;
-
-						try {
-							for (var _iterator = scope[container][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-								var item = _step.value;
-
-								// TODO: optimize this
-								var currentScope = Object.assign({}, scope);
-								currentScope[varName] = item;
-								this.renderDOM(e, currentScope);
-							}
-						} catch (err) {
-							_didIteratorError = true;
-							_iteratorError = err;
-						} finally {
-							try {
-								if (!_iteratorNormalCompletion && _iterator.return) {
-									_iterator.return();
-								}
-							} finally {
-								if (_didIteratorError) {
-									throw _iteratorError;
-								}
-							}
-						}
-					}
-				} else {
-					var labelValue = this.replaceVariables(attr.value, scope);
-					IncrementalDOM.attr(attr.name, labelValue);
-				}
-				return [isModelAttribute, hasForAttribute];
-			}
-		}, {
-			key: 'replaceVariables',
-			value: function replaceVariables(label, scope) {
-				console.log(label);
-				return label.replace(/\{\{(\w+)\}\}/g, function (m, s) {
-					return scope[s];
-				});
-			}
-		}]);
-
-		return SJElement;
-	}(HTMLElement);
-
-	module.exports.SJElement = SJElement;
-
-	/***/
-},
-/* 2 */
-/***/function (module, exports) {
-
-	var trace = function trace(msg) {
-		// console.log(msg);
-	};
-
-	function parseLeaf(scope, path, origPath) {
-		var m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
-		if (m) {
-			var ident = m[1];
-			var rest = m[2];
-
-			trace('rest: ' + rest);
-			return [scope[ident], rest];
-		} else {
-			return;
-		}
-	}
-
-	// namespace = ( ident '.' )? ident
-	function parsePath(scope, path, origPath) {
-		trace('parsePath: ' + path);
-		var m = path.match(/^([a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
-		if (m) {
-			var namespace = m[1];
-			var rest = m[2];
-
-			trace('parsePath: ' + namespace + ', ' + rest);
-			return parsePath(scope[namespace], rest, origPath);
-		} else {
-			return parseLeaf(scope, path, origPath);
-		}
-	}
-
-	function parseNumber(scope, path, origPath) {
-		var m = path.match(/^([1-9][0-9]*(?:\.[0-9]+)?)(.*)$/);
-		if (m) {
-			trace('parseNumber: ' + path + '. ' + m + '. ok');
-			return [parseFloat(m[1], 10), m[2]];
-		} else {
-			trace('parseNumber: ' + path + '. fail');
-			return;
-		}
-	}
-
-	function parseTerm(scope, path, origPath) {
-		var m = parsePath(scope, path, origPath);
-		if (m) {
-			return m;
-		}
-		return parseNumber(scope, path, origPath);
-	}
-
-	function parseParams(scope, path, origPath) {
-		if (!path.startsWith('(')) {
-			return;
-		}
-		path = path.substr(1);
-
-		var params = [];
-		while (true) {
-			var m = parseFuncall(scope, path, origPath);
-			if (!m) {
-				trace('No param: \'' + path + '\'');
-				break;
-			}
-			path = m[1];
-			trace('Got param: \'' + m + '\'');
-			params.push(m[0]);
-
-			path = path.replace(/^\s*/, '');
-			if (!path.startsWith(',')) {
-				trace('No more comma. break. ' + path);
-				break;
-			}
-			path = path.substr(1);
-			path = path.replace(/^\s*/, '');
-		}
-
-		path = path.replace(/^\s*/, '');
-		if (!path.startsWith(')')) {
-			throw 'Paren missmatch: \'' + path + '\': \'' + origPath + '\'';
-		}
-		path = path.substr(1);
-		path = path.replace(/^\s*/, '');
-		if (path.length > 0) {
-			throw 'There\'s trailing trash: ' + origPath;
-		}
-
-		return [params, path];
-	}
-
-	function parseFuncall(scope, path, origPath) {
-		if (!path) {
-			throw "Missing path";
-		}
-		var m = parseTerm(scope, path, origPath);
-		if (!m) {
-			return;
-		}
-
-		var _m = _slicedToArray(m, 2);
-
-		var got = _m[0];
-		var rest = _m[1];
-
-		if (rest) {
-			trace('got:' + got + ', ' + rest);
-			var _m2 = parseParams(scope, rest, origPath);
-			if (_m2) {
-				trace('apply: ' + rest);
-				return [got.apply(undefined, _m2[0]), _m2[1]];
-			} else {
-				return [got, rest];
-			}
-		} else {
-			return [got, rest];
-		}
-	}
-
-	function getValueByPath(scope, path) {
-		if (!path) {
-			throw "Missing path";
-		}
-		trace('getValueByPath: ' + path);
-		var m = parseFuncall(scope, path, path);
-		if (m) {
-			if (m[1]) {
-				throw 'Trailing trash: \'' + m[1] + '\' in \'' + path + '\'';
-			} else {
-				return m[0];
-			}
-		} else {}
-	}
-
-	module.exports = {
-		getValueByPath: getValueByPath
-	};
-
-	/***/
-}
-/******/]);
 (function(d){function k(a){return a?"object"==typeof a||"function"==typeof a:!1}if(!d.Proxy){var l=null;d.Proxy=function(a,b){if(!k(a)||!k(b))throw new TypeError("Cannot create proxy with a non-object as target or handler");var d=function(){};l=function(){d=function(c){throw new TypeError("Cannot perform '"+c+"' on a proxy that has been revoked");}};var f=b;b={get:null,set:null,apply:null,construct:null};for(var g in f){if(!(g in b))throw new TypeError("Proxy polyfill does not support trap '"+g+"'");
 b[g]=f[g]}"function"==typeof f&&(b.apply=f.apply.bind(f));var e=this,m=!1,n="function"==typeof a;if(b.apply||b.construct||n)e=function(){var c=this&&this.constructor===e;d(c?"construct":"apply");if(c&&b.construct)return b.construct.call(this,a,arguments);if(!c&&b.apply)return b.apply(a,this,arguments);if(n)return c?(c=Array.prototype.slice.call(arguments),c.unshift(a),new (a.bind.apply(a,c))):a.apply(this,arguments);throw new TypeError(c?"not a constructor":"not a function");},m=!0;var p=b.get?function(c){d("get");
 return b.get(this,c,e)}:function(c){d("get");return this[c]},r=b.set?function(c,a){d("set");b.set(this,c,a,e)}:function(a,b){d("set");this[a]=b},q={};Object.getOwnPropertyNames(a).forEach(function(c){if(!(m&&c in e)){var b={enumerable:!!Object.getOwnPropertyDescriptor(a,c).enumerable,get:p.bind(a,c),set:r.bind(a,c)};Object.defineProperty(e,c,b);q[c]=!0}});f=!0;Object.setPrototypeOf?Object.setPrototypeOf(e,Object.getPrototypeOf(a)):e.__proto__?e.__proto__=a.__proto__:f=!1;if(b.get||!f)for(var h in a)q[h]||
