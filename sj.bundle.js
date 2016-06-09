@@ -2431,7 +2431,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         var modelName = _renderAttributes2[0];
         var forRenderer = _renderAttributes2[1];
 
-        var modelValue = modelName ? sjExpression.getValueByPath(scope, modelName, this) : null;
+        var modelValue = modelName ? sjExpression.getValueByPath(scope, modelName, this.targetElement) : null;
         var isForm = isFormElement(elem);
         if (modelName && modelValue && scope[modelName] && isForm) {
           IncrementalDOM.attr("value", modelValue);
@@ -2462,7 +2462,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
       value: function shouldHideElement(elem, scope) {
         var cond = elem.getAttribute('sj-if');
         if (cond) {
-          var val = sjExpression.getValueByPath(scope, cond, this);
+          var val = sjExpression.getValueByPath(scope, cond, this.targetElement);
           if (!val) {
             return true;
           }
@@ -2506,7 +2506,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             IncrementalDOM.attr(event, function (e) {
               var currentScope = Object.assign({}, scope);
               currentScope['$event'] = e;
-              sjExpression.getValueByPath(currentScope, attr.value, _this2);
+              sjExpression.getValueByPath(currentScope, attr.value, _this2.targetElement);
             });
           } else if (attr.name === 'sj-model') {
             isModelAttribute = attr.value;
@@ -2544,7 +2544,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
           if (s === '$_') {
             return JSON.stringify(scope);
           } else {
-            return sjExpression.getValueByPath(scope, s, _this3);
+            return sjExpression.getValueByPath(scope, s, _this3.targetElement);
           }
         });
       }
@@ -2569,6 +2569,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
         // parse template
         var template = this.template();
+        if (template instanceof Function) {
+          template = template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+        }
         var html = document.createElement("div");
         html.innerHTML = template;
         this.renderer = new Renderer(this, html, this.scope);
@@ -2581,6 +2584,24 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
       key: 'template',
       value: function template() {
         throw "Please implement 'template' method";
+      }
+    }, {
+      key: 'attributeChangedCallback',
+      value: function attributeChangedCallback(key) {
+        if (this.accessors) {
+          var accessorConf = this.accessors[key];
+          if (accessorConf) {
+            var accessor = accessorConf.set;
+            if (accessor) {
+              accessor.apply(this, [this.getAttribute(key)]);
+              this.update();
+              return;
+            }
+          }
+        }
+
+        this[key] = this.getAttribute(key);
+        this.update();
       }
     }, {
       key: 'initialize',
