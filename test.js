@@ -382,8 +382,7 @@ window.addEventListener("load", function () {
     ok(v, msg) {
       var status = v? 'ok' : 'not ok';
       var result = `${status} - ${msg}`;
-      logs.textContent += `${result}\n`;
-      console.log(result);
+      this.log(result);
       if (v) {
         successCount++;
       } else {
@@ -394,12 +393,21 @@ window.addEventListener("load", function () {
     fail(msg) {
       this.ok(false, msg);
     }
+
+    skip(msg) {
+      this.log(`skip - ${msg}`);
+    }
+
+    log(msg) {
+      logs.textContent += `${msg}\n`;
+      console.log(msg);
+    }
   }
   var t = new Assertion();
 
   for (var tag of tags) {
     if (location.hash && tag !== location.hash.substr(1)) {
-      logs.textContent += `skip ${tag}\n`;
+      t.skip(tag);
       continue;
     }
     try {
