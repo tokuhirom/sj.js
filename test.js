@@ -224,7 +224,7 @@ customElements.define('test-if-array', class extends SJElement {
     return `
     <h1>Test if</h1>
     <div sj-repeat="x in bar">
-    <div sj-if="matched(x)" sj-model="x.foo"></div>
+    <div sj-if="matched(x)" sj-model="x.foo" class="target"></div>
     </div>`
   }
 
@@ -236,8 +236,8 @@ customElements.define('test-if-array', class extends SJElement {
   }
 
   runTest() {
-    var elems = this.querySelectorAll('div');
-    return elems.length == 1 && elems[0].textContent === '1';
+    var elems = this.querySelectorAll('div.target');
+    return elems.length === 1 && elems[0].textContent === '1';
   }
 });
 
