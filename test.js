@@ -302,6 +302,10 @@ window.addEventListener("load", function () {
   var successCount = 0;
   var failCount = 0;
   for (var tag of tags) {
+    if (location.hash && tag !== location.hash.substr(1)) {
+      logs.textContent += `skip ${tag}\n`;
+      continue;
+    }
     var elem = document.createElement(tag);
     if (elem.runTest()) {
       logs.textContent += `ok ${tag}\n`;
@@ -314,7 +318,9 @@ window.addEventListener("load", function () {
 
   var resultElem = document.getElementById("testResult");
   resultElem.textContent = `Success: ${successCount} Fail: ${failCount} Total: ${tags.length}`;
-  if (successCount === tags.length) {
+  if (location.hash) {
+    resultElem.style.color = "yellow";
+  } else if (successCount === tags.length) {
     resultElem.style.color = "green";
   } else {
     resultElem.style.color = "red";
