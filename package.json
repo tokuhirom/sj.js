@@ -12,7 +12,7 @@
   "license": "MIT",
   "dependencies": {
     "incremental-dom": "^0.4.1",
-    "proxy-polyfill": "^0.1.5",
+    "observe-js": "^0.5.7",
     "webcomponents.js": "^0.7.22",
     "whatwg-fetch": "^1.0.0"
   },

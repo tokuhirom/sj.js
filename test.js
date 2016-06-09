@@ -40,7 +40,16 @@ customElements.define('test-input', class extends SJElement {
   runTest() {
     var input = this.querySelector('input');
     input.value = 'foo';
-    input.dispatchEvent(new Event("change"));
+
+    // simulate onchange event
+    // http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
+    if ("createEvent" in document) {
+      var evt = document.createEvent("HTMLEvents");
+      evt.initEvent("change", false, true);
+      input.dispatchEvent(evt);
+    } else {
+      input.fireEvent("onchange");
+    }
 
     return this.querySelector('span').textContent === "foo";
   }

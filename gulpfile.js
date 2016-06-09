@@ -11,7 +11,7 @@ function jsStream() {
         "node_modules/incremental-dom/dist/incremental-dom-min.js",
         'src/polyfill.js',
         'node_modules/whatwg-fetch/fetch.js',
-        'node_modules/proxy-polyfill/proxy.min.js'
+        'node_modules/observe-js/src/observe.js'
     ])
         .pipe(plumber());
 

@@ -37,15 +37,7 @@
     createdCallback() {
       this.initialized = false;
 
-      this.scope = new Proxy({}, {
-        set: (target, property, value) => {
-          target[property] = value;
-          if (this.initialized) {
-            this.render();
-          }
-          return true;
-        }
-      });
+      this.scope = {};
 
       // parse template
       const template = this.template();
@@ -164,6 +156,9 @@
           isModelAttribute = attr.value;
           IncrementalDOM.attr("onchange", (e) => {
             scope[attr.value] = e.target.value;
+            console.log(e.target.value);
+            console.log(attr.value);
+            console.log(scope);
             this.render();
           });
           if (!scope[attr.value]) {
@@ -195,7 +190,6 @@
     }
 
     replaceVariables(label, scope) {
-      console.log(label);
       return label.replace(/\{\{(\w+)\}\}/g, (m, s) => {
         return scope[s];
       });
