@@ -301,18 +301,39 @@ window.addEventListener("load", function () {
   var logs = document.getElementById("logs");
   var successCount = 0;
   var failCount = 0;
+  window.exceptions = [];
+
+  class Assertion {
+    ok(v, msg) {
+      var status = v? 'ok' : 'not ok';
+      var result = `${status} - ${msg}`;
+      logs.textContent += `${result}\n`;
+      console.log(result);
+      if (v) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    fail(msg) {
+      this.ok(false, msg);
+    }
+  }
+  var t = new Assertion();
+
   for (var tag of tags) {
     if (location.hash && tag !== location.hash.substr(1)) {
       logs.textContent += `skip ${tag}\n`;
       continue;
     }
-    var elem = document.createElement(tag);
-    if (elem.runTest()) {
-      logs.textContent += `ok ${tag}\n`;
-      successCount++;
-    } else {
-      logs.textContent += `not ok ${tag}\n`;
-      failCount++;
+    try {
+      var elem = document.createElement(tag);
+      t.ok(elem.runTest(), tag);
+    } catch (e) {
+      window.exceptions.push(e);
+      console.log(e);
+      t.fail(`${tag} - ${e}`);
     }
   }
 

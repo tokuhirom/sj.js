@@ -7,11 +7,11 @@ var gulp = require("gulp"),
 
 function jsStream() {
     const bundleStream = gulp.src([
-        "node_modules/webcomponents.js/CustomElements.js",
-        "node_modules/incremental-dom/dist/incremental-dom-min.js",
-        'src/polyfill.js',
-        'node_modules/whatwg-fetch/fetch.js',
-        'node_modules/observe-js/src/observe.js'
+                                    "node_modules/webcomponents.js/CustomElements.js",
+                                    "node_modules/incremental-dom/dist/incremental-dom.js",
+                                    'src/polyfill.js',
+                                    'node_modules/whatwg-fetch/fetch.js',
+                                    'node_modules/observe-js/src/observe.js'
     ])
         .pipe(plumber());
 

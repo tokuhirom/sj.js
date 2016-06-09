@@ -21,16 +21,36 @@
 
   function isFormElement(elem) {
     return elem instanceof HTMLInputElement
-      || elem instanceof HTMLTextAreaElement
-        || elem instanceof HTMLSelectElement;
+           || elem instanceof HTMLTextAreaElement
+           || elem instanceof HTMLSelectElement;
   }
 
   // babel hacks
   // See https://phabricator.babeljs.io/T1548
-  if (typeof HTMLElement !== 'function'){
-      var _HTMLElement = function(){};
-      _HTMLElement.prototype = HTMLElement.prototype;
-      HTMLElement = _HTMLElement;
+  if (typeof HTMLElement !== 'function') {
+    var _HTMLElement = function () {
+    };
+    _HTMLElement.prototype = HTMLElement.prototype;
+    HTMLElement = _HTMLElement;
+  }
+
+  class ForRenderer {
+    constructor(renderer, element, scope, varName) {
+      this.renderer = renderer;
+      this.element = element;
+      this.scope = scope;
+      this.varName = varName;
+    }
+
+    render() {
+      let i = 0;
+      for (const item of this.scope) {
+        const currentScope = Object.assign({}, this.scope);
+        currentScope[this.varName] = item;
+        currentScope['$index'] = i++;
+        this.renderer(this.element, currentScope);
+      }
+    }
   }
 
   class SJElement extends HTMLElement {
@@ -70,7 +90,6 @@
         IncrementalDOM.patch(this, () => {
           const children = this.templateElement.children;
           for (let i = 0; i < children.length; ++i) {
-
             this.renderDOM(children[i], this.scope);
           }
         });
@@ -80,7 +99,7 @@
     }
 
     renderDOM(elem, scope) {
-      if (elem instanceof Text) {
+      if (elem.nodeType === Node.TEXT_NODE) {
         IncrementalDOM.text(this.replaceVariables(elem.textContent, scope));
         return;
       }
@@ -88,16 +107,21 @@
         return;
       }
 
-      IncrementalDOM.elementOpenStart(elem.tagName.toLowerCase());
-      const [modelName, hasForAttribute] = this.renderAttributes(elem, scope);
+      const tagName = elem.tagName.toLowerCase();
+
+      IncrementalDOM.elementOpenStart(tagName);
+      const [modelName, forRenderer] = this.renderAttributes(elem, scope);
       const modelValue = modelName? sjExpression.getValueByPath(scope, modelName) : null;
       const isForm = isFormElement(elem);
       if (modelName && modelValue && scope[modelName] && isForm) {
         IncrementalDOM.attr("value", modelValue);
       }
-      IncrementalDOM.elementOpenEnd(elem.tagName.toLowerCase());
+      console.log(elem.tagName);
+      IncrementalDOM.elementOpenEnd(tagName);
       const children = elem.childNodes;
-      if (!hasForAttribute) {
+      if (forRenderer) {
+        forRenderer.render();
+      } else {
         for (let i = 0, l = children.length; i < l; ++i) {
           const child = children[i];
           if (child instanceof Text) {
@@ -112,7 +136,7 @@
       if (modelName && modelValue && !isForm) {
         IncrementalDOM.text(modelValue);
       }
-      IncrementalDOM.elementClose(elem.tagName.toLowerCase());
+      IncrementalDOM.elementClose(tagName);
     }
 
     shouldHideElement(elem, scope) {
@@ -129,23 +153,22 @@
     renderAttributes(elem, scope) {
       let modelName;
       const attrs = elem.attributes;
-      let hasForAttribute;
+      let forRenderer;
       for (let i = 0, l = attrs.length; i < l; ++i) {
         const attr = attrs[i];
         const attrName = attr.name;
         let hasModelAttribute;
-        [hasModelAttribute, hasForAttribute] = this.renderAttribute(attrName, attr, elem, scope);
+        [hasModelAttribute, forRenderer] = this.renderAttribute(attrName, attr, elem, scope);
         if (hasModelAttribute) {
           modelName = attr.value;
         }
       }
-      return [modelName, hasForAttribute];
+      return [modelName, forRenderer];
     }
 
     renderAttribute(attrName, attr, elem, scope) {
       let isModelAttribute;
-      let hasForAttribute;
-      let hideElement;
+      let forRenderer;
       if (attrName.startsWith('sj-')) {
         const event = sj_attr2event[attrName];
         if (event) {
@@ -166,27 +189,20 @@
           if (!m) {
             throw "Invalid sj-for value: " + m;
           }
-          hasForAttribute = true;
 
           const varName = m[1];
           const container = m[2];
 
           const e = elem.querySelector('*');
-          let i = 0;
-          for (const item of scope[container]) {
-            // TODO: optimize this
-            const currentScope = Object.assign({}, scope);
-            currentScope[varName] = item;
-            currentScope['$index'] = i++;
-            console.log(currentScope);
-            this.renderDOM(e, currentScope);
-          }
+          forRenderer = new ForRenderer((elem, scope) => {
+            this.renderDOM(elem, scope)
+          }, e, scope[container], varName);
         }
       } else {
         const labelValue = this.replaceVariables(attr.value, scope);
         IncrementalDOM.attr(attr.name, labelValue);
       }
-      return [isModelAttribute, hasForAttribute];
+      return [isModelAttribute, forRenderer];
     }
 
     replaceVariables(label, scope) {
@@ -202,5 +218,5 @@
   }
 
   global.SJElement = SJElement;
-})(typeof global !== 'undefined' ? global : window);
+})(typeof global !== 'undefined'? global : window);
 
