@@ -118,8 +118,28 @@ customElements.define('test-for', class extends SJElement {
   }
 
   runTest() {
-    var elems = this.querySelectorAll('div');
+    var elems = this.querySelectorAll('div.item');
     return elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' && elems[2].textContent === '2' && elems[3].textContent === '3';
+  }
+});
+
+customElements.define('test-for-empty', class extends SJElement {
+  template() {
+    return `
+    <h1>sj-for with empty value</h1>
+    <div sj-for="x in bar">
+    <div class="item" sj-model="x.boo">replace here</div>
+    </div>
+    `;
+  }
+
+  initialize() {
+    this.scope.bar = [ ];
+  }
+
+  runTest() {
+    var elems = this.querySelectorAll('div.item');
+    return elems.length == 0;
   }
 });
 
