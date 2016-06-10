@@ -1,6 +1,6 @@
 all: dist/sj.bundle.js dist/sj.bundle.min.js
 
-dist/sj.bundle.js:
+dist/sj.bundle.js: src/*.js
 	browserify -t babelify --standalone sj src/main.js -o dist/sj.bundle.js
 
 dist/sj.bundle.min.js: dist/sj.bundle.js
