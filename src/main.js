@@ -6,5 +6,5 @@ require('whatwg-fetch/fetch.js');
 const tag = require('./sj-tag.js');
 const elem = require('./sj-element.js');
 
-module.exports.Element = elem.SJElement;
+module.exports.Element = elem.Element;
 module.exports.tag = tag.sjtag;

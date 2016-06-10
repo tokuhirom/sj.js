@@ -10,7 +10,7 @@ test:
 	browserify -t babelify test.js test/test-sj-expression.js | testling
 
 test-browser:
-	browserify -t babelify test.js test/test-sj-expression.js | testling -x test
+	browserify -t babelify test.js test/test-sj-expression.js | testling -x open
 
-.PHONY: all
+.PHONY: all test test-browser
 

@@ -21,6 +21,12 @@ window.addEventListener("load", function () {
     });
   }
 
+  test('export', function (t) {
+    t.plan(2);
+    t.ok(sj.tag, 'sj.tag');
+    t.ok(sj.Element, 'sj.Element');
+  });
+
   runTest('test-input-value', sj.tag('test-input-value', {
     template: function() {/*
                              <input type="text" sj-model="bar">
