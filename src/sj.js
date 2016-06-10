@@ -1,6 +1,8 @@
 const sjExpression = require('./sj-expression.js');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
+require('String.prototype.startsWith');
+
 const sj_attr2event = {
   'sj-click': 'onclick',
   'sj-blur': 'onblur',
