@@ -2614,11 +2614,11 @@ module.exports.tag = es5.sjtag;
 
 // polyfill
 if (!window.customElements) {
-    window.customElements = {
-        define: function define(name, elem) {
-            document.registerElement(name, elem);
-        }
-    };
+  window.customElements = {
+    define: function define(name, elem) {
+      document.registerElement(name, elem);
+    }
+  };
 }
 
 },{}],7:[function(require,module,exports){

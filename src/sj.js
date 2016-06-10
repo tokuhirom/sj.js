@@ -25,8 +25,8 @@ const sj_attr2event = {
 
 function isFormElement(elem) {
   return elem instanceof HTMLInputElement
-    || elem instanceof HTMLTextAreaElement
-      || elem instanceof HTMLSelectElement;
+         || elem instanceof HTMLTextAreaElement
+         || elem instanceof HTMLSelectElement;
 }
 
 // babel hacks
@@ -147,7 +147,7 @@ class SJRenderer {
         modelName = attr.value;
       }
       if (gotForRenderer) {
-          forRenderer = gotForRenderer;
+        forRenderer = gotForRenderer;
       }
     }
     return [modelName, forRenderer];
@@ -212,34 +212,34 @@ class SJElement extends HTMLElement {
     var template = this.template();
     if (template instanceof Function) {
       template = template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
-  }
-  const html = document.createElement("div");
-  html.innerHTML = template;
-  this.renderer = new SJRenderer(this, html, this.scope);
+    }
+    const html = document.createElement("div");
+    html.innerHTML = template;
+    this.renderer = new SJRenderer(this, html, this.scope);
 
-  this.initialize();
+    this.initialize();
 
-  this.update();
-}
-
-template() {
-  throw "Please implement 'template' method";
-}
-
-attributeChangedCallback(key) {
-  this[key] = this.getAttribute(key);
-  this.update();
-}
-
-initialize() {
-  // nop. abstract method.
-}
-
-update() {
-  this.renderer.render();
-}
+    this.update();
   }
 
-  module.exports.SJElement = SJElement;
-  module.exports.SJRenderer = SJRenderer;
+  template() {
+    throw "Please implement 'template' method";
+  }
+
+  attributeChangedCallback(key) {
+    this[key] = this.getAttribute(key);
+    this.update();
+  }
+
+  initialize() {
+    // nop. abstract method.
+  }
+
+  update() {
+    this.renderer.render();
+  }
+}
+
+module.exports.SJElement = SJElement;
+module.exports.SJRenderer = SJRenderer;
 

@@ -21,7 +21,7 @@ function sjtag(tagName, opts) {
   const elementClass = class extends HTMLElement {
     createdCallback() {
       this.scope = {};
-     
+
       const html = document.createElement("div");
       html.innerHTML = (function () {
         if (template instanceof Function) {
@@ -31,7 +31,7 @@ function sjtag(tagName, opts) {
         }
       })();
       this.renderer = new SJRenderer(this, html, this.scope);
-     
+
       if (opts.initialize) {
         opts.initialize.apply(this);
       }
