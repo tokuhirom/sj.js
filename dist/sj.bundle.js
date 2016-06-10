@@ -2603,13 +2603,13 @@ require('webcomponents.js/CustomElements.js');
 require('./polyfill.js');
 require('whatwg-fetch/fetch.js');
 
-var sj = require('./sj.js');
-var es5 = require('./sj-tag.js');
+var tag = require('./sj-tag.js');
+var elem = require('./sj-element.js');
 
-module.exports.Element = sj.SJElement;
-module.exports.tag = es5.sjtag;
+module.exports.Element = elem.SJElement;
+module.exports.tag = tag.sjtag;
 
-},{"./polyfill.js":6,"./sj-tag.js":8,"./sj.js":9,"webcomponents.js/CustomElements.js":3,"whatwg-fetch/fetch.js":4}],6:[function(require,module,exports){
+},{"./polyfill.js":6,"./sj-element.js":7,"./sj-tag.js":9,"webcomponents.js/CustomElements.js":3,"whatwg-fetch/fetch.js":4}],6:[function(require,module,exports){
 "use strict";
 
 // polyfill
@@ -2622,6 +2622,74 @@ if (!window.customElements) {
 }
 
 },{}],7:[function(require,module,exports){
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var sj = require('./sj');
+
+var SJElement = function (_HTMLElement) {
+  _inherits(SJElement, _HTMLElement);
+
+  function SJElement() {
+    _classCallCheck(this, SJElement);
+
+    return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
+  }
+
+  _createClass(SJElement, [{
+    key: "createdCallback",
+    value: function createdCallback() {
+      this.scope = {};
+
+      // parse template
+      var template = this.template();
+      if (template instanceof Function) {
+        template = template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+      }
+      var html = document.createElement("div");
+      html.innerHTML = template;
+      this.renderer = new sj.SJRenderer(this, html, this.scope);
+
+      this.initialize();
+
+      this.update();
+    }
+  }, {
+    key: "template",
+    value: function template() {
+      throw "Please implement 'template' method";
+    }
+  }, {
+    key: "attributeChangedCallback",
+    value: function attributeChangedCallback(key) {
+      this[key] = this.getAttribute(key);
+      this.update();
+    }
+  }, {
+    key: "initialize",
+    value: function initialize() {
+      // nop. abstract method.
+    }
+  }, {
+    key: "update",
+    value: function update() {
+      this.renderer.render();
+    }
+  }]);
+
+  return SJElement;
+}(HTMLElement);
+
+module.exports.Element = SJElement;
+
+},{"./sj":10}],8:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -2807,7 +2875,7 @@ function setValueByPath(scope, path, value) {
 module.exports.getValueByPath = getValueByPath;
 module.exports.setValueByPath = setValueByPath;
 
-},{"String.prototype.startsWith":2}],8:[function(require,module,exports){
+},{"String.prototype.startsWith":2}],9:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2905,16 +2973,12 @@ function sjtag(tagName, opts) {
 
 module.exports.sjtag = sjtag;
 
-},{"./sj":9}],9:[function(require,module,exports){
+},{"./sj":10}],10:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -3192,61 +3256,7 @@ var SJRenderer = function () {
   return SJRenderer;
 }();
 
-var SJElement = function (_HTMLElement2) {
-  _inherits(SJElement, _HTMLElement2);
-
-  function SJElement() {
-    _classCallCheck(this, SJElement);
-
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
-  }
-
-  _createClass(SJElement, [{
-    key: 'createdCallback',
-    value: function createdCallback() {
-      this.scope = {};
-
-      // parse template
-      var template = this.template();
-      if (template instanceof Function) {
-        template = template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
-      }
-      var html = document.createElement("div");
-      html.innerHTML = template;
-      this.renderer = new SJRenderer(this, html, this.scope);
-
-      this.initialize();
-
-      this.update();
-    }
-  }, {
-    key: 'template',
-    value: function template() {
-      throw "Please implement 'template' method";
-    }
-  }, {
-    key: 'attributeChangedCallback',
-    value: function attributeChangedCallback(key) {
-      this[key] = this.getAttribute(key);
-      this.update();
-    }
-  }, {
-    key: 'initialize',
-    value: function initialize() {
-      // nop. abstract method.
-    }
-  }, {
-    key: 'update',
-    value: function update() {
-      this.renderer.render();
-    }
-  }]);
-
-  return SJElement;
-}(HTMLElement);
-
-module.exports.SJElement = SJElement;
 module.exports.SJRenderer = SJRenderer;
 
-},{"./sj-expression.js":7,"String.prototype.startsWith":2,"incremental-dom/dist/incremental-dom.js":1}]},{},[5])(5)
+},{"./sj-expression.js":8,"String.prototype.startsWith":2,"incremental-dom/dist/incremental-dom.js":1}]},{},[5])(5)
 });
