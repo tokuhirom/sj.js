@@ -1,4 +1,12 @@
-(function (global) {
+// polyfill
+// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/String/startsWith
+if (!String.prototype.startsWith) {
+String.prototype.startsWith = function(searchString, position){
+  position = position || 0;
+  return this.substr(position, searchString.length) === searchString;
+};
+  }
+
   const trace = function (msg) {
     // console.log(msg);
   };
@@ -22,95 +30,95 @@
 
     // namespace = ( ident '.' )? ident
     parsePath(scope, path) {
-        trace(`parsePath: ${path}`);
-        const m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
-        if (m) {
+      trace(`parsePath: ${path}`);
+      const m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
+      if (m) {
         const [namespace, rest] = [m[1], m[2]];
         trace(`parsePath: ${namespace}, ${rest}`);
         return this.parsePath(scope[namespace], rest);
-        } else {
+      } else {
         return this.parseLeaf(scope, path);
-        }
+      }
     }
 
     parseNumber(scope, path) {
-        const m = path.match(/^([1-9][0-9]*(?:\.[0-9]+)?)(.*)$/);
-        if (m) {
+      const m = path.match(/^([1-9][0-9]*(?:\.[0-9]+)?)(.*)$/);
+      if (m) {
         trace(`parseNumber: ${path}. ${m}. ok`);
         return [parseFloat(m[1], 10), m[2]];
-        } else {
+      } else {
         trace(`parseNumber: ${path}. fail`);
-        }
+      }
     }
 
     parseTerm(scope, path) {
-        const m = this.parsePath(scope, path);
-        if (m) {
+      const m = this.parsePath(scope, path);
+      if (m) {
         return m;
-        }
-        return this.parseNumber(scope, path);
+      }
+      return this.parseNumber(scope, path);
     }
 
     parseParams(scope, path) {
-        if (!path.startsWith('(')) {
+      if (!path.startsWith('(')) {
         return;
-        }
-        path = path.substr(1);
+      }
+      path = path.substr(1);
 
-        const params = [];
-        while (true) {
+      const params = [];
+      while (true) {
         const m = this.parseFuncall(scope, path);
         if (!m) {
-            trace(`No param: '${path}'`);
-            break;
+          trace(`No param: '${path}'`);
+          break;
         }
         path = m[1];
         trace(`Got param: '${m}'`);
         params.push(m[0]);
 
         path = path.replace(/^\s*/, '');
-        if (!path.startsWith(',')) {
-            trace(`No more comma. break. ${path}`);
-            break;
-        }
-        path = path.substr(1);
-        path = path.replace(/^\s*/, '');
-        }
+if (!path.startsWith(',')) {
+  trace(`No more comma. break. ${path}`);
+  break;
+}
+path = path.substr(1);
+path = path.replace(/^\s*/, '');
+      }
 
-        path = path.replace(/^\s*/, '');
-        if (!path.startsWith(')')) {
-        throw `Paren missmatch: '${path}': '${this.origPath}'`;
-        }
-        path = path.substr(1);
-        path = path.replace(/^\s*/, '');
-        if (path.length > 0) {
-        throw `There's trailing trash: ${this.origPath}`;
-        }
+      path = path.replace(/^\s*/, '');
+if (!path.startsWith(')')) {
+  throw `Paren missmatch: '${path}': '${this.origPath}'`;
+}
+path = path.substr(1);
+path = path.replace(/^\s*/, '');
+if (path.length > 0) {
+  throw `There's trailing trash: ${this.origPath}`;
+}
 
-        return [params, path];
+return [params, path];
     }
 
     parseFuncall(scope, path) {
-        if (!path) {
+      if (!path) {
         throw "Missing path";
-        }
-        const m = this.parseTerm(scope, path);
-        if (!m) {
+      }
+      const m = this.parseTerm(scope, path);
+      if (!m) {
         return;
-        }
-        const [got, rest] = m;
-        if (rest) {
+      }
+      const [got, rest] = m;
+      if (rest) {
         trace(`got:${got}, ${rest}`);
         const m = this.parseParams(scope, rest);
         if (m) {
-            trace(`apply: ${rest}`);
-            return [got.apply(this.self, m[0]), m[1]];
+          trace(`apply: ${rest}`);
+          return [got.apply(this.self, m[0]), m[1]];
         } else {
-            return [got, rest];
+          return [got, rest];
         }
-        } else {
+      } else {
         return [got, rest];
-        }
+      }
     }
   }
 
@@ -146,8 +154,6 @@
     scope[path] = value;
   }
 
-  global.sjExpression = {
-    getValueByPath: getValueByPath,
-    setValueByPath: setValueByPath
-  };
-})(typeof global !== 'undefined'? global : window);
+  module.exports.getValueByPath = getValueByPath;
+  module.exports.setValueByPath = setValueByPath;
+

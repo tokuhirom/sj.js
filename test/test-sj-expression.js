@@ -1,39 +1,46 @@
-require('../src/sj-expression');
-var assert = require('chai').assert;
+const e = require('../src/sj-expression').sjExpression;
+const test = require('tape');
 
-const e = sjExpression;
+test('getValueByPath', t => {
+  t.plan(7);
 
-describe('getValueByPath', function () {
-  it('can get value by path', () => {
-    assert.equal(e.getValueByPath({"x": "y"}, 'x'), 'y');
+  t.test('can get value by path', t => {
+    t.plan(1);
+    t.equal(e.getValueByPath({"x": "y"}, 'x'), 'y');
   });
-  it('allows $ in path', () => {
-    assert.equal(e.getValueByPath({"$x": "y"}, '$x'), 'y');
+  t.test('allows $ in path', t => {
+    t.plan(1);
+    t.equal(e.getValueByPath({"$x": "y"}, '$x'), 'y');
   });
-  it('allows nested path', () => {
-    assert.equal(e.getValueByPath({"x": {"y": "z"}}, 'x.y'), 'z');
+  t.test('allows nested path', t => {
+    t.plan(1);
+    t.equal(e.getValueByPath({"x": {"y": "z"}}, 'x.y'), 'z');
   });
-  it('supports complex data', () => {
-    assert.equal(e.getValueByPath({"bar":[{"boo":4649},{"boo":1},{"boo":2},{"boo":3}],"x":{"boo":3},"$index":3}, 'x.boo'), '3');
+  t.test('supports complex data', t => {
+    t.plan(1);
+    t.equal(e.getValueByPath({"bar":[{"boo":4649},{"boo":1},{"boo":2},{"boo":3}],"x":{"boo":3},"$index":3}, 'x.boo'), 3);
   });
-  it('can call function', () => {
-    assert.equal(e.getValueByPath(
+  t.test('can call function', t => {
+    t.plan(1);
+    t.equal(e.getValueByPath(
       {
-        "x": () => {
+        "x": t => {
           return 3
         }
       }, 'x()'), 3);
   });
-  it('can pass argument parameters', () => {
-    assert.equal(e.getValueByPath(
+  t.test('can pass argument parameters', t => {
+    t.plan(1);
+    t.equal(e.getValueByPath(
       {
         "add": (x, y) => {
           return x + y;
         }
       }, 'add(3,5)'), 8);
   });
-  it('can pass "this"', () => {
-    assert.equal(e.getValueByPath(
+  t.test('can pass "this"', t => {
+    t.plan(1);
+    t.equal(e.getValueByPath(
       {
         "yy": function () {
           return this.y * 3;
@@ -41,8 +48,10 @@ describe('getValueByPath', function () {
       }, 'yy()', {"y":6}), 18);
   });
 });
-describe('setValueByPath', () => {
-  it('can set value by path', () => {
+test('setValueByPath', t => {
+  t.plan(1);
+  t.test('can set value by path', t => {
+    t.plan(2);
     const o = {
       "x": {
         "y": 3
@@ -50,8 +59,8 @@ describe('setValueByPath', () => {
     };
     e.setValueByPath(o, 'x.y', 8);
     e.setValueByPath(o, 'o', 9);
-    assert.equal(o.x.y, 8);
-    assert.equal(o.o, 9);
+    t.equal(o.x.y, 8);
+    t.equal(o.o, 9);
   });
 });
 
