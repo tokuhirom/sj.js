@@ -4,6 +4,11 @@ const trace = function (msg) {
   // console.log(msg);
 };
 
+class Node {
+  constructor(type) {
+  }
+}
+
 class Parser {
   constructor(origPath, self) {
     this.origPath = origPath;

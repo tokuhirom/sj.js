@@ -8,54 +8,17 @@
  *   - https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Functions/Arrow_functions
  *
  */
+
+var test = require('tape');
+var sj = require('./src/main.js');
 window.addEventListener("load", function () {
-  class Assertion {
-    constructor(logElement) {
-      this.successCount = 0;
-      this.failCount = 0;
-      this.logElement = logElement;
-    }
-
-    ok(v, msg) {
-      var status = v? 'ok' : 'not ok';
-      var result = `${status} - ${msg}`;
-      this.log(result);
-      if (v) {
-        this.successCount++;
-      } else {
-        this.failCount++;
-      }
-    }
-
-    fail(msg) {
-      this.ok(false, msg);
-    }
-
-    skip(msg) {
-      this.log(`skip - ${msg}`);
-    }
-
-    log(msg) {
-      this.logElement.textContent += `${msg}\n`;
-      console.log(msg);
-    }
-  }
-  var t = new Assertion(document.getElementById('logs'));
+  "use strict";
 
   function runTest(tagName, elementClass, code) {
-    try {
-      if (location.hash && tagName !== location.hash.substr(1)) {
-        t.skip(tagName);
-        return;
-      }
-
+    test(tagName, function (t) {
       var elem = document.createElement(tagName);
       code.apply(elem, [t, tagName]);
-      console.log(elem.innerHTML);
-    } catch (e) {
-      console.log(e);
-      t.fail(`${tagName} - ${e}`);
-    }
+    });
   }
 
   runTest('test-input-value', sj.tag('test-input-value', {
@@ -66,8 +29,9 @@ window.addEventListener("load", function () {
       this.scope.bar = 'hoge';
     }
   }), function (t, tagName) {
+    t.plan(1);
     var input = this.querySelector('input');
-    t.ok(input.value === 'hoge', tagName);
+    t.equal(input.value, 'hoge', tagName);
   });
 
   runTest('test-disabled', sj.tag('test-disabled', {
@@ -80,6 +44,7 @@ window.addEventListener("load", function () {
       this.scope.f = false;
     }
   }), function (t, tagName) {
+    t.plan(3);
     var divs = this.querySelectorAll('div');
     t.ok(divs.length == 2, tagName);
     t.ok(!divs[0].getAttribute('disabled'), tagName);
@@ -97,6 +62,7 @@ window.addEventListener("load", function () {
       this.scope.books = [{"name":"foo"}, {"name":"bar"}];
     }
   }), function (t, tagName) {
+    t.plan(1);
     t.ok(this.querySelectorAll('div.book').length === 2, tagName);
   });
 
@@ -113,6 +79,7 @@ window.addEventListener("load", function () {
     var elem = this.querySelector("#clickTest");
     elem.click();
 
+    t.plan(1);
     t.ok(!!this.scope.clicked, 'test-events');
   });
 
@@ -130,6 +97,7 @@ window.addEventListener("load", function () {
     }
   }), function (t, tagName) {
     this.setAttribute('foo', 'bar');
+    t.plan(1);
     t.ok(this.querySelector('div').textContent, 'bar');
   });
 
@@ -153,6 +121,7 @@ window.addEventListener("load", function () {
       input.fireEvent("onchange");
     }
 
+    t.plan(1);
     t.ok(this.querySelector('span').textContent === "foo", tagName);
   });
 
@@ -181,6 +150,7 @@ window.addEventListener("load", function () {
       input.fireEvent("onchange");
     }
 
+    t.plan(1);
     t.ok(this.scope.x.y === 'foo', tagName);
   });
 
@@ -195,6 +165,7 @@ window.addEventListener("load", function () {
     input.value = "foo";
     input.dispatchEvent(new Event("change"));
 
+    t.plan(1);
     t.ok(this.querySelector('span').textContent === "foo", tagName);
   });
 
@@ -207,6 +178,7 @@ window.addEventListener("load", function () {
       <input type="text" name="bar" sj-model="hogehoge">
     */}
   }), function (t, tagName) {
+    t.plan(1);
     t.ok(this.querySelector('input').value === "foo", tagName);
   });
 
@@ -220,7 +192,8 @@ window.addEventListener("load", function () {
       SSS: <span sj-model="sss"></span>
     */}
   }), function (t, tagName) {
-    return this.querySelector('span').textContent === "ppp";
+    t.plan(1);
+    t.equal(this.querySelector('span').textContent, "ppp");
   });
 
   runTest('test-for', sj.tag('test-for', {
@@ -240,6 +213,7 @@ window.addEventListener("load", function () {
     }
   }), function (t, tagName) {
     var elems = this.querySelectorAll('div.item');
+    t.plan(1);
     t.ok(elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' &&
          elems[2].textContent === '2' && elems[3].textContent === '3', tagName);
   });
@@ -261,6 +235,7 @@ window.addEventListener("load", function () {
     }
   }), function (t, tagName) {
     var elems = this.querySelectorAll('div.item');
+    t.plan(1);
     t.ok(elems.length == 4 && elems[0].textContent == "4649:0" && elems[1].textContent === '1:1' &&
          elems[2].textContent === '2:2' && elems[3].textContent === '3:3', tagName);
   });
@@ -277,6 +252,7 @@ window.addEventListener("load", function () {
     }
   }), function (t, tagName) {
     var elems = this.querySelectorAll('div.item');
+    t.plan(1);
     t.ok(elems.length == 0, tagName);
   });
 
@@ -290,6 +266,7 @@ window.addEventListener("load", function () {
     }
   }), function (t, tagName) {
     var elems = this.querySelector('div');
+    t.plan(1);
     t.ok(elems.style.color === 'green', tagName);
   });
 
@@ -309,6 +286,7 @@ window.addEventListener("load", function () {
     }
   }), function (t, tagName) {
     var elems = this.querySelectorAll('div');
+    t.plan(1);
     t.ok(elems.length == 1 && elems[0].textContent === 'TRUE', tagName);
   });
 
@@ -328,6 +306,7 @@ window.addEventListener("load", function () {
     }
   }), function (t, tagName) {
     var elems = this.querySelectorAll('div.target');
+    t.plan(1);
     t.ok(elems.length === 1 && elems[0].textContent === '1', tagName);
   });
 
@@ -341,6 +320,7 @@ window.addEventListener("load", function () {
     }
   }), function (t, tagName) {
     var elem = this.querySelector('div');
+    t.plan(1);
     t.ok(elem.textContent === 'Hello, John', tagName);
   });
 
@@ -361,6 +341,7 @@ window.addEventListener("load", function () {
     }
   }), function (t, tagName) {
     var elems = this.querySelectorAll('div');
+    t.plan(1);
     t.ok(elems.length === 1 && elems[0].textContent === 'Hello', tagName);
   });
 
@@ -370,16 +351,7 @@ window.addEventListener("load", function () {
       <!-- foo -->
     */}
   }), function (t, tagName) {
+    t.plan(1);
     t.ok(this.querySelector('h1'), tagName);
   });
-
-  var resultElem = document.getElementById("testResult");
-  resultElem.textContent = `Success: ${t.successCount} Fail: ${t.failCount}`;
-  if (!t.failCount && location.hash) {
-    resultElem.style.color = "yellow";
-  } else if (t.failCount > 0) {
-    resultElem.style.color = "red";
-  } else {
-    resultElem.style.color = 'green';
-  }
 });
