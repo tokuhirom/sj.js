@@ -58,8 +58,24 @@ window.addEventListener("load", function () {
     }
   }
 
+  runTest('test-disabled', sj.tag('test-disabled', {
+    template: function() {/*
+        <div sj-disabled="f">f</div>
+        <div sj-disabled="t">t</div>
+    */},
+    initialize: function() {
+      this.scope.t = true;
+      this.scope.f = false;
+    }
+  }), function (t, tagName) {
+    var divs = this.querySelectorAll('div');
+    t.ok(divs.length == 2, tagName);
+    t.ok(!divs[0].getAttribute('disabled'), tagName);
+    t.ok(divs[1].getAttribute('disabled')==='disabled', tagName);
+  });
+
   // regression test
-  runTest('test-class', sj.tag('test-class', {
+  runTest('test-multi-attributes', sj.tag('test-multi-attributes', {
     template: function() {/*
         <div class="b" sj-repeat="x in books">
             <div class='book'>{{x.name}}</div>

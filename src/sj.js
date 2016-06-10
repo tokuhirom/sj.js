@@ -23,6 +23,12 @@ const sj_attr2event = {
   'sj-submit': 'onsubmit'
 };
 
+const sj_boolean_attributes = {
+  'sj-disabled': 'disabled',
+  'sj-required': 'required',
+  'sj-checked': 'checked'
+};
+
 function isFormElement(elem) {
   return elem instanceof HTMLInputElement
          || elem instanceof HTMLTextAreaElement
@@ -184,6 +190,12 @@ class SJRenderer {
 
         const e = elem.querySelector('*');
         forRenderer = new ForRenderer(this, e, scope[container], scope, varName);
+      } else if (sj_boolean_attributes[attr.name]) {
+        const attribute = sj_boolean_attributes[attr.name];
+        const result = sjExpression.getValueByPath(scope, attr.value);
+        if (result) {
+          IncrementalDOM.attr(attribute, attribute);
+        }
       }
     } else {
       const labelValue = this.replaceVariables(attr.value, scope);

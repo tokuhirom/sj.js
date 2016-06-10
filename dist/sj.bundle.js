@@ -2943,6 +2943,12 @@ var sj_attr2event = {
   'sj-submit': 'onsubmit'
 };
 
+var sj_boolean_attributes = {
+  'sj-disabled': 'disabled',
+  'sj-required': 'required',
+  'sj-checked': 'checked'
+};
+
 function isFormElement(elem) {
   return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
 }
@@ -3155,6 +3161,12 @@ var SJRenderer = function () {
 
           var e = elem.querySelector('*');
           forRenderer = new ForRenderer(this, e, scope[container], scope, varName);
+        } else if (sj_boolean_attributes[attr.name]) {
+          var attribute = sj_boolean_attributes[attr.name];
+          var result = sjExpression.getValueByPath(scope, attr.value);
+          if (result) {
+            IncrementalDOM.attr(attribute, attribute);
+          }
         }
       } else {
         var labelValue = this.replaceVariables(attr.value, scope);
