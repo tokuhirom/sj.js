@@ -3103,17 +3103,19 @@ var SJRenderer = function () {
       for (var i = 0, l = attrs.length; i < l; ++i) {
         var attr = attrs[i];
         var attrName = attr.name;
-        var hasModelAttribute = void 0;
 
         var _renderAttribute = this.renderAttribute(attrName, attr, elem, scope);
 
         var _renderAttribute2 = _slicedToArray(_renderAttribute, 2);
 
-        hasModelAttribute = _renderAttribute2[0];
-        forRenderer = _renderAttribute2[1];
+        var hasModelAttribute = _renderAttribute2[0];
+        var gotForRenderer = _renderAttribute2[1];
 
         if (hasModelAttribute) {
           modelName = attr.value;
+        }
+        if (gotForRenderer) {
+          forRenderer = gotForRenderer;
         }
       }
       return [modelName, forRenderer];
