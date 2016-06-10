@@ -2751,7 +2751,8 @@ var Parser = function () {
         var rest = m[2];
 
         trace('rest: ' + rest);
-        return [scope[ident], rest];
+        var val = scope ? scope[ident] : undefined;
+        return [val, rest];
       } else {
         return;
       }
@@ -2769,7 +2770,8 @@ var Parser = function () {
         var rest = m[2];
 
         trace('parsePath: ' + namespace + ', ' + rest);
-        return this.parsePath(scope[namespace], rest);
+        var val = scope ? scope[namespace] : undefined;
+        return this.parsePath(val, rest);
       } else {
         return this.parseLeaf(scope, path);
       }

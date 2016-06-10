@@ -15,7 +15,8 @@ require('String.prototype.startsWith');
       if (m) {
         const [ident, rest] = [m[1], m[2]];
         trace(`rest: ${rest}`);
-        return [scope[ident], rest];
+        const val = scope ? scope[ident] : undefined;
+        return [val, rest];
       } else {
         return;
       }
@@ -28,7 +29,8 @@ require('String.prototype.startsWith');
       if (m) {
         const [namespace, rest] = [m[1], m[2]];
         trace(`parsePath: ${namespace}, ${rest}`);
-        return this.parsePath(scope[namespace], rest);
+        const val = scope ? scope[namespace] : undefined;
+        return this.parsePath(val, rest);
       } else {
         return this.parseLeaf(scope, path);
       }

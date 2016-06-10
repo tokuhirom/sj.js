@@ -1,8 +1,8 @@
-const e = require('../src/sj-expression').sjExpression;
+const e = require('../src/sj-expression');
 const test = require('tape');
 
 test('getValueByPath', t => {
-  t.plan(7);
+  t.plan(8);
 
   t.test('can get value by path', t => {
     t.plan(1);
@@ -11,6 +11,10 @@ test('getValueByPath', t => {
   t.test('allows $ in path', t => {
     t.plan(1);
     t.equal(e.getValueByPath({"$x": "y"}, '$x'), 'y');
+  });
+  t.test('returns undefined if undefined path', t => {
+    t.plan(1);
+    t.equal(e.getValueByPath({"$x": "y"}, 'x.y.z'), undefined);
   });
   t.test('allows nested path', t => {
     t.plan(1);
