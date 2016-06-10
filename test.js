@@ -58,6 +58,18 @@ window.addEventListener("load", function () {
     }
   }
 
+  runTest('test-input-value', sj.tag('test-input-value', {
+    template: function() {/*
+                             <input type="text" sj-model="bar">
+    */},
+    initialize: function() {
+      this.scope.bar = 'hoge';
+    }
+  }), function (t, tagName) {
+    var input = this.querySelector('input');
+    t.ok(input.value === 'hoge', tagName);
+  });
+
   runTest('test-disabled', sj.tag('test-disabled', {
     template: function() {/*
         <div sj-disabled="f">f</div>
