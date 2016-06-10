@@ -1074,6 +1074,63 @@
 
 
 },{}],2:[function(require,module,exports){
+/*! http://mths.be/startswith v0.2.0 by @mathias */
+if (!String.prototype.startsWith) {
+	(function() {
+		'use strict'; // needed to support `apply`/`call` with `undefined`/`null`
+		var defineProperty = (function() {
+			// IE 8 only supports `Object.defineProperty` on DOM elements
+			try {
+				var object = {};
+				var $defineProperty = Object.defineProperty;
+				var result = $defineProperty(object, object, object) && $defineProperty;
+			} catch(error) {}
+			return result;
+		}());
+		var toString = {}.toString;
+		var startsWith = function(search) {
+			if (this == null) {
+				throw TypeError();
+			}
+			var string = String(this);
+			if (search && toString.call(search) == '[object RegExp]') {
+				throw TypeError();
+			}
+			var stringLength = string.length;
+			var searchString = String(search);
+			var searchLength = searchString.length;
+			var position = arguments.length > 1 ? arguments[1] : undefined;
+			// `ToInteger`
+			var pos = position ? Number(position) : 0;
+			if (pos != pos) { // better `isNaN`
+				pos = 0;
+			}
+			var start = Math.min(Math.max(pos, 0), stringLength);
+			// Avoid the `indexOf` call if no match is possible
+			if (searchLength + start > stringLength) {
+				return false;
+			}
+			var index = -1;
+			while (++index < searchLength) {
+				if (string.charCodeAt(start + index) != searchString.charCodeAt(index)) {
+					return false;
+				}
+			}
+			return true;
+		};
+		if (defineProperty) {
+			defineProperty(String.prototype, 'startsWith', {
+				'value': startsWith,
+				'configurable': true,
+				'writable': true
+			});
+		} else {
+			String.prototype.startsWith = startsWith;
+		}
+	}());
+}
+
+},{}],3:[function(require,module,exports){
 /**
  * @license
  * Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
@@ -2103,7 +2160,7 @@ window.CustomElements.addModule(function(scope) {
     window.addEventListener(loadEvent, bootstrap);
   }
 })(window.CustomElements);
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function(self) {
   'use strict';
 
@@ -2538,7 +2595,7 @@ window.CustomElements.addModule(function(scope) {
   self.fetch.polyfill = true
 })(typeof self !== 'undefined' ? self : this);
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 'use strict';
 
 // polyfills
@@ -2552,7 +2609,7 @@ var es5 = require('./sj-es5.js');
 module.exports.Element = sj.SJElement;
 module.exports.tag = es5.sjtag;
 
-},{"./polyfill.js":5,"./sj-es5.js":6,"./sj.js":8,"webcomponents.js/CustomElements.js":2,"whatwg-fetch/fetch.js":3}],5:[function(require,module,exports){
+},{"./polyfill.js":6,"./sj-es5.js":7,"./sj.js":9,"webcomponents.js/CustomElements.js":3,"whatwg-fetch/fetch.js":4}],6:[function(require,module,exports){
 "use strict";
 
 // polyfill
@@ -2564,7 +2621,7 @@ if (!window.customElements) {
     };
 }
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2662,7 +2719,7 @@ function sjtag(tagName, opts) {
 
 module.exports.sjtag = sjtag;
 
-},{"./sj":8}],7:[function(require,module,exports){
+},{"./sj":9}],8:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -2671,14 +2728,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-// polyfill
-// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/String/startsWith
-if (!String.prototype.startsWith) {
-  String.prototype.startsWith = function (searchString, position) {
-    position = position || 0;
-    return this.substr(position, searchString.length) === searchString;
-  };
-}
+require('String.prototype.startsWith');
 
 var trace = function trace(msg) {
   // console.log(msg);
@@ -2853,7 +2903,7 @@ function setValueByPath(scope, path, value) {
 module.exports.getValueByPath = getValueByPath;
 module.exports.setValueByPath = setValueByPath;
 
-},{}],8:[function(require,module,exports){
+},{"String.prototype.startsWith":2}],9:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
@@ -2868,6 +2918,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var sjExpression = require('./sj-expression.js');
 var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
+
+require('String.prototype.startsWith');
 
 var sj_attr2event = {
   'sj-click': 'onclick',
@@ -3180,5 +3232,5 @@ var SJElement = function (_HTMLElement2) {
 module.exports.SJElement = SJElement;
 module.exports.SJRenderer = SJRenderer;
 
-},{"./sj-expression.js":7,"incremental-dom/dist/incremental-dom.js":1}]},{},[4])(4)
+},{"./sj-expression.js":8,"String.prototype.startsWith":2,"incremental-dom/dist/incremental-dom.js":1}]},{},[5])(5)
 });
