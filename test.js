@@ -58,6 +58,20 @@ window.addEventListener("load", function () {
     }
   }
 
+  // regression test
+  runTest('test-class', sj.tag('test-class', {
+    template: function() {/*
+        <div class="b" sj-repeat="x in books">
+            <div class='book'>{{x.name}}</div>
+        </div>
+    */},
+    initialize: function() {
+      this.scope.books = [{"name":"foo"}, {"name":"bar"}];
+    }
+  }), function (t, tagName) {
+    t.ok(this.querySelectorAll('div.book').length === 2, tagName);
+  });
+
   runTest('test-events', sj.tag('test-events', {
     template: function() {/*
                              <button id="clickTest" sj-click="btnclick($event)">yay</button>

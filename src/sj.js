@@ -142,10 +142,12 @@ class SJRenderer {
     for (let i = 0, l = attrs.length; i < l; ++i) {
       const attr = attrs[i];
       const attrName = attr.name;
-      let hasModelAttribute;
-      [hasModelAttribute, forRenderer] = this.renderAttribute(attrName, attr, elem, scope);
+      const [hasModelAttribute, gotForRenderer] = this.renderAttribute(attrName, attr, elem, scope);
       if (hasModelAttribute) {
         modelName = attr.value;
+      }
+      if (gotForRenderer) {
+          forRenderer = gotForRenderer;
       }
     }
     return [modelName, forRenderer];
