@@ -3156,9 +3156,9 @@ function isFormElement(elem) {
   return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
 }
 
-var ForRenderer = function () {
-  function ForRenderer(renderer, element, items, scope, varName) {
-    _classCallCheck(this, ForRenderer);
+var RepeatRenderer = function () {
+  function RepeatRenderer(renderer, element, items, scope, varName) {
+    _classCallCheck(this, RepeatRenderer);
 
     this.renderer = renderer;
     this.element = element;
@@ -3167,7 +3167,7 @@ var ForRenderer = function () {
     this.varName = varName;
   }
 
-  _createClass(ForRenderer, [{
+  _createClass(RepeatRenderer, [{
     key: 'render',
     value: function render() {
       var i = 0;
@@ -3201,7 +3201,7 @@ var ForRenderer = function () {
     }
   }]);
 
-  return ForRenderer;
+  return RepeatRenderer;
 }();
 
 var SJRenderer = function () {
@@ -3310,13 +3310,13 @@ var SJRenderer = function () {
         var _renderAttribute2 = _slicedToArray(_renderAttribute, 2);
 
         var hasModelAttribute = _renderAttribute2[0];
-        var gotForRenderer = _renderAttribute2[1];
+        var gotRepeatRenderer = _renderAttribute2[1];
 
         if (hasModelAttribute) {
           modelName = attr.value;
         }
-        if (gotForRenderer) {
-          forRenderer = gotForRenderer;
+        if (gotRepeatRenderer) {
+          forRenderer = gotRepeatRenderer;
         }
       }
       return [modelName, forRenderer];
@@ -3352,7 +3352,7 @@ var SJRenderer = function () {
           var container = m[2];
 
           var e = elem.querySelector('*');
-          forRenderer = new ForRenderer(this, e, scope[container], scope, varName);
+          forRenderer = new RepeatRenderer(this, e, scope[container], scope, varName);
         } else if (sj_boolean_attributes[attr.name]) {
           var attribute = sj_boolean_attributes[attr.name];
           var result = sjExpression.getValueByPath(scope, attr.value);

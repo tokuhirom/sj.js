@@ -41,7 +41,7 @@ function isFormElement(elem) {
          || elem instanceof HTMLSelectElement;
 }
 
-class ForRenderer {
+class RepeatRenderer {
   constructor(renderer, element, items, scope, varName) {
     this.renderer = renderer;
     this.element = element;
@@ -145,12 +145,12 @@ class SJRenderer {
     for (let i = 0, l = attrs.length; i < l; ++i) {
       const attr = attrs[i];
       const attrName = attr.name;
-      const [hasModelAttribute, gotForRenderer] = this.renderAttribute(attrName, attr, elem, scope);
+      const [hasModelAttribute, gotRepeatRenderer] = this.renderAttribute(attrName, attr, elem, scope);
       if (hasModelAttribute) {
         modelName = attr.value;
       }
-      if (gotForRenderer) {
-        forRenderer = gotForRenderer;
+      if (gotRepeatRenderer) {
+        forRenderer = gotRepeatRenderer;
       }
     }
     return [modelName, forRenderer];
@@ -183,7 +183,7 @@ class SJRenderer {
         const container = m[2];
 
         const e = elem.querySelector('*');
-        forRenderer = new ForRenderer(this, e, scope[container], scope, varName);
+        forRenderer = new RepeatRenderer(this, e, scope[container], scope, varName);
       } else if (sj_boolean_attributes[attr.name]) {
         const attribute = sj_boolean_attributes[attr.name];
         const result = sjExpression.getValueByPath(scope, attr.value);
