@@ -2,7 +2,7 @@ const e = require('../src/sj-expression');
 const test = require('tape');
 
 test('getValueByPath', t => {
-  t.plan(8);
+  t.plan(9);
 
   t.test('can get value by path', t => {
     t.plan(1);
@@ -50,6 +50,11 @@ test('getValueByPath', t => {
           return this.y * 3;
         }
       }, 'yy()', {"y":6}), 18);
+  });
+  t.test('!x', t => {
+    t.plan(2);
+    t.equal(e.getValueByPath({ "x": true }, '!x'), false);
+    t.equal(e.getValueByPath({ "x": false }, '!x'), true);
   });
 });
 test('setValueByPath', t => {

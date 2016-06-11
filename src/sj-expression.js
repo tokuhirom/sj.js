@@ -50,6 +50,8 @@ class Compiler {
         return node[1];
       case '.':
         return 'getDot($scope, [' + node[1].map(e => `"${e[1]}"`).join(",") + "])";
+      case '!':
+        return `!(${this._compile(node[1])})`;
       case 'FUNCALL':
         return this._compile(node[1]) + '.apply(this, [' + node[2].map(e => this._compile(e)) + '])';
       default:

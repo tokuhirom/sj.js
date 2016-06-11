@@ -16,7 +16,19 @@ class Parser {
   }
 
   expr() {
-    return this.funcall();
+    return this.not();
+  }
+
+  // not = '!'? funcall
+  not() {
+    if (this.token('!')) {
+      const funcall = this.funcall();
+      if (funcall) {
+        return ['!', funcall];
+      }
+    } else {
+      return this.funcall();
+    }
   }
 
   // funcall = dot '(' params ')'

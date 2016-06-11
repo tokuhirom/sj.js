@@ -10,6 +10,7 @@ const cases = [
   ['x(y)', [ 'FUNCALL', [ 'IDENT', 'x' ], [ [ 'IDENT', 'y' ] ] ]],
   ['x.y(3,5)', [ 'FUNCALL', [ '.', [ [ 'IDENT', 'x' ], [ 'IDENT', 'y' ] ] ], [ [ 'NUMBER', '3' ], [ 'NUMBER', '5' ] ] ]],
   ['add(3,5)', [ 'FUNCALL', [ 'IDENT', 'add' ], [ [ 'NUMBER', '3' ], [ 'NUMBER', '5' ] ] ]],
+  ['!add(3,5)', [ '!', [ 'FUNCALL', [ 'IDENT', 'add' ], [ [ 'NUMBER', '3' ], [ 'NUMBER', '5' ] ] ] ]],
 ];
 
 for (const c of cases) {
