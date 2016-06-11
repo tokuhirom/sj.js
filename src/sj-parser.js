@@ -1,3 +1,5 @@
+// See https://tomcopeland.blogs.com/EcmaScript.html
+
 class Parser {
   constructor(expr) {
     this.origExpr = expr;
@@ -69,7 +71,7 @@ class Parser {
   // dot = term '.' ident
   //     = term
   dot() {
-    let term = this.term();
+    let term = this.additive();
     if (this.token('.')) {
       const terms = [term];
       while (true) {
@@ -87,14 +89,48 @@ class Parser {
     }
   }
 
+  // additive = multiplicative ( [ '+' | '-' ] multiplicative )*
+  additive() {
+    let m = this.multiplicative();
+    while (true) {
+      const add = this.token(['+', '-']);
+      if (!add) {
+        return m;
+      }
+      const lhs = this.multiplicative();
+      if (!lhs) {
+        throw `Missing multiplicative after ${add}: ${this.origExpr}`;
+      }
+      m = [add, m, lhs];
+    }
+  }
+
+  multiplicative() {
+    return this.primary_expression();
+  }
+
   // term = number | ident
-  term() {
+  primary_expression() {
     const number = this.number();
     if (number) {
       return number;
     }
+
     const ident = this.ident();
-    return ident;
+    if (ident) {
+      return ident;
+    }
+
+    if (this.token('(')) {
+      const expr = this.expr();
+      if (!expr) {
+        throw `Missing expression after '(': ${this.origExpr}`;
+      }
+      if (!this.token(')')) {
+        throw `Missing closing paren after '(': ${this.origExpr}`;
+      }
+      return expr;
+    }
   }
 
   ident() {
@@ -120,13 +156,17 @@ class Parser {
   }
 
   token(token) {
-    this.input = this.input.replace(/^\s*/, '');
-    if (this.input.startsWith(token)) {
-      this.trace(`trace match ${token}`);
+    const tokens = Array.isArray(token) ? token : [token];
 
-      this.input = this.input.substr(token.length);
+    for (const token of tokens) {
       this.input = this.input.replace(/^\s*/, '');
-      return token;
+      if (this.input.startsWith(token)) {
+        this.trace(`trace match ${token}`);
+
+        this.input = this.input.substr(token.length);
+        this.input = this.input.replace(/^\s*/, '');
+        return token;
+      }
     }
   }
 

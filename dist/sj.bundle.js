@@ -2743,10 +2743,6 @@ function _classCallCheck(instance, Constructor) {
 require('String.prototype.startsWith');
 var Parser = require('./sj-parser.js');
 
-var trace = function trace(msg) {
-  // console.log(msg);
-};
-
 function getDot(scope, items) {
   var retval = void 0;
   var _iteratorNormalCompletion = true;
@@ -2781,19 +2777,44 @@ function getDot(scope, items) {
   return retval;
 }
 
-var Compiler = function () {
-  function Compiler(expr) {
-    _classCallCheck(this, Compiler);
+var Expression = function () {
+  function Expression(code) {
+    _classCallCheck(this, Expression);
 
-    this.parser = new Parser(expr);
+    if (!code) {
+      throw "Missing code";
+    }
+    this.code = code;
+  }
+
+  _createClass(Expression, [{
+    key: 'apply',
+    value: function apply(scope, self) {
+      return this.code.apply(self, [scope, getDot]);
+    }
+  }], [{
+    key: 'compile',
+    value: function compile(expr) {
+      var code = new Compiler().compile(expr);
+      return new Expression(code);
+    }
+  }]);
+
+  return Expression;
+}();
+
+var Compiler = function () {
+  function Compiler() {
+    _classCallCheck(this, Compiler);
   }
 
   _createClass(Compiler, [{
     key: 'compile',
-    value: function compile() {
-      var node = this.parser.parse();
+    value: function compile(expr) {
+      var parser = new Parser(expr);
+      var node = parser.parse();
       var code = this._compile(node);
-      return new Function('$scope', 'getDot', 'self', 'return ' + code);
+      return new Function('$scope', 'getDot', 'return ' + code);
     }
   }, {
     key: '_compile',
@@ -2809,8 +2830,14 @@ var Compiler = function () {
           return 'getDot($scope, [' + node[1].map(function (e) {
             return '"' + e[1] + '"';
           }).join(",") + "])";
+        case '!':
+          return '!(' + this._compile(node[1]) + ')';
+        case '+':
+          return '(' + this._compile(node[1]) + ') + (' + this._compile(node[2]) + ')';
+        case '-':
+          return '(' + this._compile(node[1]) + ') - (' + this._compile(node[2]) + ')';
         case 'FUNCALL':
-          return this._compile(node[1]) + '.apply(self, [' + node[2].map(function (e) {
+          return this._compile(node[1]) + '.apply(this, [' + node[2].map(function (e) {
             return _this._compile(e);
           }) + '])';
         default:
@@ -2822,14 +2849,9 @@ var Compiler = function () {
   return Compiler;
 }();
 
-function compileExpression(expr) {
-  var compiler = new Compiler(expr);
-  return compiler.compile();
-}
-
 function getValueByPath(scope, expr, self) {
-  var code = compileExpression(expr);
-  return code.apply(self, [scope, getDot, self]);
+  var e = Expression.compile(expr);
+  return e.apply(scope, self);
 }
 
 function setValueByPath(scope, path, value) {
@@ -2846,6 +2868,7 @@ function setValueByPath(scope, path, value) {
   scope[path] = value;
 }
 
+module.exports.Expression = Expression;
 module.exports.getValueByPath = getValueByPath;
 module.exports.setValueByPath = setValueByPath;
 
@@ -2867,6 +2890,8 @@ function _classCallCheck(instance, Constructor) {
     throw new TypeError("Cannot call a class as a function");
   }
 }
+
+// See https://tomcopeland.blogs.com/EcmaScript.html
 
 var Parser = function () {
   function Parser(expr) {
@@ -2891,7 +2916,22 @@ var Parser = function () {
   }, {
     key: 'expr',
     value: function expr() {
-      return this.funcall();
+      return this.not();
+    }
+
+    // not = '!'? funcall
+
+  }, {
+    key: 'not',
+    value: function not() {
+      if (this.token('!')) {
+        var funcall = this.funcall();
+        if (funcall) {
+          return ['!', funcall];
+        }
+      } else {
+        return this.funcall();
+      }
     }
 
     // funcall = dot '(' params ')'
@@ -2941,7 +2981,7 @@ var Parser = function () {
   }, {
     key: 'dot',
     value: function dot() {
-      var term = this.term();
+      var term = this.additive();
       if (this.token('.')) {
         var terms = [term];
         while (true) {
@@ -2959,17 +2999,55 @@ var Parser = function () {
       }
     }
 
+    // additive = multiplicative ( [ '+' | '-' ] multiplicative )*
+
+  }, {
+    key: 'additive',
+    value: function additive() {
+      var m = this.multiplicative();
+      while (true) {
+        var add = this.token(['+', '-']);
+        if (!add) {
+          return m;
+        }
+        var lhs = this.multiplicative();
+        if (!lhs) {
+          throw 'Missing multiplicative after ' + add + ': ' + this.origExpr;
+        }
+        m = [add, m, lhs];
+      }
+    }
+  }, {
+    key: 'multiplicative',
+    value: function multiplicative() {
+      return this.primary_expression();
+    }
+
     // term = number | ident
 
   }, {
-    key: 'term',
-    value: function term() {
+    key: 'primary_expression',
+    value: function primary_expression() {
       var number = this.number();
       if (number) {
         return number;
       }
+
       var ident = this.ident();
-      return ident;
+      if (ident) {
+        return ident;
+      }
+
+      if (this.token('(')) {
+        var expr = this.expr();
+        if (!expr) {
+          throw 'Missing expression after \'(\': ' + this.origExpr;
+        }
+        if (!this.token(')')) {
+          throw 'Missing closing paren after \'(\': ' + this.origExpr;
+        }
+        return expr;
+      }
     }
   }, {
     key: 'ident',
@@ -2999,13 +3077,38 @@ var Parser = function () {
   }, {
     key: 'token',
     value: function token(_token) {
-      this.input = this.input.replace(/^\s*/, '');
-      if (this.input.startsWith(_token)) {
-        this.trace('trace match ' + _token);
+      var tokens = Array.isArray(_token) ? _token : [_token];
 
-        this.input = this.input.substr(_token.length);
-        this.input = this.input.replace(/^\s*/, '');
-        return _token;
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = tokens[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var token = _step.value;
+
+          this.input = this.input.replace(/^\s*/, '');
+          if (this.input.startsWith(token)) {
+            this.trace('trace match ' + token);
+
+            this.input = this.input.substr(token.length);
+            this.input = this.input.replace(/^\s*/, '');
+            return token;
+          }
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
       }
     }
   }, {
@@ -3231,6 +3334,15 @@ function isFormElement(elem) {
   return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
 }
 
+var EXPR_CACHE = {};
+function evalExpression(scope, expr, self) {
+  if (!EXPR_CACHE[expr]) {
+    EXPR_CACHE[expr] = sjExpression.Expression.compile(expr);
+  }
+  var e = EXPR_CACHE[expr];
+  return e.apply(scope, self);
+}
+
 var RepeatRenderer = function () {
   function RepeatRenderer(renderer, element, items, scope, varName) {
     _classCallCheck(this, RepeatRenderer);
@@ -3332,7 +3444,7 @@ var SJRenderer = function () {
       var modelName = _renderAttributes2[0];
       var forRenderer = _renderAttributes2[1];
 
-      var modelValue = modelName ? sjExpression.getValueByPath(scope, modelName, this.targetElement) : null;
+      var modelValue = modelName ? evalExpression(scope, modelName, this.targetElement) : null;
       var isForm = isFormElement(elem);
       if (modelName && isForm) {
         IncrementalDOM.attr("value", modelValue);
@@ -3363,7 +3475,7 @@ var SJRenderer = function () {
     value: function shouldHideElement(elem, scope) {
       var cond = elem.getAttribute('sj-if');
       if (cond) {
-        var val = sjExpression.getValueByPath(scope, cond, this.targetElement);
+        var val = evalExpression(scope, cond, this.targetElement);
         if (!val) {
           return true;
         }
@@ -3409,7 +3521,7 @@ var SJRenderer = function () {
           IncrementalDOM.attr(event, function (e) {
             var currentScope = Object.assign({}, scope);
             currentScope['$event'] = e;
-            sjExpression.getValueByPath(currentScope, attr.value, _this2.targetElement);
+            evalExpression(currentScope, attr.value, _this2.targetElement);
           });
         } else if (attr.name === 'sj-model') {
           isModelAttribute = attr.value;
@@ -3430,7 +3542,7 @@ var SJRenderer = function () {
           forRenderer = new RepeatRenderer(this, e, scope[container], scope, varName);
         } else if (sj_boolean_attributes[attr.name]) {
           var attribute = sj_boolean_attributes[attr.name];
-          var result = sjExpression.getValueByPath(scope, attr.value);
+          var result = evalExpression(scope, attr.value);
           if (result) {
             IncrementalDOM.attr(attribute, attribute);
           }
@@ -3450,7 +3562,7 @@ var SJRenderer = function () {
         if (s === '$_') {
           return JSON.stringify(scope);
         } else {
-          return sjExpression.getValueByPath(scope, s, _this3.targetElement);
+          return evalExpression(scope, s, _this3.targetElement);
         }
       });
     }
