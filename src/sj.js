@@ -41,6 +41,15 @@ function isFormElement(elem) {
          || elem instanceof HTMLSelectElement;
 }
 
+const EXPR_CACHE = {};
+function evalExpression(scope, expr, self) {
+  if (!EXPR_CACHE[expr]) {
+    EXPR_CACHE[expr] = sjExpression.Expression.compile(expr);
+  }
+  const e = EXPR_CACHE[expr];
+  return e.apply(scope, self);
+}
+
 class RepeatRenderer {
   constructor(renderer, element, items, scope, varName) {
     this.renderer = renderer;
@@ -100,7 +109,7 @@ class SJRenderer {
 
     IncrementalDOM.elementOpenStart(tagName);
     const [modelName, forRenderer] = this.renderAttributes(elem, scope);
-    const modelValue = modelName? sjExpression.getValueByPath(scope, modelName, this.targetElement) : null;
+    const modelValue = modelName? evalExpression(scope, modelName, this.targetElement) : null;
     const isForm = isFormElement(elem);
     if (modelName && isForm) {
       IncrementalDOM.attr("value", modelValue);
@@ -130,7 +139,7 @@ class SJRenderer {
   shouldHideElement(elem, scope) {
     const cond = elem.getAttribute('sj-if');
     if (cond) {
-      const val = sjExpression.getValueByPath(scope, cond, this.targetElement);
+      const val = evalExpression(scope, cond, this.targetElement);
       if (!val) {
         return true;
       }
@@ -165,7 +174,7 @@ class SJRenderer {
         IncrementalDOM.attr(event, (e) => {
           const currentScope = Object.assign({}, scope);
           currentScope['$event'] = e;
-          sjExpression.getValueByPath(currentScope, attr.value, this.targetElement);
+          evalExpression(currentScope, attr.value, this.targetElement);
         });
       } else if (attr.name === 'sj-model') {
         isModelAttribute = attr.value;
@@ -186,7 +195,7 @@ class SJRenderer {
         forRenderer = new RepeatRenderer(this, e, scope[container], scope, varName);
       } else if (sj_boolean_attributes[attr.name]) {
         const attribute = sj_boolean_attributes[attr.name];
-        const result = sjExpression.getValueByPath(scope, attr.value);
+        const result = evalExpression(scope, attr.value);
         if (result) {
           IncrementalDOM.attr(attribute, attribute);
         }
@@ -203,7 +212,7 @@ class SJRenderer {
       if (s === '$_') {
         return JSON.stringify(scope);
       } else {
-        return sjExpression.getValueByPath(scope, s, this.targetElement);
+        return evalExpression(scope, s, this.targetElement);
       }
     });
   }

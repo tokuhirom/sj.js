@@ -1,10 +1,6 @@
 require('String.prototype.startsWith');
 const Parser = require('./sj-parser.js');
 
-const trace = function (msg) {
-  // console.log(msg);
-};
-
 function getDot(scope, items) {
   let retval;
   for (const item of items) {
@@ -17,15 +13,33 @@ function getDot(scope, items) {
   return retval;
 }
 
-class Compiler {
-  constructor(expr) {
-    this.parser = new Parser(expr);
+class Expression {
+  constructor(code) {
+    if (!code) {
+      throw "Missing code";
+    }
+    this.code = code;
   }
 
-  compile() {
-    const node = this.parser.parse();
+  static compile(expr) {
+    const code = new Compiler().compile(expr);
+    return new Expression(code);
+  }
+
+  apply(scope, self) {
+    return this.code.apply(self, [scope, getDot]);
+  }
+}
+
+class Compiler {
+  constructor() {
+  }
+
+  compile(expr) {
+    const parser = new Parser(expr);
+    const node = parser.parse();
     const code = this._compile(node);
-    return new Function('$scope', 'getDot', 'self', 'return ' + code);
+    return new Function('$scope', 'getDot', 'return ' + code);
   }
 
   _compile(node) {
@@ -37,21 +51,16 @@ class Compiler {
       case '.':
         return 'getDot($scope, [' + node[1].map(e => `"${e[1]}"`).join(",") + "])";
       case 'FUNCALL':
-        return this._compile(node[1]) + '.apply(self, [' + node[2].map(e => this._compile(e)) + '])';
+        return this._compile(node[1]) + '.apply(this, [' + node[2].map(e => this._compile(e)) + '])';
       default:
         throw "Unknown node: " + node[0];
     }
   }
 }
 
-function compileExpression(expr) {
-  const compiler = new Compiler(expr);
-  return compiler.compile();
-}
-
 function getValueByPath(scope, expr, self) {
-  const code = compileExpression(expr);
-  return code.apply(self, [scope, getDot, self]);
+  const e = Expression.compile(expr);
+  return e.apply(scope, self);
 }
 
 function setValueByPath(scope, path, value) {
@@ -68,6 +77,7 @@ function setValueByPath(scope, path, value) {
   scope[path] = value;
 }
 
+module.exports.Expression = Expression;
 module.exports.getValueByPath = getValueByPath;
 module.exports.setValueByPath = setValueByPath;
 
