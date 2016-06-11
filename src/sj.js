@@ -1,6 +1,12 @@
 const sjExpression = require('./sj-expression.js');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
+// hack
+// https://github.com/google/incremental-dom/issues/239
+IncrementalDOM.attributes.value = function (el, name, value) {
+  el.value = value
+};
+
 require('String.prototype.startsWith');
 
 const sj_attr2event = {

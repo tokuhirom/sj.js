@@ -3118,6 +3118,12 @@ function _classCallCheck(instance, Constructor) {
 var sjExpression = require('./sj-expression.js');
 var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
+// hack
+// https://github.com/google/incremental-dom/issues/239
+IncrementalDOM.attributes.value = function (el, name, value) {
+  el.value = value;
+};
+
 require('String.prototype.startsWith');
 
 var sj_attr2event = {
