@@ -2610,7 +2610,7 @@ var elem = require('./sj-element.js');
 module.exports.Element = elem.Element;
 module.exports.tag = tag.sjtag;
 
-},{"./polyfill.js":6,"./sj-element.js":7,"./sj-tag.js":9,"webcomponents.js/CustomElements.js":3,"whatwg-fetch/fetch.js":4}],6:[function(require,module,exports){
+},{"./polyfill.js":6,"./sj-element.js":7,"./sj-tag.js":10,"webcomponents.js/CustomElements.js":3,"whatwg-fetch/fetch.js":4}],6:[function(require,module,exports){
 "use strict";
 
 // polyfill
@@ -2721,34 +2721,8 @@ var SJElement = function (_HTMLElement2) {
 
 module.exports.Element = SJElement;
 
-},{"./sj":10}],8:[function(require,module,exports){
+},{"./sj":11}],8:[function(require,module,exports){
 'use strict';
-
-var _slicedToArray = function () {
-  function sliceIterator(arr, i) {
-    var _arr = [];var _n = true;var _d = false;var _e = undefined;try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;_e = err;
-    } finally {
-      try {
-        if (!_n && _i["return"]) _i["return"]();
-      } finally {
-        if (_d) throw _e;
-      }
-    }return _arr;
-  }return function (arr, i) {
-    if (Array.isArray(arr)) {
-      return arr;
-    } else if (Symbol.iterator in Object(arr)) {
-      return sliceIterator(arr, i);
-    } else {
-      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-    }
-  };
-}();
 
 var _createClass = function () {
   function defineProperties(target, props) {
@@ -2767,167 +2741,95 @@ function _classCallCheck(instance, Constructor) {
 }
 
 require('String.prototype.startsWith');
+var Parser = require('./sj-parser.js');
 
 var trace = function trace(msg) {
   // console.log(msg);
 };
 
-var Node = function Node(type) {
-  _classCallCheck(this, Node);
-};
+function getDot(scope, items) {
+  var retval = void 0;
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
 
-var Parser = function () {
-  function Parser(origPath, self) {
-    _classCallCheck(this, Parser);
+  try {
+    for (var _iterator = items[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var item = _step.value;
 
-    this.origPath = origPath;
-    this.self = self;
+      retval = scope[item];
+      scope = scope[item];
+      if (!retval) {
+        return;
+      }
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
   }
 
-  _createClass(Parser, [{
-    key: 'parseLeaf',
-    value: function parseLeaf(scope, path) {
-      var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)(.*)$/);
-      if (m) {
-        var ident = m[1];
-        var rest = m[2];
+  return retval;
+}
 
-        trace('rest: ' + rest);
-        var val = scope ? scope[ident] : undefined;
-        return [val, rest];
-      } else {
-        return;
-      }
-    }
+var Compiler = function () {
+  function Compiler(expr) {
+    _classCallCheck(this, Compiler);
 
-    // namespace = ( ident '.' )? ident
+    this.parser = new Parser(expr);
+  }
 
-  }, {
-    key: 'parsePath',
-    value: function parsePath(scope, path) {
-      trace('parsePath: ' + path);
-      var m = path.match(/^([$a-zA-Z][a-zA-Z0-9_-]*)\.(.*)$/);
-      if (m) {
-        var namespace = m[1];
-        var rest = m[2];
-
-        trace('parsePath: ' + namespace + ', ' + rest);
-        var val = scope ? scope[namespace] : undefined;
-        return this.parsePath(val, rest);
-      } else {
-        return this.parseLeaf(scope, path);
-      }
+  _createClass(Compiler, [{
+    key: 'compile',
+    value: function compile() {
+      var node = this.parser.parse();
+      var code = this._compile(node);
+      return new Function('$scope', 'getDot', 'self', 'return ' + code);
     }
   }, {
-    key: 'parseNumber',
-    value: function parseNumber(scope, path) {
-      var m = path.match(/^([1-9][0-9]*(?:\.[0-9]+)?)(.*)$/);
-      if (m) {
-        trace('parseNumber: ' + path + '. ' + m + '. ok');
-        return [parseFloat(m[1], 10), m[2]];
-      } else {
-        trace('parseNumber: ' + path + '. fail');
-      }
-    }
-  }, {
-    key: 'parseTerm',
-    value: function parseTerm(scope, path) {
-      var m = this.parsePath(scope, path);
-      if (m) {
-        return m;
-      }
-      return this.parseNumber(scope, path);
-    }
-  }, {
-    key: 'parseParams',
-    value: function parseParams(scope, path) {
-      if (!path.startsWith('(')) {
-        return;
-      }
-      path = path.substr(1);
+    key: '_compile',
+    value: function _compile(node) {
+      var _this = this;
 
-      var params = [];
-      while (true) {
-        var m = this.parseFuncall(scope, path);
-        if (!m) {
-          trace('No param: \'' + path + '\'');
-          break;
-        }
-        path = m[1];
-        trace('Got param: \'' + m + '\'');
-        params.push(m[0]);
-
-        path = path.replace(/^\s*/, '');
-        if (!path.startsWith(',')) {
-          trace('No more comma. break. ' + path);
-          break;
-        }
-        path = path.substr(1);
-        path = path.replace(/^\s*/, '');
-      }
-
-      path = path.replace(/^\s*/, '');
-      if (!path.startsWith(')')) {
-        throw 'Paren missmatch: \'' + path + '\': \'' + this.origPath + '\'';
-      }
-      path = path.substr(1);
-      path = path.replace(/^\s*/, '');
-      if (path.length > 0) {
-        throw 'There\'s trailing trash: ' + this.origPath;
-      }
-
-      return [params, path];
-    }
-  }, {
-    key: 'parseFuncall',
-    value: function parseFuncall(scope, path) {
-      if (!path) {
-        throw "Missing path";
-      }
-      var m = this.parseTerm(scope, path);
-      if (!m) {
-        return;
-      }
-
-      var _m = _slicedToArray(m, 2);
-
-      var got = _m[0];
-      var rest = _m[1];
-
-      if (rest) {
-        trace('got:' + got + ', ' + rest);
-        var _m2 = this.parseParams(scope, rest);
-        if (_m2) {
-          trace('apply: ' + rest);
-          return [got.apply(this.self, _m2[0]), _m2[1]];
-        } else {
-          return [got, rest];
-        }
-      } else {
-        return [got, rest];
+      switch (node[0]) {
+        case 'IDENT':
+          return '$scope.' + node[1];
+        case 'NUMBER':
+          return node[1];
+        case '.':
+          return 'getDot($scope, [' + node[1].map(function (e) {
+            return '"' + e[1] + '"';
+          }).join(",") + "])";
+        case 'FUNCALL':
+          return this._compile(node[1]) + '.apply(self, [' + node[2].map(function (e) {
+            return _this._compile(e);
+          }) + '])';
+        default:
+          throw "Unknown node: " + node[0];
       }
     }
   }]);
 
-  return Parser;
+  return Compiler;
 }();
 
-function getValueByPath(scope, path, self) {
-  if (!path) {
-    throw "Missing path";
-  }
-  trace('getValueByPath: ' + path);
-  var parser = new Parser(path, self);
-  var m = parser.parseFuncall(scope, path, path);
-  if (m) {
-    if (m[1]) {
-      throw 'Trailing trash: \'' + m[1] + '\' in \'' + path + '\'';
-    } else {
-      return m[0];
-    }
-  } else {
-    throw 'Cannot parse expression: \'' + path + '\'';
-  }
+function compileExpression(expr) {
+  var compiler = new Compiler(expr);
+  return compiler.compile();
+}
+
+function getValueByPath(scope, expr, self) {
+  var code = compileExpression(expr);
+  return code.apply(self, [scope, getDot, self]);
 }
 
 function setValueByPath(scope, path, value) {
@@ -2947,7 +2849,180 @@ function setValueByPath(scope, path, value) {
 module.exports.getValueByPath = getValueByPath;
 module.exports.setValueByPath = setValueByPath;
 
-},{"String.prototype.startsWith":2}],9:[function(require,module,exports){
+},{"./sj-parser.js":9,"String.prototype.startsWith":2}],9:[function(require,module,exports){
+'use strict';
+
+var _createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
+  };
+}();
+
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+
+var Parser = function () {
+  function Parser(expr) {
+    _classCallCheck(this, Parser);
+
+    this.origExpr = expr;
+    this.input = expr;
+  }
+
+  _createClass(Parser, [{
+    key: 'parse',
+    value: function parse() {
+      var expr = this.expr();
+      if (!expr) {
+        throw 'Parse failed: \'' + this.origExpr + '\'';
+      }
+      if (this.input) {
+        throw 'Parse failed: ' + this.input;
+      }
+      return expr;
+    }
+  }, {
+    key: 'expr',
+    value: function expr() {
+      return this.funcall();
+    }
+
+    // funcall = dot '(' params ')'
+
+  }, {
+    key: 'funcall',
+    value: function funcall() {
+      var term = this.dot();
+      if (!term) {
+        return;
+      }
+
+      if (this.token('(')) {
+        var params = this.params();
+        if (!this.token(')')) {
+          throw 'Paren missmatch: \'' + this.origExpr + '\'';
+        }
+        return ['FUNCALL', term, params];
+      } else {
+        return term;
+      }
+    }
+
+    // params = ( expr ',' )*
+
+  }, {
+    key: 'params',
+    value: function params() {
+      var params = [];
+      while (true) {
+        var expr = this.expr();
+        if (!expr) {
+          break;
+        }
+        params.push(expr);
+
+        if (!this.token(',')) {
+          break;
+        }
+      }
+      return params;
+    }
+
+    // dot = term '.' ident
+    //     = term
+
+  }, {
+    key: 'dot',
+    value: function dot() {
+      var term = this.term();
+      if (this.token('.')) {
+        var terms = [term];
+        while (true) {
+          var rhs = this.ident();
+          if (!rhs) {
+            throw 'Invalid token after dot: \'' + this.input + '\', \'' + this.origExpr + '\'';
+          }
+          terms.push(rhs);
+          if (!this.token('.')) {
+            return ['.', terms];
+          }
+        }
+      } else {
+        return term;
+      }
+    }
+
+    // term = number | ident
+
+  }, {
+    key: 'term',
+    value: function term() {
+      var number = this.number();
+      if (number) {
+        return number;
+      }
+      var ident = this.ident();
+      return ident;
+    }
+  }, {
+    key: 'ident',
+    value: function ident() {
+      var s = this.expect(/^([$a-zA-Z][$a-zA-Z0-9_-]*)/);
+      if (s) {
+        return ['IDENT', s];
+      }
+    }
+  }, {
+    key: 'number',
+    value: function number() {
+      var number = this.expect(/^([1-9][0-9]*(?:\.[0-9]+)?)/);
+      if (number) {
+        return ['NUMBER', number];
+      }
+    }
+  }, {
+    key: 'expect',
+    value: function expect(re) {
+      var m = this.input.match(re);
+      if (m) {
+        this.input = this.input.substr(m[0].length);
+        return m[1];
+      }
+    }
+  }, {
+    key: 'token',
+    value: function token(_token) {
+      this.input = this.input.replace(/^\s*/, '');
+      if (this.input.startsWith(_token)) {
+        this.trace('trace match ' + _token);
+
+        this.input = this.input.substr(_token.length);
+        this.input = this.input.replace(/^\s*/, '');
+        return _token;
+      }
+    }
+  }, {
+    key: 'trace',
+    value: function trace(msg) {
+      if (this.debug) {
+        console.log('# TRACE ' + msg);
+      }
+    }
+  }]);
+
+  return Parser;
+}();
+
+module.exports = Parser;
+
+},{}],10:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -3070,7 +3145,7 @@ function sjtag(tagName, opts) {
 
 module.exports.sjtag = sjtag;
 
-},{"./sj":10}],10:[function(require,module,exports){
+},{"./sj":11}],11:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () {
