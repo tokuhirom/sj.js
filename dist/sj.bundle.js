@@ -2624,7 +2624,7 @@ if (!window.customElements) {
 }
 
 },{}],7:[function(require,module,exports){
-"use strict";
+'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
@@ -2658,8 +2658,16 @@ function _inherits(subClass, superClass) {
 
 var sj = require('./sj');
 
-var SJElement = function (_HTMLElement) {
-  _inherits(SJElement, _HTMLElement);
+// babel hacks
+// See https://phabricator.babeljs.io/T1548
+if (typeof HTMLElement !== 'function') {
+  var _HTMLElement = function _HTMLElement() {};
+  _HTMLElement.prototype = HTMLElement.prototype;
+  HTMLElement = _HTMLElement;
+}
+
+var SJElement = function (_HTMLElement2) {
+  _inherits(SJElement, _HTMLElement2);
 
   function SJElement() {
     _classCallCheck(this, SJElement);
@@ -2668,7 +2676,7 @@ var SJElement = function (_HTMLElement) {
   }
 
   _createClass(SJElement, [{
-    key: "createdCallback",
+    key: 'createdCallback',
     value: function createdCallback() {
       this.scope = {};
 
@@ -2686,23 +2694,23 @@ var SJElement = function (_HTMLElement) {
       this.update();
     }
   }, {
-    key: "template",
+    key: 'template',
     value: function template() {
       throw "Please implement 'template' method";
     }
   }, {
-    key: "attributeChangedCallback",
+    key: 'attributeChangedCallback',
     value: function attributeChangedCallback(key) {
       this[key] = this.getAttribute(key);
       this.update();
     }
   }, {
-    key: "initialize",
+    key: 'initialize',
     value: function initialize() {
       // nop. abstract method.
     }
   }, {
-    key: "update",
+    key: 'update',
     value: function update() {
       this.renderer.render();
     }
@@ -2972,7 +2980,9 @@ function _classCallCheck(instance, Constructor) {
   }
 }
 
-var SJRenderer = require('./sj').SJRenderer;
+var sj = require('./sj');
+var SJRenderer = sj.SJRenderer;
+var SJAggregater = sj.SJAggregater;
 
 var SJTagBuilder = function () {
   function SJTagBuilder(klass) {
@@ -3011,8 +3021,6 @@ function sjtag(tagName, opts) {
     _createClass(elementClass, [{
       key: 'createdCallback',
       value: function createdCallback() {
-        this.scope = {};
-
         var html = document.createElement("div");
         html.innerHTML = function () {
           if (template instanceof Function) {
@@ -3021,6 +3029,8 @@ function sjtag(tagName, opts) {
             return template;
           }
         }();
+
+        this.scope = new SJAggregater(html).aggregate();
         this.renderer = new SJRenderer(this, html, this.scope);
 
         if (opts.initialize) {
@@ -3043,6 +3053,7 @@ function sjtag(tagName, opts) {
 
     return elementClass;
   }(HTMLElement);
+
   if (opts.accessors) {
     for (var name in opts.accessors) {
       Object.defineProperty(elementClass.prototype, name, {
@@ -3137,14 +3148,6 @@ var sj_boolean_attributes = {
 
 function isFormElement(elem) {
   return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
-}
-
-// babel hacks
-// See https://phabricator.babeljs.io/T1548
-if (typeof HTMLElement !== 'function') {
-  var _HTMLElement = function _HTMLElement() {};
-  _HTMLElement.prototype = HTMLElement.prototype;
-  HTMLElement = _HTMLElement;
 }
 
 var ForRenderer = function () {
@@ -3378,7 +3381,34 @@ var SJRenderer = function () {
   return SJRenderer;
 }();
 
+var SJAggregater = function () {
+  function SJAggregater(element) {
+    _classCallCheck(this, SJAggregater);
+
+    this.element = element;
+  }
+
+  _createClass(SJAggregater, [{
+    key: 'aggregate',
+    value: function aggregate() {
+      var scope = {};
+      var elems = this.element.querySelectorAll('input,select,textarea');
+      for (var i = 0, l = elems.length; i < l; ++i) {
+        var val = elems[i].value;
+        if (val) {
+          var modelName = elems[i].getAttribute('sj-model');
+          sjExpression.setValueByPath(scope, modelName, val);
+        }
+      }
+      return scope;
+    }
+  }]);
+
+  return SJAggregater;
+}();
+
 module.exports.SJRenderer = SJRenderer;
+module.exports.SJAggregater = SJAggregater;
 
 },{"./sj-expression.js":8,"String.prototype.startsWith":2,"incremental-dom/dist/incremental-dom.js":1}]},{},[5])(5)
 });
