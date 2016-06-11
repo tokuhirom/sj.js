@@ -7,10 +7,10 @@ dist/sj.bundle.min.js: dist/sj.bundle.js
 	uglify -s dist/sj.bundle.js -o dist/sj.bundle.min.js
 
 test:
-	browserify -t babelify test.js test/test-sj-expression.js | testling
+	browserify -t babelify test/test-*.js | testling
 
 test-browser:
-	browserify -t babelify test.js test/test-sj-expression.js | testling -x open
+	browserify -t babelify test/test-*.js | testling -x open
 
 .PHONY: all test test-browser
 

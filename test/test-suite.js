@@ -10,7 +10,7 @@
  */
 
 var test = require('tape');
-var sj = require('./src/main.js');
+var sj = require('../src/main.js');
 window.addEventListener("load", function () {
   "use strict";
 
