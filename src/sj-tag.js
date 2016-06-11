@@ -1,4 +1,6 @@
-const SJRenderer = require('./sj').SJRenderer;
+const sj = require('./sj');
+const SJRenderer = sj.SJRenderer;
+const SJAggregater = sj.SJAggregater;
 
 class SJTagBuilder {
   constructor(klass) {
@@ -20,8 +22,6 @@ function sjtag(tagName, opts) {
   const elementClassPrototype = Object.create(HTMLElement.prototype);
   const elementClass = class extends HTMLElement {
     createdCallback() {
-      this.scope = {};
-
       const html = document.createElement("div");
       html.innerHTML = (function () {
         if (template instanceof Function) {
@@ -30,6 +30,8 @@ function sjtag(tagName, opts) {
           return template;
         }
       })();
+
+      this.scope = new SJAggregater(html).aggregate();
       this.renderer = new SJRenderer(this, html, this.scope);
 
       if (opts.initialize) {
@@ -47,6 +49,7 @@ function sjtag(tagName, opts) {
       this.renderer.render();
     }
   };
+
   if (opts.accessors) {
     for (const name in opts.accessors) {
       Object.defineProperty(elementClass.prototype, name, {

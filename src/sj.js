@@ -35,15 +35,6 @@ function isFormElement(elem) {
          || elem instanceof HTMLSelectElement;
 }
 
-// babel hacks
-// See https://phabricator.babeljs.io/T1548
-if (typeof HTMLElement !== 'function') {
-  var _HTMLElement = function () {
-  };
-  _HTMLElement.prototype = HTMLElement.prototype;
-  HTMLElement = _HTMLElement;
-}
-
 class ForRenderer {
   constructor(renderer, element, items, scope, varName) {
     this.renderer = renderer;
@@ -216,5 +207,25 @@ class SJRenderer {
 
 }
 
+class SJAggregater {
+  constructor(element) {
+    this.element = element;
+  }
+
+  aggregate() {
+    const scope = {};
+    const elems = this.element.querySelectorAll('input,select,textarea');
+    for (let i=0, l=elems.length; i<l; ++i) {
+      const val = elems[i].value;
+      if (val) {
+        const modelName = elems[i].getAttribute('sj-model');
+        sjExpression.setValueByPath(scope, modelName, val);
+      }
+    }
+    return scope;
+  }
+}
+
 module.exports.SJRenderer = SJRenderer;
+module.exports.SJAggregater = SJAggregater;
 

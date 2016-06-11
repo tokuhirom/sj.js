@@ -1,5 +1,15 @@
 const sj = require('./sj');
-        
+
+// babel hacks
+// See https://phabricator.babeljs.io/T1548
+if (typeof HTMLElement !== 'function') {
+  var _HTMLElement = function () {
+  };
+  _HTMLElement.prototype = HTMLElement.prototype;
+  HTMLElement = _HTMLElement;
+}
+
+
 class SJElement extends HTMLElement {
   createdCallback() {
     this.scope = {};

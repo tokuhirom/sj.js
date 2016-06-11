@@ -29,15 +29,22 @@ window.addEventListener("load", function () {
 
   runTest('test-input-value', sj.tag('test-input-value', {
     template: function() {/*
-                             <input type="text" sj-model="bar">
+                             <input type="text" sj-model="filter" value="hoge">
+                             <button sj-click="clear()">clear</button>
     */},
     initialize: function() {
-      this.scope.bar = 'hoge';
+      this.scope.filter = 'hoge';
+      this.scope.clear = function() {
+        this.scope.filter = '';
+        this.update();
+      };
     }
   }), function (t, tagName) {
-    t.plan(1);
+    t.plan(2);
     var input = this.querySelector('input');
-    t.equal(input.value, 'hoge', tagName);
+
+    t.equal(input.value, 'hoge', 'input.value');
+    t.equal(this.scope.filter, 'hoge', tagName);
   });
 
   runTest('test-disabled', sj.tag('test-disabled', {
