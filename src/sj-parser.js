@@ -1,5 +1,7 @@
 // See https://tomcopeland.blogs.com/EcmaScript.html
 
+// TODO null undefined string literal
+
 class Parser {
   constructor(expr) {
     this.origExpr = expr;
@@ -18,41 +20,183 @@ class Parser {
   }
 
   expr() {
-    return this.not();
+    return this.logical_or();
   }
 
-  // not = '!'? funcall
-  not() {
-    if (this.token('!')) {
-      const funcall = this.funcall();
-      if (funcall) {
-        return ['!', funcall];
+  logical_or() {
+    return this.binop('logical_and', /^(\|\|)/);
+  }
+
+  logical_and() {
+    return this.binop('bitwise_or', /^(&&)/);
+  }
+
+  bitwise_or() {
+    return this.binop('bitwise_xor', /^(\|)[^|]/);
+  }
+
+  bitwise_xor() {
+    return this.binop('bitwise_and', /^(\^)[^^]/);
+  }
+
+  bitwise_and() {
+    return this.binop('equality', /^(\&)[^&]/);
+  }
+
+  equality() {
+    return this.binop('relational', /^(===|==|!==|!=)/);
+  }
+
+  relational() {
+    return this.binop('shift', /^(<=|>=|>|<|instanceof|in)/);
+  }
+
+  shift() {
+    return this.binop('additive', /^(>>>|>>|<<)/);
+  }
+
+  additive() {
+    return this.binop('multiplicative', /^(\+|\-)/);
+  }
+
+  multiplicative() {
+    return this.binop('unary', /^(\*|\/|\%)/);
+  }
+
+  unary() {
+    let m = [];
+    while (true) {
+      const unary_op = this.token(["+", "-", "~", "!"]);
+      if (!unary_op) {
+        break;
       }
-    } else {
-      return this.funcall();
+      m.push(unary_op);
     }
+
+   let expr = this.postfix();
+   if (!expr) {
+     return;
+   }
+   for (const p of m) {
+     expr = [p, expr];
+   }
+   return expr;
   }
 
-  // funcall = dot '(' params ')'
-  funcall() {
-    const term = this.dot();
-    if (!term) {
+  postfix() {
+    return this.left_hand_side();
+  }
+
+  // CallExpression ::= MemberExpression Arguments ( CallExpressionPart )*
+  left_hand_side() {
+    const member = this.member();
+    if (!member) {
       return;
     }
 
+    const arguments_ = this.arguments_();
+    if (!arguments_) {
+      return member;
+    }
+
+    const call_expressions = [];
+    while (true) {
+      const c = this.call_expression();
+      if (!c) {
+        break;
+      }
+      call_expression.push(c);
+    }
+
+    return ['CALL', member, arguments_, call_expressions];
+  }
+
+  member() {
+    const lhs = this.primary();
+    if (!lhs) {
+      return;
+    }
+
+    const member_expression_part = [];
+    while (true) {
+      const m = this.member_expression_part();
+      if (!m) {
+        break;
+      }
+      member_expression_part.push(m);
+    }
+    if (member_expression_part.length) {
+      return ['MEMBER', lhs, member_expression_part];
+    } else {
+      return lhs;
+    }
+  }
+
+  member_expression_part() {
+    if (this.token('[')) {
+      const expr = this.expr();
+      if (!expr) {
+        throw `Missing expression after '[': ${this.input}, ${this.origExpr}`;
+      }
+
+      if (!this.token(']')) {
+        throw `Missing closing ']': ${this.input}, ${this.origExpr}`;
+      }
+      return ['[]', expr];
+    }
+
+    if (this.token('.')) {
+      const ident = this.ident();
+      if (!ident) {
+        throw `Missing ident after dot: ${this.input}, ${this.origExpr}`;
+      }
+      return ['.', ident];
+    }
+  }
+
+  // CallExpression ::= MemberExpression Arguments ( CallExpressionPart )*
+  call_expression() {
+    const arguments_ = this.arguments_();
+    if (arguments_) {
+      return arguments_;
+    }
+
+    if (this.token('[')) {
+      const expr = this.expr();
+      if (!expr) {
+        throw `Missing expression after '[': ${this.input}, ${this.origExpr}`;
+      }
+
+      if (!this.token(']')) {
+        throw `Missing closing ']': ${this.input}, ${this.origExpr}`;
+      }
+      return ['[]', expr];
+    }
+
+    if (this.token('.')) {
+      const ident = this.ident();
+      if (!ident) {
+        throw `Missing ident after dot: ${this.input}, ${this.origExpr}`;
+      }
+      return ['.', ident];
+    }
+  }
+
+  // Arguments  ::= "(" ( ArgumentList )? ")"
+  arguments_() {
     if (this.token('(')) {
-      const params = this.params();
+      const params = this.argument_list();
       if (!this.token(')')) {
         throw `Paren missmatch: '${this.origExpr}'`;
       }
-      return ['FUNCALL', term, params];
+      return params;
     } else {
-      return term;
+      return;
     }
   }
 
   // params = ( expr ',' )*
-  params() {
+  argument_list() {
     const params = [];
     while (true) {
       const expr = this.expr();
@@ -71,7 +215,7 @@ class Parser {
   // dot = term '.' ident
   //     = term
   dot() {
-    let term = this.additive();
+    let term = this.ident();
     if (this.token('.')) {
       const terms = [term];
       while (true) {
@@ -89,28 +233,8 @@ class Parser {
     }
   }
 
-  // additive = multiplicative ( [ '+' | '-' ] multiplicative )*
-  additive() {
-    let m = this.multiplicative();
-    while (true) {
-      const add = this.token(['+', '-']);
-      if (!add) {
-        return m;
-      }
-      const lhs = this.multiplicative();
-      if (!lhs) {
-        throw `Missing multiplicative after ${add}: ${this.origExpr}`;
-      }
-      m = [add, m, lhs];
-    }
-  }
-
-  multiplicative() {
-    return this.primary_expression();
-  }
-
   // term = number | ident
-  primary_expression() {
+  primary() {
     const number = this.number();
     if (number) {
       return number;
@@ -147,10 +271,27 @@ class Parser {
     }
   }
 
+  binop(child, operator) {
+    let lhs = this[child]();
+    while (true) {
+      const op = this.expect(operator);
+      if (!op) {
+        break;
+      }
+
+      const rhs = this[child]();
+      if (!rhs) {
+        throw `Missing right hand side expression after '${op}': '${this.input}', '${this.origExpr}'`;
+      }
+      lhs = [op, lhs, rhs];
+    }
+    return lhs;
+  }
+
   expect(re) {
     const m = this.input.match(re);
     if (m) {
-      this.input = this.input.substr(m[0].length);
+      this.input = this.input.substr(m[1].length);
       return m[1];
     }
   }
