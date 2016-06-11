@@ -3253,7 +3253,7 @@ var SJRenderer = function () {
 
       var modelValue = modelName ? sjExpression.getValueByPath(scope, modelName, this.targetElement) : null;
       var isForm = isFormElement(elem);
-      if (modelName && modelValue && scope[modelName] && isForm) {
+      if (modelName && isForm) {
         IncrementalDOM.attr("value", modelValue);
       }
       IncrementalDOM.elementOpenEnd(tagName);
@@ -3336,9 +3336,6 @@ var SJRenderer = function () {
             sjExpression.setValueByPath(scope, attr.value, e.target.value);
             _this2.render();
           });
-          if (!scope[attr.value]) {
-            scope[attr.value] = elem.value;
-          }
         } else if (attr.name === 'sj-repeat') {
           var m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
           if (!m) {

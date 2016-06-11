@@ -96,7 +96,7 @@ class SJRenderer {
     const [modelName, forRenderer] = this.renderAttributes(elem, scope);
     const modelValue = modelName? sjExpression.getValueByPath(scope, modelName, this.targetElement) : null;
     const isForm = isFormElement(elem);
-    if (modelName && modelValue && scope[modelName] && isForm) {
+    if (modelName && isForm) {
       IncrementalDOM.attr("value", modelValue);
     }
     IncrementalDOM.elementOpenEnd(tagName);
@@ -167,9 +167,6 @@ class SJRenderer {
           sjExpression.setValueByPath(scope, attr.value, e.target.value);
           this.render();
         });
-        if (!scope[attr.value]) {
-          scope[attr.value] = elem.value;
-        }
       } else if (attr.name === 'sj-repeat') {
         const m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
         if (!m) {
