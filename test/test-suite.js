@@ -1,6 +1,6 @@
 var test = require('tape');
 var sj = require('../src/main.js');
-window.addEventListener("load", function () {
+(function () {
   "use strict";
 
   function runTest(tagName, elementClass, code) {
@@ -340,4 +340,4 @@ window.addEventListener("load", function () {
     t.plan(1);
     t.ok(this.querySelector('h1'), tagName);
   });
-});
+})();

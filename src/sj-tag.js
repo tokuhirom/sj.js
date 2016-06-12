@@ -1,6 +1,7 @@
 const sj = require('./sj');
 const SJRenderer = sj.SJRenderer;
 const SJAggregater = sj.SJAggregater;
+const ExpressionRunner = require('./expression-runner.js');
 
 function sjtag(tagName, opts) {
   const template = opts.template;
@@ -21,8 +22,9 @@ function sjtag(tagName, opts) {
         }
       })();
 
-      new SJAggregater(html).aggregate(this);
-      this.renderer = new SJRenderer(this, html);
+      const expressionRunner = new ExpressionRunner();
+      new SJAggregater(html, expressionRunner).aggregate(this);
+      this.renderer = new SJRenderer(this, html, expressionRunner);
 
       if (opts.initialize) {
         opts.initialize.apply(this);

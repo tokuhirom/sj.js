@@ -41,44 +41,6 @@ function isFormElement(elem) {
          || elem instanceof HTMLSelectElement;
 }
 
-// http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-var createFunction = (function() {
-  function F(args) {
-    return Function.apply(this, args);
-  }
-  F.prototype = Function.prototype;
-
-  return function() {
-    return new F(arguments);
-  }
-})();
-
-const EVAL_CODE_CACHE = {};
-function evalExpression(self, expr, lexVarNames, lexVarValues) {
-  assert(arguments.length === 4);
-  assert(Array.isArray(lexVarNames));
-  // assert(self instanceof HTMLElement);
-  // console.log(`evalExpression:${JSON.stringify(self.dump())}, ${expr}, lexVarNames:${JSON.stringify(lexVarNames)}, lexVarValues:${JSON.stringify(lexVarValues)}`);
-
-  const cache_key = expr+"\t"+lexVarNames.join("\t");
-  if (!EVAL_CODE_CACHE[cache_key]) {
-    EVAL_CODE_CACHE[cache_key] = createFunction.apply(null, lexVarNames.concat([`return ${expr}`]));
-  }
-  return EVAL_CODE_CACHE[cache_key].apply(self, lexVarValues);
-}
-
-const SET_CODE_CACHE = {};
-function setValueByPath(self, expression, value) {
-  assert(arguments.length === 3);
-  // assert(self instanceof HTMLElement);
-  // console.log(`setValueByPath: ${self}, ${expression}, ${value}`);
-
-  if (!SET_CODE_CACHE[expression]) {
-    SET_CODE_CACHE[expression] = new Function('$value', `${expression}=$value`);
-  }
-  SET_CODE_CACHE[expression].apply(self, [value]);
-}
-
 class RepeatRenderer {
   // forRenderer = new RepeatRenderer(this, this.targetElement, e, container, scope, varName);
   constructor(renderer, targetElement, element, container, varName, lexVarNames, lexVarValues) {
@@ -94,7 +56,7 @@ class RepeatRenderer {
   }
 
   render() {
-    const container = evalExpression(this.targetElement, this.container, this.lexVarNames, this.lexVarValues);
+    const container = this.renderer.expressionRunner.evalExpression(this.targetElement, this.container, this.lexVarNames, this.lexVarValues);
     for (let i=0, l=container.length; i<l; i++) {
       const item = container[i];
 
@@ -107,10 +69,11 @@ class RepeatRenderer {
 }
 
 class SJRenderer {
-  constructor(targetElement, templateElement) {
-    assert(arguments.length === 2);
+  constructor(targetElement, templateElement, expressionRunner) {
+    assert(arguments.length === 3);
     this.targetElement = targetElement;
     this.templateElement = templateElement;
+    this.expressionRunner = expressionRunner;
   }
 
   render() {
@@ -146,7 +109,7 @@ class SJRenderer {
 
     IncrementalDOM.elementOpenStart(tagName);
     const [modelName, forRenderer] = this.renderAttributes(elem, lexVarNames, lexVarValues);
-    const modelValue = modelName ? evalExpression(this.targetElement, modelName, lexVarNames, lexVarValues) : null;
+    const modelValue = modelName ? this.expressionRunner.evalExpression(this.targetElement, modelName, lexVarNames, lexVarValues) : null;
     const isForm = isFormElement(elem);
     // console.log(`modelName:${modelName}, isForm:${isForm}, value:${modelValue}`);
     if (modelName && isForm) {
@@ -177,7 +140,7 @@ class SJRenderer {
   shouldHideElement(elem, lexVarNames, lexVarValues) {
     const cond = elem.getAttribute('sj-if');
     if (cond) {
-      const val = evalExpression(this.targetElement, cond, lexVarNames, lexVarValues);
+      const val = this.expressionRunner.evalExpression(this.targetElement, cond, lexVarNames, lexVarValues);
       if (!val) {
         return true;
       }
@@ -211,7 +174,7 @@ class SJRenderer {
       if (event) {
         const expression = attr.value;
         IncrementalDOM.attr(event, (e) => {
-          evalExpression(
+          this.expressionRunner.evalExpression(
             this.targetElement,
             expression,
             lexVarNames.concat(['$event']),
@@ -220,7 +183,7 @@ class SJRenderer {
       } else if (attr.name === 'sj-model') {
         isModelAttribute = attr.value;
         IncrementalDOM.attr("onchange", (e) => {
-          setValueByPath(this.targetElement, attr.value, e.target.value);
+          this.expressionRunner.setValueByPath(this.targetElement, attr.value, e.target.value);
           this.render();
         });
       } else if (attr.name === 'sj-repeat') {
@@ -238,7 +201,7 @@ class SJRenderer {
       } else if (sj_boolean_attributes[attr.name]) {
         const attribute = sj_boolean_attributes[attr.name];
         const expression = attr.value;
-        const result = evalExpression(this.targetElement, expression, lexVarNames, lexVarValues);
+        const result = this.expressionRunner.evalExpression(this.targetElement, expression, lexVarNames, lexVarValues);
         if (result) {
           IncrementalDOM.attr(attribute, attribute);
         }
@@ -256,7 +219,7 @@ class SJRenderer {
       if (s === '$_') {
         return JSON.stringify(this.targetElement);
       } else {
-        return evalExpression(this.targetElement, s, lexVarNames, lexVarValues);
+        return this.expressionRunner.evalExpression(this.targetElement, s, lexVarNames, lexVarValues);
       }
     });
   }
@@ -264,8 +227,9 @@ class SJRenderer {
 }
 
 class SJAggregater {
-  constructor(element) {
+  constructor(element, expressionRunner) {
     this.element = element;
+    this.expressionRunner = expressionRunner;
   }
 
   aggregate(scope) {
@@ -274,7 +238,7 @@ class SJAggregater {
       const val = elems[i].value;
       if (val) {
         const modelName = elems[i].getAttribute('sj-model');
-        setValueByPath(scope, modelName, val);
+        this.expressionRunner.setValueByPath(scope, modelName, val);
       }
     }
   }

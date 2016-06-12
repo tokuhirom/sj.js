@@ -1,6 +1,7 @@
 const sj = require('./sj');
 const SJRenderer = sj.SJRenderer;
 const SJAggregater = sj.SJAggregater;
+const ExpressionRunner = require('./expression-runner.js');
 
 // babel hacks
 // See https://phabricator.babeljs.io/T1548
@@ -21,8 +22,9 @@ class SJElement extends HTMLElement {
 
     const html = document.createElement("div");
     html.innerHTML = template;
-    new SJAggregater(html).aggregate(this);
-    this.renderer = new sj.SJRenderer(this, html);
+    const expressionRunner = new ExpressionRunner();
+    new SJAggregater(html, expressionRunner).aggregate(this);
+    this.renderer = new sj.SJRenderer(this, html, expressionRunner);
 
     this.initialize();
 
