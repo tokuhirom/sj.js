@@ -2,6 +2,8 @@ const Compiler = require('./sj');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 const Aggregator = require('./default-value-aggregator.js');
 
+var unwrapComment = /\/\*!?(?:\@preserve)?[ \t]*(?:\r\n|\n)([\s\S]*?)(?:\r\n|\n)\s*\*\//;
+
 function sjtag(tagName, opts) {
   const template = opts.template;
   delete opts['template'];
@@ -14,8 +16,8 @@ function sjtag(tagName, opts) {
     createdCallback() {
       const html = document.createElement("div");
       html.innerHTML = (function () {
-        if (template instanceof Function) {
-          return template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+        if (typeof(template) === 'function') {
+          return unwrapComment.exec(template.toString())[1];
         } else {
           return template;
         }
