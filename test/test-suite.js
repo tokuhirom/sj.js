@@ -1,14 +1,3 @@
-/**
- *
- * You shouldn't use following syntax in this script:
- *
- * - Safari doesn't support `let` and `const` yet@20160609.
- *   - https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/let
- * - Safari doesn't support Arrow expression like `e => { }` yet @20160609
- *   - https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Functions/Arrow_functions
- *
- */
-
 var test = require('tape');
 var sj = require('../src/main.js');
 window.addEventListener("load", function () {

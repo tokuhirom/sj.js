@@ -2,16 +2,6 @@ const sj = require('./sj');
 const SJRenderer = sj.SJRenderer;
 const SJAggregater = sj.SJAggregater;
 
-class SJTagBuilder {
-  constructor(klass) {
-    this.klass = klass;
-  }
-
-  accessor(name, opts) {
-    return this;
-  }
-}
-
 function sjtag(tagName, opts) {
   const template = opts.template;
   delete opts['template'];
@@ -76,8 +66,6 @@ function sjtag(tagName, opts) {
   }
 
   customElements.define(tagName, elementClass);
-
-  return new SJTagBuilder(elementClass);
 }
 
 module.exports.sjtag = sjtag;
