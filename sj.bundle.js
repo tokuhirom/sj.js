@@ -1074,63 +1074,6 @@
 
 
 },{}],2:[function(require,module,exports){
-/*! http://mths.be/startswith v0.2.0 by @mathias */
-if (!String.prototype.startsWith) {
-	(function() {
-		'use strict'; // needed to support `apply`/`call` with `undefined`/`null`
-		var defineProperty = (function() {
-			// IE 8 only supports `Object.defineProperty` on DOM elements
-			try {
-				var object = {};
-				var $defineProperty = Object.defineProperty;
-				var result = $defineProperty(object, object, object) && $defineProperty;
-			} catch(error) {}
-			return result;
-		}());
-		var toString = {}.toString;
-		var startsWith = function(search) {
-			if (this == null) {
-				throw TypeError();
-			}
-			var string = String(this);
-			if (search && toString.call(search) == '[object RegExp]') {
-				throw TypeError();
-			}
-			var stringLength = string.length;
-			var searchString = String(search);
-			var searchLength = searchString.length;
-			var position = arguments.length > 1 ? arguments[1] : undefined;
-			// `ToInteger`
-			var pos = position ? Number(position) : 0;
-			if (pos != pos) { // better `isNaN`
-				pos = 0;
-			}
-			var start = Math.min(Math.max(pos, 0), stringLength);
-			// Avoid the `indexOf` call if no match is possible
-			if (searchLength + start > stringLength) {
-				return false;
-			}
-			var index = -1;
-			while (++index < searchLength) {
-				if (string.charCodeAt(start + index) != searchString.charCodeAt(index)) {
-					return false;
-				}
-			}
-			return true;
-		};
-		if (defineProperty) {
-			defineProperty(String.prototype, 'startsWith', {
-				'value': startsWith,
-				'configurable': true,
-				'writable': true
-			});
-		} else {
-			String.prototype.startsWith = startsWith;
-		}
-	}());
-}
-
-},{}],3:[function(require,module,exports){
 /**
  * @license
  * Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
@@ -2160,7 +2103,7 @@ window.CustomElements.addModule(function(scope) {
     window.addEventListener(loadEvent, bootstrap);
   }
 })(window.CustomElements);
-},{}],4:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 (function(self) {
   'use strict';
 
@@ -2595,7 +2538,130 @@ window.CustomElements.addModule(function(scope) {
   self.fetch.polyfill = true
 })(typeof self !== 'undefined' ? self : this);
 
-},{}],5:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
+'use strict';
+
+var _createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
+  };
+}();
+
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+
+var assert = require('assert');
+
+var DefaultValueAggregator = function () {
+  function DefaultValueAggregator(element, expressionRunner) {
+    _classCallCheck(this, DefaultValueAggregator);
+
+    assert(expressionRunner);
+    this.element = element;
+    this.expressionRunner = expressionRunner;
+  }
+
+  _createClass(DefaultValueAggregator, [{
+    key: 'aggregate',
+    value: function aggregate(scope) {
+      var elems = this.element.querySelectorAll('input,select,textarea');
+      for (var i = 0, l = elems.length; i < l; ++i) {
+        var val = elems[i].value;
+        if (val) {
+          var modelName = elems[i].getAttribute('sj-model');
+          this.expressionRunner.setValueByPath(scope, modelName, val);
+        }
+      }
+    }
+  }]);
+
+  return DefaultValueAggregator;
+}();
+
+module.exports = DefaultValueAggregator;
+
+},{"assert":11}],5:[function(require,module,exports){
+"use strict";
+
+var _createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
+  };
+}();
+
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+
+var assert = require('assert');
+
+// http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
+var createFunction = function () {
+  function F(args) {
+    return Function.apply(this, args);
+  }
+  F.prototype = Function.prototype;
+
+  return function () {
+    return new F(arguments);
+  };
+}();
+
+var ExpressionRunner = function () {
+  function ExpressionRunner() {
+    _classCallCheck(this, ExpressionRunner);
+
+    this.eval_cache = {};
+    this.set_cache = {};
+  }
+
+  _createClass(ExpressionRunner, [{
+    key: "evalExpression",
+    value: function evalExpression(self, expression, lexVarNames, lexVarValues) {
+      assert(arguments.length === 4);
+      assert(Array.isArray(lexVarNames));
+      // assert(self instanceof HTMLElement);
+      // console.log(`evalExpression:${JSON.stringify(self.dump())}, ${expression}, lexVarNames:${JSON.stringify(lexVarNames)}, lexVarValues:${JSON.stringify(lexVarValues)}`);
+
+      var cache_key = expression + "\t" + lexVarNames.join("\t");
+      if (!this.eval_cache[cache_key]) {
+        this.eval_cache[cache_key] = createFunction.apply(null, lexVarNames.concat(["return " + expression]));
+      }
+      return this.eval_cache[cache_key].apply(self, lexVarValues);
+    }
+  }, {
+    key: "setValueByPath",
+    value: function setValueByPath(self, expression, value) {
+      assert(arguments.length === 3);
+      // assert(self instanceof HTMLElement);
+      // console.log(`setValueByPath: ${self}, ${expression}, ${value}`);
+
+      if (!this.set_cache[expression]) {
+        this.set_cache[expression] = new Function('$value', expression + "=$value");
+      }
+      this.set_cache[expression].apply(self, [value]);
+    }
+  }]);
+
+  return ExpressionRunner;
+}();
+
+module.exports = ExpressionRunner;
+
+},{"assert":11}],6:[function(require,module,exports){
 'use strict';
 
 // polyfills
@@ -2610,7 +2676,7 @@ var elem = require('./sj-element.js');
 module.exports.Element = elem.Element;
 module.exports.tag = tag.sjtag;
 
-},{"./polyfill.js":6,"./sj-element.js":7,"./sj-tag.js":8,"webcomponents.js/CustomElements.js":3,"whatwg-fetch/fetch.js":4}],6:[function(require,module,exports){
+},{"./polyfill.js":7,"./sj-element.js":8,"./sj-tag.js":9,"webcomponents.js/CustomElements.js":2,"whatwg-fetch/fetch.js":3}],7:[function(require,module,exports){
 "use strict";
 
 // polyfill
@@ -2623,7 +2689,7 @@ if (!window.customElements) {
   };
 }
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -2657,6 +2723,9 @@ function _inherits(subClass, superClass) {
 }
 
 var sj = require('./sj');
+var SJRenderer = sj.SJRenderer;
+var Aggregator = require('./default-value-aggregator.js');
+var ExpressionRunner = require('./expression-runner.js');
 
 // babel hacks
 // See https://phabricator.babeljs.io/T1548
@@ -2678,16 +2747,17 @@ var SJElement = function (_HTMLElement2) {
   _createClass(SJElement, [{
     key: 'createdCallback',
     value: function createdCallback() {
-      this.scope = {};
-
       // parse template
       var template = this.template();
-      if (template instanceof Function) {
-        template = template.toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1];
+      if (!template) {
+        throw 'template shouldn\'t be null';
       }
+
       var html = document.createElement("div");
       html.innerHTML = template;
-      this.renderer = new sj.SJRenderer(this, html, this.scope);
+      var expressionRunner = new ExpressionRunner();
+      new Aggregator(html, expressionRunner).aggregate(this);
+      this.renderer = new sj.SJRenderer(this, html, expressionRunner);
 
       this.initialize();
 
@@ -2714,6 +2784,19 @@ var SJElement = function (_HTMLElement2) {
     value: function update() {
       this.renderer.render();
     }
+  }, {
+    key: 'dump',
+    value: function dump() {
+      var _this2 = this;
+
+      var scope = {};
+      Object.keys(this).forEach(function (key) {
+        if (key !== 'renderer') {
+          scope[key] = _this2[key];
+        }
+      });
+      return scope;
+    }
   }]);
 
   return SJElement;
@@ -2721,7 +2804,7 @@ var SJElement = function (_HTMLElement2) {
 
 module.exports.Element = SJElement;
 
-},{"./sj":9}],8:[function(require,module,exports){
+},{"./default-value-aggregator.js":4,"./expression-runner.js":5,"./sj":10}],9:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -2736,6 +2819,12 @@ var _createClass = function () {
   };
 }();
 
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+
 function _possibleConstructorReturn(self, call) {
   if (!self) {
     throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
@@ -2748,32 +2837,10 @@ function _inherits(subClass, superClass) {
   }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
 }
 
-function _classCallCheck(instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-}
-
 var sj = require('./sj');
 var SJRenderer = sj.SJRenderer;
-var SJAggregater = sj.SJAggregater;
-
-var SJTagBuilder = function () {
-  function SJTagBuilder(klass) {
-    _classCallCheck(this, SJTagBuilder);
-
-    this.klass = klass;
-  }
-
-  _createClass(SJTagBuilder, [{
-    key: 'accessor',
-    value: function accessor(name, opts) {
-      return this;
-    }
-  }]);
-
-  return SJTagBuilder;
-}();
+var Aggregator = require('./default-value-aggregator.js');
+var ExpressionRunner = require('./expression-runner.js');
 
 function sjtag(tagName, opts) {
   var template = opts.template;
@@ -2804,8 +2871,9 @@ function sjtag(tagName, opts) {
           }
         }();
 
-        new SJAggregater(html).aggregate(this);
-        this.renderer = new SJRenderer(this, html);
+        var expressionRunner = new ExpressionRunner();
+        new Aggregator(html, expressionRunner).aggregate(this);
+        this.renderer = new SJRenderer(this, html, expressionRunner);
 
         if (opts.initialize) {
           opts.initialize.apply(this);
@@ -2857,13 +2925,11 @@ function sjtag(tagName, opts) {
   }
 
   customElements.define(tagName, elementClass);
-
-  return new SJTagBuilder(elementClass);
 }
 
 module.exports.sjtag = sjtag;
 
-},{"./sj":9}],9:[function(require,module,exports){
+},{"./default-value-aggregator.js":4,"./expression-runner.js":5,"./sj":10}],10:[function(require,module,exports){
 'use strict';
 
 var _slicedToArray = function () {
@@ -2917,8 +2983,6 @@ IncrementalDOM.attributes.value = function (el, name, value) {
   el.value = value;
 };
 
-require('String.prototype.startsWith');
-
 var sj_attr2event = {
   'sj-click': 'onclick',
   'sj-blur': 'onblur',
@@ -2949,44 +3013,6 @@ function isFormElement(elem) {
   return elem instanceof HTMLInputElement || elem instanceof HTMLTextAreaElement || elem instanceof HTMLSelectElement;
 }
 
-// http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-var createFunction = function () {
-  function F(args) {
-    return Function.apply(this, args);
-  }
-  F.prototype = Function.prototype;
-
-  return function () {
-    return new F(arguments);
-  };
-}();
-
-var EVAL_CODE_CACHE = {};
-function evalExpression(self, expr, lexVarNames, lexVarValues) {
-  assert(arguments.length === 4);
-  assert(Array.isArray(lexVarNames));
-  assert(self instanceof HTMLElement);
-  // console.log(`evalExpression:${JSON.stringify(self.dump())}, ${expr}, lexVarNames:${JSON.stringify(lexVarNames)}, lexVarValues:${JSON.stringify(lexVarValues)}`);
-
-  var cache_key = expr + "\t" + lexVarNames.join("\t");
-  if (!EVAL_CODE_CACHE[cache_key]) {
-    EVAL_CODE_CACHE[cache_key] = createFunction.apply(null, lexVarNames.concat(['return ' + expr]));
-  }
-  return EVAL_CODE_CACHE[cache_key].apply(self, lexVarValues);
-}
-
-var SET_CODE_CACHE = {};
-function setValueByPath(self, expression, value) {
-  assert(arguments.length === 3);
-  assert(self instanceof HTMLElement);
-  // console.log(`setValueByPath: ${self}, ${expression}, ${value}`);
-
-  if (!SET_CODE_CACHE[expression]) {
-    SET_CODE_CACHE[expression] = new Function('$value', expression + '=$value');
-  }
-  SET_CODE_CACHE[expression].apply(self, [value]);
-}
-
 var RepeatRenderer = function () {
   // forRenderer = new RepeatRenderer(this, this.targetElement, e, container, scope, varName);
 
@@ -3007,7 +3033,7 @@ var RepeatRenderer = function () {
   _createClass(RepeatRenderer, [{
     key: 'render',
     value: function render() {
-      var container = evalExpression(this.targetElement, this.container, this.lexVarNames, this.lexVarValues);
+      var container = this.renderer.expressionRunner.evalExpression(this.targetElement, this.container, this.lexVarNames, this.lexVarValues);
       for (var i = 0, l = container.length; i < l; i++) {
         var item = container[i];
 
@@ -3020,12 +3046,13 @@ var RepeatRenderer = function () {
 }();
 
 var SJRenderer = function () {
-  function SJRenderer(targetElement, templateElement) {
+  function SJRenderer(targetElement, templateElement, expressionRunner) {
     _classCallCheck(this, SJRenderer);
 
-    assert(arguments.length === 2);
+    assert(arguments.length === 3);
     this.targetElement = targetElement;
     this.templateElement = templateElement;
+    this.expressionRunner = expressionRunner;
   }
 
   _createClass(SJRenderer, [{
@@ -3073,7 +3100,7 @@ var SJRenderer = function () {
       var modelName = _renderAttributes2[0];
       var forRenderer = _renderAttributes2[1];
 
-      var modelValue = modelName ? evalExpression(this.targetElement, modelName, lexVarNames, lexVarValues) : null;
+      var modelValue = modelName ? this.expressionRunner.evalExpression(this.targetElement, modelName, lexVarNames, lexVarValues) : null;
       var isForm = isFormElement(elem);
       // console.log(`modelName:${modelName}, isForm:${isForm}, value:${modelValue}`);
       if (modelName && isForm) {
@@ -3105,7 +3132,7 @@ var SJRenderer = function () {
     value: function shouldHideElement(elem, lexVarNames, lexVarValues) {
       var cond = elem.getAttribute('sj-if');
       if (cond) {
-        var val = evalExpression(this.targetElement, cond, lexVarNames, lexVarValues);
+        var val = this.expressionRunner.evalExpression(this.targetElement, cond, lexVarNames, lexVarValues);
         if (!val) {
           return true;
         }
@@ -3145,19 +3172,19 @@ var SJRenderer = function () {
 
       var isModelAttribute = void 0;
       var forRenderer = void 0;
-      if (attrName.startsWith('sj-')) {
+      if (attrName.substr(0, 3) === 'sj-') {
         var event = sj_attr2event[attrName];
         if (event) {
           (function () {
             var expression = attr.value;
             IncrementalDOM.attr(event, function (e) {
-              evalExpression(_this2.targetElement, expression, lexVarNames.concat(['$event']), lexVarValues.concat([e]));
+              _this2.expressionRunner.evalExpression(_this2.targetElement, expression, lexVarNames.concat(['$event']), lexVarValues.concat([e]));
             });
           })();
         } else if (attr.name === 'sj-model') {
           isModelAttribute = attr.value;
           IncrementalDOM.attr("onchange", function (e) {
-            setValueByPath(_this2.targetElement, attr.value, e.target.value);
+            _this2.expressionRunner.setValueByPath(_this2.targetElement, attr.value, e.target.value);
             _this2.render();
           });
         } else if (attr.name === 'sj-repeat') {
@@ -3175,7 +3202,7 @@ var SJRenderer = function () {
         } else if (sj_boolean_attributes[attr.name]) {
           var attribute = sj_boolean_attributes[attr.name];
           var _expression = attr.value;
-          var result = evalExpression(this.targetElement, _expression, lexVarNames, lexVarValues);
+          var result = this.expressionRunner.evalExpression(this.targetElement, _expression, lexVarNames, lexVarValues);
           if (result) {
             IncrementalDOM.attr(attribute, attribute);
           }
@@ -3196,7 +3223,7 @@ var SJRenderer = function () {
         if (s === '$_') {
           return JSON.stringify(_this3.targetElement);
         } else {
-          return evalExpression(_this3.targetElement, s, lexVarNames, lexVarValues);
+          return _this3.expressionRunner.evalExpression(_this3.targetElement, s, lexVarNames, lexVarValues);
         }
       });
     }
@@ -3205,34 +3232,9 @@ var SJRenderer = function () {
   return SJRenderer;
 }();
 
-var SJAggregater = function () {
-  function SJAggregater(element) {
-    _classCallCheck(this, SJAggregater);
-
-    this.element = element;
-  }
-
-  _createClass(SJAggregater, [{
-    key: 'aggregate',
-    value: function aggregate(scope) {
-      var elems = this.element.querySelectorAll('input,select,textarea');
-      for (var i = 0, l = elems.length; i < l; ++i) {
-        var val = elems[i].value;
-        if (val) {
-          var modelName = elems[i].getAttribute('sj-model');
-          setValueByPath(scope, modelName, val);
-        }
-      }
-    }
-  }]);
-
-  return SJAggregater;
-}();
-
 module.exports.SJRenderer = SJRenderer;
-module.exports.SJAggregater = SJAggregater;
 
-},{"String.prototype.startsWith":2,"assert":10,"incremental-dom/dist/incremental-dom.js":1}],10:[function(require,module,exports){
+},{"assert":11,"incremental-dom/dist/incremental-dom.js":1}],11:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
 //
 // THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
@@ -3593,7 +3595,7 @@ var objectKeys = Object.keys || function (obj) {
   return keys;
 };
 
-},{"util/":14}],11:[function(require,module,exports){
+},{"util/":15}],12:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -3618,7 +3620,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -3714,14 +3716,14 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -4311,5 +4313,5 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":13,"_process":12,"inherits":11}]},{},[5])(5)
+},{"./support/isBuffer":14,"_process":13,"inherits":12}]},{},[6])(6)
 });
