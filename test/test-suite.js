@@ -1,5 +1,6 @@
 var test = require('tape');
 var sj = require('../src/main.js');
+
 (function () {
   "use strict";
 

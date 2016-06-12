@@ -1,6 +1,6 @@
 const sj = require('./sj');
 const SJRenderer = sj.SJRenderer;
-const SJAggregater = sj.SJAggregater;
+const Aggregator = require('./default-value-aggregator.js');
 const ExpressionRunner = require('./expression-runner.js');
 
 // babel hacks
@@ -23,7 +23,7 @@ class SJElement extends HTMLElement {
     const html = document.createElement("div");
     html.innerHTML = template;
     const expressionRunner = new ExpressionRunner();
-    new SJAggregater(html, expressionRunner).aggregate(this);
+    new Aggregator(html, expressionRunner).aggregate(this);
     this.renderer = new sj.SJRenderer(this, html, expressionRunner);
 
     this.initialize();

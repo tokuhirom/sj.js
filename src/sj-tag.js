@@ -1,6 +1,6 @@
 const sj = require('./sj');
 const SJRenderer = sj.SJRenderer;
-const SJAggregater = sj.SJAggregater;
+const Aggregator = require('./default-value-aggregator.js');
 const ExpressionRunner = require('./expression-runner.js');
 
 function sjtag(tagName, opts) {
@@ -23,7 +23,7 @@ function sjtag(tagName, opts) {
       })();
 
       const expressionRunner = new ExpressionRunner();
-      new SJAggregater(html, expressionRunner).aggregate(this);
+      new Aggregator(html, expressionRunner).aggregate(this);
       this.renderer = new SJRenderer(this, html, expressionRunner);
 
       if (opts.initialize) {
