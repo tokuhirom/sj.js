@@ -33,7 +33,7 @@ const sj_boolean_attributes = {
   'sj-checked': 'checked'
 };
 
-class SJRenderer {
+class Compiler {
   constructor() {
     assert(arguments.length === 0);
     // TODO optimize this
@@ -168,5 +168,5 @@ class SJRenderer {
   }
 }
 
-module.exports = SJRenderer;
+module.exports = Compiler;
 

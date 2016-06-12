@@ -1,5 +1,5 @@
-const Compiler = require('./sj');
-const Aggregator = require('./default-value-aggregator.js');
+const Compiler = require('./compiler.js');
+const Aggregator = require('./aggregator.js');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
 // babel hacks
@@ -11,7 +11,7 @@ if (typeof HTMLElement !== 'function') {
   HTMLElement = _HTMLElement;
 }
 
-class SJElement extends HTMLElement {
+class Element extends HTMLElement {
   createdCallback() {
     // parse template
     var template = this.template();
@@ -59,5 +59,5 @@ class SJElement extends HTMLElement {
   }
 }
 
-module.exports.Element = SJElement;
+module.exports = Element;
 

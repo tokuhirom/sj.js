@@ -1,5 +1,5 @@
 var test = require('tape');
-var Compiler = require('../src/sj');
+var Compiler = require('../src/compiler');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
 test('foo', (t) => {

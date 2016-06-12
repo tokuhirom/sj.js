@@ -1,6 +1,9 @@
 const assert = require('assert');
 
-class DefaultValueAggregator {
+/**
+ * Aggregate values from dom tree
+ */
+class Aggregator {
   constructor(element) {
     this.element = element;
   }
@@ -19,5 +22,5 @@ class DefaultValueAggregator {
   }
 }
 
-module.exports = DefaultValueAggregator;
+module.exports = Aggregator;
 

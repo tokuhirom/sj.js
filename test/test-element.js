@@ -1,8 +1,9 @@
 var test = require('tape');
-var sj = require('../src/main.js');
+var Element = require('../src/element.js');
+require('../src/polyfill.js');
 
 test('es6', t => {
-  customElements.define('test-es6', class extends sj.Element {
+  customElements.define('test-es6', class extends Element {
     template() {
       return `<input type="text" sj-model="this.filter" value="hoge">`;
     }

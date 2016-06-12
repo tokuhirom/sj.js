@@ -9,7 +9,7 @@ dist/sj.bundle.min.js: dist/sj.bundle.js
 test:
 	browserify -t babelify test/test-aggregator.js | testling
 	browserify -t babelify test/test-compile.js | testling
-	browserify -t babelify test/test-es6.js | testling
+	browserify -t babelify test/test-element.js | testling
 	browserify -t babelify test/test-suite.js | testling
 
 

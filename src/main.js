@@ -3,8 +3,8 @@ require('webcomponents.js/CustomElements.js');
 require('./polyfill.js');
 require('whatwg-fetch/fetch.js');
 
-const tag = require('./sj-tag.js');
-const elem = require('./sj-element.js');
+const tag = require('./tag.js');
+const Element = require('./element.js');
 
-module.exports.Element = elem.Element;
-module.exports.tag = tag.sjtag;
+module.exports.Element = Element;
+module.exports.tag = tag;

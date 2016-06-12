@@ -1,10 +1,10 @@
-const Compiler = require('./sj');
+const Compiler = require('./compiler');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
-const Aggregator = require('./default-value-aggregator.js');
+const Aggregator = require('./aggregator.js');
 
 var unwrapComment = /\/\*!?(?:\@preserve)?[ \t]*(?:\r\n|\n)([\s\S]*?)(?:\r\n|\n)\s*\*\//;
 
-function sjtag(tagName, opts) {
+function tag(tagName, opts) {
   const template = opts.template;
   delete opts['template'];
   if (!template) {
@@ -72,5 +72,5 @@ function sjtag(tagName, opts) {
   customElements.define(tagName, elementClass);
 }
 
-module.exports.sjtag = sjtag;
+module.exports = tag;
 
