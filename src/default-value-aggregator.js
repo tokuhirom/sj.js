@@ -1,10 +1,8 @@
 const assert = require('assert');
 
 class DefaultValueAggregator {
-  constructor(element, expressionRunner) {
-    assert(expressionRunner);
+  constructor(element) {
     this.element = element;
-    this.expressionRunner = expressionRunner;
   }
 
   aggregate(scope) {
@@ -13,7 +11,7 @@ class DefaultValueAggregator {
       const val = elems[i].value;
       if (val) {
         const modelName = elems[i].getAttribute('sj-model');
-        this.expressionRunner.setValueByPath(scope, modelName, val);
+        new Function('$val', `${modelName}=$val`).apply(scope, [val]);
       }
     }
   }

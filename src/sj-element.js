@@ -1,7 +1,6 @@
-const sj = require('./sj');
-const SJRenderer = sj.SJRenderer;
+const Compiler = require('./sj');
 const Aggregator = require('./default-value-aggregator.js');
-const ExpressionRunner = require('./expression-runner.js');
+const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
 // babel hacks
 // See https://phabricator.babeljs.io/T1548
@@ -22,9 +21,8 @@ class SJElement extends HTMLElement {
 
     const html = document.createElement("div");
     html.innerHTML = template;
-    const expressionRunner = new ExpressionRunner();
-    new Aggregator(html, expressionRunner).aggregate(this);
-    this.renderer = new sj.SJRenderer(this, html, expressionRunner);
+    new Aggregator(html).aggregate(this);
+    this.compiled = new Compiler().compile(html);
 
     this.initialize();
 
@@ -45,7 +43,9 @@ class SJElement extends HTMLElement {
   }
 
   update() {
-    this.renderer.render();
+    IncrementalDOM.patch(this, () => {
+      this.compiled.apply(this, [IncrementalDOM]);
+    });
   }
 
   dump() {

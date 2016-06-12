@@ -9,6 +9,7 @@ test('es6', t => {
   });
 
   const elem = document.createElement('test-es6');
+  t.plan(1);
   t.equal(elem.filter, 'hoge');
 });
 

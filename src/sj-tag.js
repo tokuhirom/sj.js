@@ -1,7 +1,6 @@
-const sj = require('./sj');
-const SJRenderer = sj.SJRenderer;
+const Compiler = require('./sj');
+const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 const Aggregator = require('./default-value-aggregator.js');
-const ExpressionRunner = require('./expression-runner.js');
 
 function sjtag(tagName, opts) {
   const template = opts.template;
@@ -22,9 +21,8 @@ function sjtag(tagName, opts) {
         }
       })();
 
-      const expressionRunner = new ExpressionRunner();
-      new Aggregator(html, expressionRunner).aggregate(this);
-      this.renderer = new SJRenderer(this, html, expressionRunner);
+      new Aggregator(html).aggregate(this);
+      this.compiled = new Compiler().compile(html);
 
       if (opts.initialize) {
         opts.initialize.apply(this);
@@ -38,7 +36,9 @@ function sjtag(tagName, opts) {
     }
 
     update() {
-      this.renderer.render();
+      IncrementalDOM.patch(this, () => {
+        this.compiled.apply(this, [IncrementalDOM]);
+      });
     }
 
     dump() {
