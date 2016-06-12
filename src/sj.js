@@ -129,9 +129,6 @@ class SJRenderer {
         }
       }
     }
-    if (modelName && modelValue && !isForm) {
-      IncrementalDOM.text(modelValue);
-    }
     IncrementalDOM.elementClose(tagName);
   }
 

@@ -86,8 +86,8 @@ runTest('test-set-attrs', sj.tag('test-set-attrs', {
 runTest('test-input', sj.tag('test-input', {
   template: function () {/*
                             <h1>Input</h1>
-                            <input type="text" name="name" sj-model="name" id="myInput">
-                            Hello, <span sj-model="name"></span>
+                            <input type="text" name="name" sj-model="this.name" id="myInput">
+                            Hello, <span>{{this.name}}</span>
                             */}
 }), function (t, tagName) {
   var input = this.querySelector('input');
@@ -140,7 +140,7 @@ runTest('test-textarea', sj.tag('test-textarea', {
   template: function () {/*
     <h1>Textarea</h1>
     <textarea name="hoge" sj-model="this.hoge"></textarea>
-    Hello, <span sj-model="this.hoge"></span>
+    Hello, <span>{{this.hoge}}</span>
   */}
 }), function (t, tagName) {
   var input = this.querySelector('textarea');
@@ -171,7 +171,7 @@ runTest('test-select', sj.tag('test-select', {
     <option value="ppp">ppp</option>
     <option value="qqq">qqq</option>
     </select>
-    SSS: <span sj-model="this.sss"></span>
+    SSS: <span>{{this.sss}}</span>
   */}
 }), function (t, tagName) {
   t.plan(1);
@@ -182,7 +182,7 @@ runTest('test-for', sj.tag('test-for', {
   template: function() {/*
     <h1>bar</h1>
     <div sj-repeat="x in this.bar">
-    <div class="item" sj-model="x.boo">replace here</div>
+    <div class="item">{{x.boo}}</div>
     </div>
   */},
   initialize: function () {
@@ -277,7 +277,7 @@ runTest('test-if-array', sj.tag('test-if-array', {
     return `
     <h1>Test if</h1>
     <div sj-repeat="x in this.bar">
-      <div sj-if="this.matched(x)" sj-model="x.foo" class="target"></div>
+      <div sj-if="this.matched(x)" class="target">{{x.foo}}</div>
     </div>
   */},
   initialize: function () {
