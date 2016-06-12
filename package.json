@@ -24,6 +24,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "assert": "^1.4.1",
     "incremental-dom": "^0.4.1",
     "string.prototype.startswith": "^0.2.0",
     "webcomponents.js": "^0.7.22",

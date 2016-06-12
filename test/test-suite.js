@@ -29,32 +29,24 @@ window.addEventListener("load", function () {
 
   runTest('test-input-value', sj.tag('test-input-value', {
     template: function() {/*
-                             <input type="text" sj-model="filter" value="hoge">
-                             <button sj-click="clear()">clear</button>
-    */},
-    initialize: function() {
-      this.scope.filter = 'hoge';
-      this.scope.clear = function() {
-        this.scope.filter = '';
-        this.update();
-      };
-    }
+                             <input type="text" sj-model="this.filter" value="hoge">
+    */}
   }), function (t, tagName) {
     t.plan(2);
     var input = this.querySelector('input');
 
     t.equal(input.value, 'hoge', 'input.value');
-    t.equal(this.scope.filter, 'hoge', tagName);
+    t.equal(this.filter, 'hoge', tagName);
   });
 
   runTest('test-disabled', sj.tag('test-disabled', {
     template: function() {/*
-        <div sj-disabled="f">f</div>
-        <div sj-disabled="t">t</div>
+        <div sj-disabled="this.f">f</div>
+        <div sj-disabled="this.t">t</div>
     */},
     initialize: function() {
-      this.scope.t = true;
-      this.scope.f = false;
+      this.t = true;
+      this.f = false;
     }
   }), function (t, tagName) {
     t.plan(3);
@@ -67,51 +59,41 @@ window.addEventListener("load", function () {
   // regression test
   runTest('test-multi-attributes', sj.tag('test-multi-attributes', {
     template: function() {/*
-        <div class="b" sj-repeat="x in books">
+        <div class="b" sj-repeat="x in this.books">
             <div class='book'>{{x.name}}</div>
         </div>
     */},
     initialize: function() {
-      this.scope.books = [{"name":"foo"}, {"name":"bar"}];
+      this.books = [{"name":"foo"}, {"name":"bar"}];
     }
   }), function (t, tagName) {
     t.plan(1);
-    t.ok(this.querySelectorAll('div.book').length === 2, tagName);
+    t.equal(this.querySelectorAll('div.book').length, 2, tagName);
   });
 
   runTest('test-events', sj.tag('test-events', {
     template: function() {/*
-                             <button id="clickTest" sj-click="btnclick($event)">yay</button>
+                             <button id="clickTest" sj-click="this.btnclick($event)">yay</button>
                              */},
-    initialize: function() {
-      this.scope.btnclick = function (e) {
-        this.scope.clicked = true;
-      };
+    methods: {
+      btnclick: function() {
+        this.clicked = true;
+      }
     }
   }), function (t) {
     var elem = this.querySelector("#clickTest");
     elem.click();
 
     t.plan(1);
-    t.ok(!!this.scope.clicked, 'test-events');
+    t.ok(!!this.clicked, 'test-events');
   });
 
   runTest('test-set-attrs', sj.tag('test-set-attrs', {
-    template: '<div>{{foo}}</div>',
-    accessors: {
-      foo: {
-        get: function () {
-          return this.scope.foo;
-        },
-        set: function (v) {
-          this.scope.foo = v;
-        }
-      }
-    }
+    template: '<div>{{this.foo}}</div>'
   }), function (t, tagName) {
     this.setAttribute('foo', 'bar');
     t.plan(1);
-    t.ok(this.querySelector('div').textContent, 'bar');
+    t.equal(this.querySelector('div').textContent, 'bar');
   });
 
   runTest('test-input', sj.tag('test-input', {
@@ -141,11 +123,11 @@ window.addEventListener("load", function () {
   runTest('test-input-nested', sj.tag('test-input-nested', {
     template: function () {/*
       <h1>Input</h1>
-      <input type="text" name="name" sj-model="x.y" id="myInput">
-      Hello, <span sj-model="name"></span>
+      <input type="text" name="name" sj-model="this.x.y" id="myInput">
+      Hello, <span sj-model="this.name"></span>
     */},
     initialize: function() {
-      this.scope.x = {
+      this.x = {
         y: 3
       };
     }
@@ -164,14 +146,14 @@ window.addEventListener("load", function () {
     }
 
     t.plan(1);
-    t.ok(this.scope.x.y === 'foo', tagName);
+    t.ok(this.x.y === 'foo', tagName);
   });
 
   runTest('test-textarea', sj.tag('test-textarea', {
     template: function () {/*
       <h1>Textarea</h1>
-      <textarea name="hoge" sj-model="hoge"></textarea>
-      Hello, <span sj-model="hoge"></span>
+      <textarea name="hoge" sj-model="this.hoge"></textarea>
+      Hello, <span sj-model="this.hoge"></span>
     */}
   }), function (t, tagName) {
     var input = this.querySelector('textarea');
@@ -184,11 +166,11 @@ window.addEventListener("load", function () {
 
   runTest('test-from-controller', sj.tag('test-from-controller', {
     initialize: function() {
-      this.scope.hogehoge = "foo";
+      this.hogehoge = "foo";
     },
     template: function() {/*
       <h1>Passed from controller</h1>
-      <input type="text" name="bar" sj-model="hogehoge">
+      <input type="text" name="bar" sj-model="this.hogehoge">
     */}
   }), function (t, tagName) {
     t.plan(1);
@@ -198,11 +180,11 @@ window.addEventListener("load", function () {
   runTest('test-select', sj.tag('test-select', {
     template: function () {/*
       <h1>Select</h1>
-      <select sj-model="sss">
+      <select sj-model="this.sss">
       <option value="ppp">ppp</option>
       <option value="qqq">qqq</option>
       </select>
-      SSS: <span sj-model="sss"></span>
+      SSS: <span sj-model="this.sss"></span>
     */}
   }), function (t, tagName) {
     t.plan(1);
@@ -212,12 +194,12 @@ window.addEventListener("load", function () {
   runTest('test-for', sj.tag('test-for', {
     template: function() {/*
       <h1>bar</h1>
-      <div sj-repeat="x in bar">
+      <div sj-repeat="x in this.bar">
       <div class="item" sj-model="x.boo">replace here</div>
       </div>
     */},
     initialize: function () {
-      this.scope.bar = [
+      this.bar = [
         {boo: 4649},
         {boo: 1},
         {boo: 2},
@@ -234,12 +216,12 @@ window.addEventListener("load", function () {
   runTest('test-for-index', sj.tag('test-for-index', {
     template: function () {/*
       <h1>For index</h1>
-      <div sj-repeat="x in bar">
+      <div sj-repeat="x in this.bar">
       <div class="item">{{x.boo}}:{{$index}}</div>
       </div>
     */},
     initialize: function () {
-      this.scope.bar = [
+      this.bar = [
         {boo: 4649},
         {boo: 1},
         {boo: 2},
@@ -256,12 +238,12 @@ window.addEventListener("load", function () {
   runTest('test-for-empty', sj.tag('test-for-empty', {
     template: function () {/*
       <h1>sj-repeat with empty value</h1>
-      <div sj-repeat="x in bar">
+      <div sj-repeat="x in this.bar">
       <div class="item" sj-model="x.boo">replace here</div>
       </div>
     */},
     initialize: function() {
-      this.scope.bar = [];
+      this.bar = [];
     }
   }), function (t, tagName) {
     var elems = this.querySelectorAll('div.item');
@@ -272,10 +254,10 @@ window.addEventListener("load", function () {
   runTest('test-attr-var', sj.tag('test-attr-var', {
     template: function () {/*
       <h1>Attr variable</h1>
-      <div style="color: {{ccc}}">CONTENT</div>`;
+      <div style="color: {{this.ccc}}">CONTENT</div>`;
     */},
     initialize: function () {
-      this.scope.ccc = "green";
+      this.ccc = "green";
     }
   }), function (t, tagName) {
     var elems = this.querySelector('div');
@@ -286,16 +268,16 @@ window.addEventListener("load", function () {
   runTest('test-if', sj.tag('test-if', {
     template: function () {/*
       <h1>Test if</h1>
-      <div sj-if="getFalse()">FALSE</div>
-      <div sj-if="getTrue()">TRUE</div>
+      <div sj-if="this.getFalse()">FALSE</div>
+      <div sj-if="this.getTrue()">TRUE</div>
     */},
-    initialize: function () {
-      this.scope.getTrue = function (e) {
+    methods: {
+      getTrue: function () {
         return true
-      };
-      this.scope.getFalse = function (e) {
+      },
+      getFalse: function() {
         return false
-      };
+      }
     }
   }), function (t, tagName) {
     var elems = this.querySelectorAll('div');
@@ -307,15 +289,17 @@ window.addEventListener("load", function () {
     template: function() {/*
       return `
       <h1>Test if</h1>
-      <div sj-repeat="x in bar">
-      <div sj-if="matched(x)" sj-model="x.foo" class="target"></div>
+      <div sj-repeat="x in this.bar">
+        <div sj-if="this.matched(x)" sj-model="x.foo" class="target"></div>
       </div>
     */},
     initialize: function () {
-      this.scope.bar = [{"foo":1}]
-      this.scope.matched = function(x) {
+      this.bar = [{"foo":1}];
+    },
+    methods: {
+      matched: function (x) {
         return x.foo == 1;
-      };
+      }
     }
   }), function (t, tagName) {
     var elems = this.querySelectorAll('div.target');
@@ -326,10 +310,10 @@ window.addEventListener("load", function () {
   runTest('test-text-var', sj.tag('test-text-var', {
     template: function() {/*
       <h1>Test text var</h1>
-      <div>Hello, {{name}}</div>
+      <div>Hello, {{this.name}}</div>
     */},
     initialize: function () {
-      this.scope.name = 'John';
+      this.name = 'John';
     }
   }), function (t, tagName) {
     var elem = this.querySelector('div');
@@ -340,15 +324,15 @@ window.addEventListener("load", function () {
   runTest('test-filter', sj.tag('test-filter', {
     template: function() {/*
       <h1>Test filter</h1>
-      <div sj-if="filter(x.y)">Hello</div>
-      <div sj-if="filter(x.z)">Hi</div>
+      <div sj-if="this.filter(this.x.y)">Hello</div>
+      <div sj-if="this.filter(this.x.z)">Hi</div>
     */},
     initialize: function () {
-      this.scope.x = {
+      this.x = {
         y: true,
         z: false
       };
-      this.scope.filter = function (e) {
+      this.filter = function (e) {
         return e;
       };
     }
