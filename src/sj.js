@@ -57,7 +57,7 @@ const EVAL_CODE_CACHE = {};
 function evalExpression(self, expr, lexVarNames, lexVarValues) {
   assert(arguments.length === 4);
   assert(Array.isArray(lexVarNames));
-  assert(self instanceof HTMLElement);
+  // assert(self instanceof HTMLElement);
   // console.log(`evalExpression:${JSON.stringify(self.dump())}, ${expr}, lexVarNames:${JSON.stringify(lexVarNames)}, lexVarValues:${JSON.stringify(lexVarValues)}`);
 
   const cache_key = expr+"\t"+lexVarNames.join("\t");
@@ -70,7 +70,7 @@ function evalExpression(self, expr, lexVarNames, lexVarValues) {
 const SET_CODE_CACHE = {};
 function setValueByPath(self, expression, value) {
   assert(arguments.length === 3);
-  assert(self instanceof HTMLElement);
+  // assert(self instanceof HTMLElement);
   // console.log(`setValueByPath: ${self}, ${expression}, ${value}`);
 
   if (!SET_CODE_CACHE[expression]) {
