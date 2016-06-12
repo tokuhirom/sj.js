@@ -37,7 +37,7 @@ class SJRenderer {
   constructor() {
     assert(arguments.length === 0);
     // TODO optimize this
-    this.replaceVariables = `.replace(/\{\{([$A-Za-z0-9_.-]+)\}\}/g, function (m, s) {
+    this.replaceVariables = `.replace(/\{\{([$A-Za-z0-9_.\(\)-]+)\}\}/g, function (m, s) {
       return eval(s);
     }.bind(this))`;
   }
@@ -48,8 +48,8 @@ class SJRenderer {
     for (let i = 0; i < children.length; ++i) {
       code = code.concat(this.renderDOM(children[i]));
     }
+    // console.log(code);
     return new Function('IncrementalDOM', code.join("\n"));
-    // return new Function('IncrementalDOM', code.join("\n")).apply(this, [IncrementalDOM]);
   }
 
   renderDOM(elem) {
@@ -87,8 +87,8 @@ class SJRenderer {
         const container = m[2];
 
         // TODO support (x,i) in bar
-        headers.push(`$container=${container}; for (var $index=0,$l=$container.length; $index<$l; $index++) {var ${varName}=$container[$index];`);
-        footers.push(`}`);
+        headers.push(`(function(IncrementalDOM) {\nvar $container=${container};\nfor (var $index=0,$l=$container.length; $index<$l; $index++) {\nvar ${varName}=$container[$index];`);
+        footers.push(`}\n}).apply(this, [IncrementalDOM]);`);
       }
     }
 
@@ -111,7 +111,7 @@ class SJRenderer {
     }
     body.push(`IncrementalDOM.elementClose("${tagName}")`);
 
-    const retval = headers.concat(body).concat(footers);
+    const retval = [';'].concat(headers).concat(body).concat(footers);
     // console.log(`DONE renderDOM ${JSON.stringify(retval)}`);
     return retval;
   }

@@ -113,22 +113,34 @@ test('replace {{}}', (t) => {
   t.ok(target.innerHTML.match(/foo/));
   t.ok(target.innerHTML.match(/bar/));
 });
-test('mattn', (t) => {
-  t.plan(1);
+test('nested for', (t) => {
+  t.plan(2);
   var div = document.createElement('div');
   div.innerHTML = `
-    <input type="button" value="クリア" />
+    <div sj-repeat="blog in this.blogs">
+      <div sj-repeat="entry in blog.entries">
+        <div class="book">{{entry.title}}</div>
+      </div>
+    </div>
   `;
   const code = new Compiler().compile(div);
 
   var target = document.createElement('target');
   target.update = function () { };
-  target.foo = 'foo';
-  target.bar = 'bar';
+  target.blogs = [
+    {entries: [
+      {title:'hoge'}
+    ]},
+    {entries: [
+      {title:'fuga'}
+    ]},
+  ];
 
   IncrementalDOM.patch(target, () => {
     code.apply(target, [IncrementalDOM]);
   });
+  console.log(target.innerHTML);
 
-  t.ok(target.innerHTML.match(/クリア/));
+  t.ok(target.innerHTML.match(/hoge/));
+  t.ok(target.innerHTML.match(/fuga/));
 });
