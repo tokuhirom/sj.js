@@ -48,7 +48,7 @@ class SJRenderer {
     for (let i = 0; i < children.length; ++i) {
       code = code.concat(this.renderDOM(children[i]));
     }
-    // console.log(code);
+    // console.log(code.join(";\n"));
     return new Function('IncrementalDOM', code.join(";\n"));
   }
 
@@ -137,17 +137,17 @@ class SJRenderer {
       if (event) {
         const expression = attr.value;
         return `
-          IncrementalDOM.attr("${event}", function ($event) {
+          IncrementalDOM.attr("${event}", function ($index, $event) {
             ${expression};
-          }.bind(this));
+          }.bind(this, typeof $index !=='undefined' ? $index : null));
         `;
       } else if (attr.name === 'sj-model') {
         return `
           IncrementalDOM.attr("value", ${attr.value});
-          IncrementalDOM.attr("onchange", function ($event) {
+          IncrementalDOM.attr("onchange", function ($index, $event) {
             ${attr.value} = $event.target.value;
             this.update();
-          }.bind(this));
+          }.bind(this, typeof $index !=='undefined' ? $index : null));
         `;
       } else if (sj_boolean_attributes[attr.name]) {
         const attribute = sj_boolean_attributes[attr.name];
@@ -160,6 +160,7 @@ class SJRenderer {
     }
   }
 
+  // TODO escape all required chars
   escape(s) {
     return s.replace(/\n/g, function (m) {
       return "\\n";

@@ -2932,7 +2932,7 @@ var SJRenderer = function () {
       for (var i = 0; i < children.length; ++i) {
         code = code.concat(this.renderDOM(children[i]));
       }
-      // console.log(code);
+      // console.log(code.join(";\n"));
       return new Function('IncrementalDOM', code.join(";\n"));
     }
   }, {
@@ -3023,9 +3023,9 @@ var SJRenderer = function () {
         var event = sj_attr2event[attrName];
         if (event) {
           var expression = attr.value;
-          return '\n          IncrementalDOM.attr("' + event + '", function ($event) {\n            ' + expression + ';\n          }.bind(this));\n        ';
+          return '\n          IncrementalDOM.attr("' + event + '", function ($index, $event) {\n            ' + expression + ';\n          }.bind(this, typeof $index !==\'undefined\' ? $index : null));\n        ';
         } else if (attr.name === 'sj-model') {
-          return '\n          IncrementalDOM.attr("value", ' + attr.value + ');\n          IncrementalDOM.attr("onchange", function ($event) {\n            ' + attr.value + ' = $event.target.value;\n            this.update();\n          }.bind(this));\n        ';
+          return '\n          IncrementalDOM.attr("value", ' + attr.value + ');\n          IncrementalDOM.attr("onchange", function ($index, $event) {\n            ' + attr.value + ' = $event.target.value;\n            this.update();\n          }.bind(this, typeof $index !==\'undefined\' ? $index : null));\n        ';
         } else if (sj_boolean_attributes[attr.name]) {
           var attribute = sj_boolean_attributes[attr.name];
           var _expression = attr.value;

@@ -118,8 +118,9 @@ test('nested for', (t) => {
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="blog in this.blogs">
+  {{$index}}
       <div sj-repeat="entry in blog.entries">
-        <div class="book">{{entry.title}}</div>
+        <div class="book">{{entry.title}}:{{$index}}</div>
       </div>
     </div>
   `;
@@ -129,10 +130,12 @@ test('nested for', (t) => {
   target.update = function () { };
   target.blogs = [
     {entries: [
-      {title:'hoge'}
+      {title:'hoge'},
+      {title:'hige'}
     ]},
     {entries: [
-      {title:'fuga'}
+      {title:'fuga'},
+      {title:'figa'}
     ]},
   ];
 
@@ -143,4 +146,39 @@ test('nested for', (t) => {
 
   t.ok(target.innerHTML.match(/hoge/));
   t.ok(target.innerHTML.match(/fuga/));
+});
+test('nested for', (t) => {
+  t.plan(1);
+  var div = document.createElement('div');
+  div.innerHTML = `
+    <div sj-repeat="blog in this.blogs">
+      <div sj-repeat="entry in blog.entries">
+        <div class="book" sj-click="this.result.push($index)">{{entry.title}}:{{$index}}</div>
+      </div>
+    </div>
+  `;
+  const code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () { };
+  target.blogs = [
+    {entries: [
+      {title:'hoge'},
+      {title:'hige'}
+    ]},
+    {entries: [
+      {title:'fuga'},
+      {title:'figa'}
+    ]},
+  ];
+  target.result = [];
+
+  IncrementalDOM.patch(target, () => {
+    code.apply(target, [IncrementalDOM]);
+  });
+  const books = target.querySelectorAll('.book');
+  for (let i=0; i<books.length; i++) {
+    books[i].click();
+  }
+  t.deepEqual(target.result, [0,1,0,1]);
 });
