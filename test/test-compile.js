@@ -113,4 +113,22 @@ test('replace {{}}', (t) => {
   t.ok(target.innerHTML.match(/foo/));
   t.ok(target.innerHTML.match(/bar/));
 });
+test('mattn', (t) => {
+  t.plan(1);
+  var div = document.createElement('div');
+  div.innerHTML = `
+    <input type="button" value="クリア" />
+  `;
+  const code = new Compiler().compile(div);
 
+  var target = document.createElement('target');
+  target.update = function () { };
+  target.foo = 'foo';
+  target.bar = 'bar';
+
+  IncrementalDOM.patch(target, () => {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+  t.ok(target.innerHTML.match(/クリア/));
+});
