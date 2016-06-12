@@ -1,5 +1,5 @@
-const sjExpression = require('./sj-expression.js');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
+const assert = require('assert');
 
 // hack
 // https://github.com/google/incremental-dom/issues/239
@@ -41,40 +41,76 @@ function isFormElement(elem) {
          || elem instanceof HTMLSelectElement;
 }
 
-const EXPR_CACHE = {};
-function evalExpression(scope, expr, self) {
-  if (!EXPR_CACHE[expr]) {
-    EXPR_CACHE[expr] = sjExpression.Expression.compile(expr);
+// http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
+var createFunction = (function() {
+  function F(args) {
+    return Function.apply(this, args);
   }
-  const e = EXPR_CACHE[expr];
-  return e.apply(scope, self);
+  F.prototype = Function.prototype;
+
+  return function() {
+    return new F(arguments);
+  }
+})();
+
+const EVAL_CODE_CACHE = {};
+function evalExpression(self, expr, lexVarNames, lexVarValues) {
+  assert(arguments.length === 4);
+  assert(Array.isArray(lexVarNames));
+  assert(self instanceof HTMLElement);
+  // console.log(`evalExpression:${JSON.stringify(self.dump())}, ${expr}, lexVarNames:${JSON.stringify(lexVarNames)}, lexVarValues:${JSON.stringify(lexVarValues)}`);
+
+  const cache_key = expr+"\t"+lexVarNames.join("\t");
+  if (!EVAL_CODE_CACHE[cache_key]) {
+    EVAL_CODE_CACHE[cache_key] = createFunction.apply(null, lexVarNames.concat([`return ${expr}`]));
+  }
+  return EVAL_CODE_CACHE[cache_key].apply(self, lexVarValues);
+}
+
+const SET_CODE_CACHE = {};
+function setValueByPath(self, expression, value) {
+  assert(arguments.length === 3);
+  assert(self instanceof HTMLElement);
+  // console.log(`setValueByPath: ${self}, ${expression}, ${value}`);
+
+  if (!SET_CODE_CACHE[expression]) {
+    SET_CODE_CACHE[expression] = new Function('$value', `${expression}=$value`);
+  }
+  SET_CODE_CACHE[expression].apply(self, [value]);
 }
 
 class RepeatRenderer {
-  constructor(renderer, element, items, scope, varName) {
+  // forRenderer = new RepeatRenderer(this, this.targetElement, e, container, scope, varName);
+  constructor(renderer, targetElement, element, container, varName, lexVarNames, lexVarValues) {
+    assert(Array.isArray(lexVarNames));
+    assert(Array.isArray(lexVarValues));
     this.renderer = renderer;
+    this.targetElement = targetElement;
     this.element = element;
-    this.items = items;
-    this.scope = scope;
+    this.container = container;
     this.varName = varName;
+    this.lexVarNames = lexVarNames;
+    this.lexVarValues = lexVarValues;
   }
 
   render() {
-    let i = 0;
-    for (const item of this.items) {
-      const currentScope = Object.assign({}, this.scope);
-      currentScope[this.varName] = item;
-      currentScope['$index'] = i++;
-      this.renderer.renderDOM(this.element, currentScope);
+    const container = evalExpression(this.targetElement, this.container, this.lexVarNames, this.lexVarValues);
+    for (let i=0, l=container.length; i<l; i++) {
+      const item = container[i];
+
+      this.renderer.renderDOM(
+        this.element,
+        this.lexVarNames.concat(['$index', this.varName]),
+        this.lexVarValues.concat([i, item]));
     }
   }
 }
 
 class SJRenderer {
-  constructor(targetElement, templateElement, scope) {
+  constructor(targetElement, templateElement) {
+    assert(arguments.length === 2);
     this.targetElement = targetElement;
     this.templateElement = templateElement;
-    this.scope = scope;
   }
 
   render() {
@@ -88,7 +124,7 @@ class SJRenderer {
       IncrementalDOM.patch(this.targetElement, () => {
         const children = this.templateElement.children;
         for (let i = 0; i < children.length; ++i) {
-          this.renderDOM(children[i], this.scope);
+          this.renderDOM(children[i], [], []);
         }
       });
     } finally {
@@ -96,21 +132,23 @@ class SJRenderer {
     }
   }
 
-  renderDOM(elem, scope) {
+  renderDOM(elem, lexVarNames, lexVarValues) {
+    assert(arguments.length === 3);
     if (elem.nodeType === Node.TEXT_NODE) {
-      IncrementalDOM.text(this.replaceVariables(elem.textContent, scope));
+      IncrementalDOM.text(this.replaceVariables(elem.textContent, lexVarNames, lexVarValues));
       return;
     }
-    if (this.shouldHideElement(elem, scope)) {
+    if (this.shouldHideElement(elem, lexVarNames, lexVarValues)) {
       return;
     }
 
     const tagName = elem.tagName.toLowerCase();
 
     IncrementalDOM.elementOpenStart(tagName);
-    const [modelName, forRenderer] = this.renderAttributes(elem, scope);
-    const modelValue = modelName? evalExpression(scope, modelName, this.targetElement) : null;
+    const [modelName, forRenderer] = this.renderAttributes(elem, lexVarNames, lexVarValues);
+    const modelValue = modelName ? evalExpression(this.targetElement, modelName, lexVarNames, lexVarValues) : null;
     const isForm = isFormElement(elem);
+    // console.log(`modelName:${modelName}, isForm:${isForm}, value:${modelValue}`);
     if (modelName && isForm) {
       IncrementalDOM.attr("value", modelValue);
     }
@@ -123,10 +161,10 @@ class SJRenderer {
         const child = children[i];
         if (child.nodeType === Node.TEXT_NODE) {
           if (!modelName) {
-            IncrementalDOM.text(this.replaceVariables(child.textContent, scope));
+            IncrementalDOM.text(this.replaceVariables(child.textContent, lexVarNames, lexVarValues));
           }
         } else {
-          this.renderDOM(child, scope);
+          this.renderDOM(child, lexVarNames, lexVarValues);
         }
       }
     }
@@ -136,10 +174,10 @@ class SJRenderer {
     IncrementalDOM.elementClose(tagName);
   }
 
-  shouldHideElement(elem, scope) {
+  shouldHideElement(elem, lexVarNames, lexVarValues) {
     const cond = elem.getAttribute('sj-if');
     if (cond) {
-      const val = evalExpression(scope, cond, this.targetElement);
+      const val = evalExpression(this.targetElement, cond, lexVarNames, lexVarValues);
       if (!val) {
         return true;
       }
@@ -147,14 +185,14 @@ class SJRenderer {
     return false;
   }
 
-  renderAttributes(elem, scope) {
+  renderAttributes(elem, lexVarNames, lexVarValues) {
     let modelName;
     const attrs = elem.attributes;
     let forRenderer;
     for (let i = 0, l = attrs.length; i < l; ++i) {
       const attr = attrs[i];
       const attrName = attr.name;
-      const [hasModelAttribute, gotRepeatRenderer] = this.renderAttribute(attrName, attr, elem, scope);
+      const [hasModelAttribute, gotRepeatRenderer] = this.renderAttribute(attrName, attr, elem, lexVarNames, lexVarValues);
       if (hasModelAttribute) {
         modelName = attr.value;
       }
@@ -165,54 +203,60 @@ class SJRenderer {
     return [modelName, forRenderer];
   }
 
-  renderAttribute(attrName, attr, elem, scope) {
+  renderAttribute(attrName, attr, elem, lexVarNames, lexVarValues) {
     let isModelAttribute;
     let forRenderer;
     if (attrName.startsWith('sj-')) {
       const event = sj_attr2event[attrName];
       if (event) {
+        const expression = attr.value;
         IncrementalDOM.attr(event, (e) => {
-          const currentScope = Object.assign({}, scope);
-          currentScope['$event'] = e;
-          evalExpression(currentScope, attr.value, this.targetElement);
+          evalExpression(
+            this.targetElement,
+            expression,
+            lexVarNames.concat(['$event']),
+            lexVarValues.concat([e]));
         });
       } else if (attr.name === 'sj-model') {
         isModelAttribute = attr.value;
         IncrementalDOM.attr("onchange", (e) => {
-          sjExpression.setValueByPath(scope, attr.value, e.target.value);
+          setValueByPath(this.targetElement, attr.value, e.target.value);
           this.render();
         });
       } else if (attr.name === 'sj-repeat') {
-        const m = attr.value.match(/^\s*(\w+)\s+in\s+(\w+)\s*$/);
+        // TODO support (x,i) in bar
+        const m = attr.value.match(/^\s*(\w+)\s+in\s+([a-z][a-z0-9.]+)\s*$/);
         if (!m) {
-          throw "Invalid sj-repeat value: " + m;
+          throw `Invalid sj-repeat value: ${attr.value}`;
         }
 
         const varName = m[1];
         const container = m[2];
 
         const e = elem.querySelector('*');
-        forRenderer = new RepeatRenderer(this, e, scope[container], scope, varName);
+        forRenderer = new RepeatRenderer(this, this.targetElement, e, container, varName, lexVarNames, lexVarValues);
       } else if (sj_boolean_attributes[attr.name]) {
         const attribute = sj_boolean_attributes[attr.name];
-        const result = evalExpression(scope, attr.value);
+        const expression = attr.value;
+        const result = evalExpression(this.targetElement, expression, lexVarNames, lexVarValues);
         if (result) {
           IncrementalDOM.attr(attribute, attribute);
         }
       }
     } else {
-      const labelValue = this.replaceVariables(attr.value, scope);
+      const labelValue = this.replaceVariables(attr.value, lexVarNames, lexVarValues);
       IncrementalDOM.attr(attr.name, labelValue);
     }
     return [isModelAttribute, forRenderer];
   }
 
-  replaceVariables(label, scope) {
+  replaceVariables(label, lexVarNames, lexVarValues) {
+    assert(arguments.length === 3);
     return label.replace(/\{\{([$A-Za-z0-9_.-]+)\}\}/g, (m, s) => {
       if (s === '$_') {
-        return JSON.stringify(scope);
+        return JSON.stringify(this.targetElement);
       } else {
-        return evalExpression(scope, s, this.targetElement);
+        return evalExpression(this.targetElement, s, lexVarNames, lexVarValues);
       }
     });
   }
@@ -224,17 +268,15 @@ class SJAggregater {
     this.element = element;
   }
 
-  aggregate() {
-    const scope = {};
+  aggregate(scope) {
     const elems = this.element.querySelectorAll('input,select,textarea');
     for (let i=0, l=elems.length; i<l; ++i) {
       const val = elems[i].value;
       if (val) {
         const modelName = elems[i].getAttribute('sj-model');
-        sjExpression.setValueByPath(scope, modelName, val);
+        setValueByPath(scope, modelName, val);
       }
     }
-    return scope;
   }
 }
 

@@ -31,8 +31,8 @@ function sjtag(tagName, opts) {
         }
       })();
 
-      this.scope = new SJAggregater(html).aggregate();
-      this.renderer = new SJRenderer(this, html, this.scope);
+      new SJAggregater(html).aggregate(this);
+      this.renderer = new SJRenderer(this, html);
 
       if (opts.initialize) {
         opts.initialize.apply(this);
@@ -48,7 +48,23 @@ function sjtag(tagName, opts) {
     update() {
       this.renderer.render();
     }
+
+    dump() {
+      const scope = {};
+      Object.keys(this).forEach(key => {
+        if (key !== 'renderer') {
+          scope[key] = this[key];
+        }
+      });
+      return scope;
+    }
   };
+
+  if (opts.methods) {
+    for (const name in opts.methods) {
+      elementClass.prototype[name] = opts.methods[name];
+    }
+  }
 
   if (opts.accessors) {
     for (const name in opts.accessors) {
