@@ -228,6 +228,7 @@ class SJRenderer {
 
 class SJAggregater {
   constructor(element, expressionRunner) {
+    assert(expressionRunner);
     this.element = element;
     this.expressionRunner = expressionRunner;
   }
