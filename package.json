@@ -17,8 +17,7 @@
   },
   "testling": {
     "files": [
-      "test.js",
-      "test/test-sj-expression.js"
+      "test/test-*.js"
     ]
   },
   "author": "",
