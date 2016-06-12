@@ -2574,7 +2574,9 @@ var DefaultValueAggregator = function () {
         var val = elems[i].value;
         if (val) {
           var modelName = elems[i].getAttribute('sj-model');
-          new Function('$val', modelName + '=$val').apply(scope, [val]);
+          if (modelName) {
+            new Function('$val', modelName + '=$val').apply(scope, [val]);
+          }
         }
       }
     }
