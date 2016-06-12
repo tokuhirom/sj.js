@@ -2933,7 +2933,7 @@ var SJRenderer = function () {
         code = code.concat(this.renderDOM(children[i]));
       }
       // console.log(code);
-      return new Function('IncrementalDOM', code.join("\n"));
+      return new Function('IncrementalDOM', code.join(";\n"));
     }
   }, {
     key: 'renderDOM',
