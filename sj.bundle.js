@@ -2560,12 +2560,10 @@ function _classCallCheck(instance, Constructor) {
 var assert = require('assert');
 
 var DefaultValueAggregator = function () {
-  function DefaultValueAggregator(element, expressionRunner) {
+  function DefaultValueAggregator(element) {
     _classCallCheck(this, DefaultValueAggregator);
 
-    assert(expressionRunner);
     this.element = element;
-    this.expressionRunner = expressionRunner;
   }
 
   _createClass(DefaultValueAggregator, [{
@@ -2576,7 +2574,7 @@ var DefaultValueAggregator = function () {
         var val = elems[i].value;
         if (val) {
           var modelName = elems[i].getAttribute('sj-model');
-          this.expressionRunner.setValueByPath(scope, modelName, val);
+          new Function('$val', modelName + '=$val').apply(scope, [val]);
         }
       }
     }
@@ -2587,81 +2585,7 @@ var DefaultValueAggregator = function () {
 
 module.exports = DefaultValueAggregator;
 
-},{"assert":11}],5:[function(require,module,exports){
-"use strict";
-
-var _createClass = function () {
-  function defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }return function (Constructor, protoProps, staticProps) {
-    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
-  };
-}();
-
-function _classCallCheck(instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-}
-
-var assert = require('assert');
-
-// http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-var createFunction = function () {
-  function F(args) {
-    return Function.apply(this, args);
-  }
-  F.prototype = Function.prototype;
-
-  return function () {
-    return new F(arguments);
-  };
-}();
-
-var ExpressionRunner = function () {
-  function ExpressionRunner() {
-    _classCallCheck(this, ExpressionRunner);
-
-    this.eval_cache = {};
-    this.set_cache = {};
-  }
-
-  _createClass(ExpressionRunner, [{
-    key: "evalExpression",
-    value: function evalExpression(self, expression, lexVarNames, lexVarValues) {
-      assert(arguments.length === 4);
-      assert(Array.isArray(lexVarNames));
-      // assert(self instanceof HTMLElement);
-      // console.log(`evalExpression:${JSON.stringify(self.dump())}, ${expression}, lexVarNames:${JSON.stringify(lexVarNames)}, lexVarValues:${JSON.stringify(lexVarValues)}`);
-
-      var cache_key = expression + "\t" + lexVarNames.join("\t");
-      if (!this.eval_cache[cache_key]) {
-        this.eval_cache[cache_key] = createFunction.apply(null, lexVarNames.concat(["return " + expression]));
-      }
-      return this.eval_cache[cache_key].apply(self, lexVarValues);
-    }
-  }, {
-    key: "setValueByPath",
-    value: function setValueByPath(self, expression, value) {
-      assert(arguments.length === 3);
-      // assert(self instanceof HTMLElement);
-      // console.log(`setValueByPath: ${self}, ${expression}, ${value}`);
-
-      if (!this.set_cache[expression]) {
-        this.set_cache[expression] = new Function('$value', expression + "=$value");
-      }
-      this.set_cache[expression].apply(self, [value]);
-    }
-  }]);
-
-  return ExpressionRunner;
-}();
-
-module.exports = ExpressionRunner;
-
-},{"assert":11}],6:[function(require,module,exports){
+},{"assert":10}],5:[function(require,module,exports){
 'use strict';
 
 // polyfills
@@ -2676,7 +2600,7 @@ var elem = require('./sj-element.js');
 module.exports.Element = elem.Element;
 module.exports.tag = tag.sjtag;
 
-},{"./polyfill.js":7,"./sj-element.js":8,"./sj-tag.js":9,"webcomponents.js/CustomElements.js":2,"whatwg-fetch/fetch.js":3}],7:[function(require,module,exports){
+},{"./polyfill.js":6,"./sj-element.js":7,"./sj-tag.js":8,"webcomponents.js/CustomElements.js":2,"whatwg-fetch/fetch.js":3}],6:[function(require,module,exports){
 "use strict";
 
 // polyfill
@@ -2689,7 +2613,7 @@ if (!window.customElements) {
   };
 }
 
-},{}],8:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -2722,10 +2646,9 @@ function _inherits(subClass, superClass) {
   }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
 }
 
-var sj = require('./sj');
-var SJRenderer = sj.SJRenderer;
+var Compiler = require('./sj');
 var Aggregator = require('./default-value-aggregator.js');
-var ExpressionRunner = require('./expression-runner.js');
+var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
 // babel hacks
 // See https://phabricator.babeljs.io/T1548
@@ -2755,9 +2678,8 @@ var SJElement = function (_HTMLElement2) {
 
       var html = document.createElement("div");
       html.innerHTML = template;
-      var expressionRunner = new ExpressionRunner();
-      new Aggregator(html, expressionRunner).aggregate(this);
-      this.renderer = new sj.SJRenderer(this, html, expressionRunner);
+      new Aggregator(html).aggregate(this);
+      this.compiled = new Compiler().compile(html);
 
       this.initialize();
 
@@ -2782,17 +2704,21 @@ var SJElement = function (_HTMLElement2) {
   }, {
     key: 'update',
     value: function update() {
-      this.renderer.render();
+      var _this2 = this;
+
+      IncrementalDOM.patch(this, function () {
+        _this2.compiled.apply(_this2, [IncrementalDOM]);
+      });
     }
   }, {
     key: 'dump',
     value: function dump() {
-      var _this2 = this;
+      var _this3 = this;
 
       var scope = {};
       Object.keys(this).forEach(function (key) {
         if (key !== 'renderer') {
-          scope[key] = _this2[key];
+          scope[key] = _this3[key];
         }
       });
       return scope;
@@ -2804,7 +2730,7 @@ var SJElement = function (_HTMLElement2) {
 
 module.exports.Element = SJElement;
 
-},{"./default-value-aggregator.js":4,"./expression-runner.js":5,"./sj":10}],9:[function(require,module,exports){
+},{"./default-value-aggregator.js":4,"./sj":9,"incremental-dom/dist/incremental-dom.js":1}],8:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -2837,10 +2763,9 @@ function _inherits(subClass, superClass) {
   }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
 }
 
-var sj = require('./sj');
-var SJRenderer = sj.SJRenderer;
+var Compiler = require('./sj');
+var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 var Aggregator = require('./default-value-aggregator.js');
-var ExpressionRunner = require('./expression-runner.js');
 
 function sjtag(tagName, opts) {
   var template = opts.template;
@@ -2871,9 +2796,8 @@ function sjtag(tagName, opts) {
           }
         }();
 
-        var expressionRunner = new ExpressionRunner();
-        new Aggregator(html, expressionRunner).aggregate(this);
-        this.renderer = new SJRenderer(this, html, expressionRunner);
+        new Aggregator(html).aggregate(this);
+        this.compiled = new Compiler().compile(html);
 
         if (opts.initialize) {
           opts.initialize.apply(this);
@@ -2889,17 +2813,21 @@ function sjtag(tagName, opts) {
     }, {
       key: 'update',
       value: function update() {
-        this.renderer.render();
+        var _this2 = this;
+
+        IncrementalDOM.patch(this, function () {
+          _this2.compiled.apply(_this2, [IncrementalDOM]);
+        });
       }
     }, {
       key: 'dump',
       value: function dump() {
-        var _this2 = this;
+        var _this3 = this;
 
         var scope = {};
         Object.keys(this).forEach(function (key) {
           if (key !== 'renderer') {
-            scope[key] = _this2[key];
+            scope[key] = _this3[key];
           }
         });
         return scope;
@@ -2929,34 +2857,8 @@ function sjtag(tagName, opts) {
 
 module.exports.sjtag = sjtag;
 
-},{"./default-value-aggregator.js":4,"./expression-runner.js":5,"./sj":10}],10:[function(require,module,exports){
+},{"./default-value-aggregator.js":4,"./sj":9,"incremental-dom/dist/incremental-dom.js":1}],9:[function(require,module,exports){
 'use strict';
-
-var _slicedToArray = function () {
-  function sliceIterator(arr, i) {
-    var _arr = [];var _n = true;var _d = false;var _e = undefined;try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;_e = err;
-    } finally {
-      try {
-        if (!_n && _i["return"]) _i["return"]();
-      } finally {
-        if (_d) throw _e;
-      }
-    }return _arr;
-  }return function (arr, i) {
-    if (Array.isArray(arr)) {
-      return arr;
-    } else if (Symbol.iterator in Object(arr)) {
-      return sliceIterator(arr, i);
-    } else {
-      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-    }
-  };
-}();
 
 var _createClass = function () {
   function defineProperties(target, props) {
@@ -3009,177 +2911,55 @@ var sj_boolean_attributes = {
   'sj-checked': 'checked'
 };
 
-var RepeatRenderer = function () {
-  // forRenderer = new RepeatRenderer(this, this.targetElement, e, container, scope, varName);
-
-  function RepeatRenderer(renderer, targetElement, element, container, varName, lexVarNames, lexVarValues) {
-    _classCallCheck(this, RepeatRenderer);
-
-    assert(Array.isArray(lexVarNames));
-    assert(Array.isArray(lexVarValues));
-    this.renderer = renderer;
-    this.targetElement = targetElement;
-    this.element = element;
-    this.container = container;
-    this.varName = varName;
-    this.lexVarNames = lexVarNames;
-    this.lexVarValues = lexVarValues;
-  }
-
-  _createClass(RepeatRenderer, [{
-    key: 'render',
-    value: function render() {
-      var container = this.renderer.expressionRunner.evalExpression(this.targetElement, this.container, this.lexVarNames, this.lexVarValues);
-      for (var i = 0, l = container.length; i < l; i++) {
-        var item = container[i];
-
-        this.renderer.renderDOM(this.element, this.lexVarNames.concat(['$index', this.varName]), this.lexVarValues.concat([i, item]));
-      }
-    }
-  }]);
-
-  return RepeatRenderer;
-}();
-
 var SJRenderer = function () {
-  function SJRenderer(targetElement, templateElement, expressionRunner) {
+  function SJRenderer() {
     _classCallCheck(this, SJRenderer);
 
-    assert(arguments.length === 3);
-    this.targetElement = targetElement;
-    this.templateElement = templateElement;
-    this.expressionRunner = expressionRunner;
+    assert(arguments.length === 0);
+    // TODO optimize this
+    this.replaceVariables = '.replace(/{{([$A-Za-z0-9_.-]+)}}/g, function (m, s) {\n      return eval(s);\n    }.bind(this))';
   }
 
   _createClass(SJRenderer, [{
-    key: 'render',
-    value: function render() {
-      var _this = this;
-
-      if (this.rendering) {
-        return;
+    key: 'compile',
+    value: function compile(templateElement) {
+      var children = templateElement.childNodes;
+      var code = [];
+      for (var i = 0; i < children.length; ++i) {
+        code = code.concat(this.renderDOM(children[i]));
       }
-
-      try {
-        this.rendering = true;
-
-        IncrementalDOM.patch(this.targetElement, function () {
-          var children = _this.templateElement.children;
-          for (var i = 0; i < children.length; ++i) {
-            _this.renderDOM(children[i], [], []);
-          }
-        });
-      } finally {
-        this.rendering = false;
-      }
+      return new Function('IncrementalDOM', code.join("\n"));
+      // return new Function('IncrementalDOM', code.join("\n")).apply(this, [IncrementalDOM]);
     }
   }, {
     key: 'renderDOM',
-    value: function renderDOM(elem, lexVarNames, lexVarValues) {
-      assert(arguments.length === 3);
+    value: function renderDOM(elem) {
+      assert(elem);
       if (elem.nodeType === Node.TEXT_NODE) {
-        IncrementalDOM.text(this.replaceVariables(elem.textContent, lexVarNames, lexVarValues));
-        return;
+        return 'IncrementalDOM.text("' + this.escape(elem.textContent) + '"' + this.replaceVariables + ')';
+      } else if (elem.nodeType === Node.COMMENT_NODE) {
+        // Ignore comment node
+        return '';
       }
-      if (this.shouldHideElement(elem, lexVarNames, lexVarValues)) {
-        return;
-      }
 
-      var tagName = elem.tagName.toLowerCase();
+      var headers = [];
+      var footers = [];
+      var body = [];
 
-      IncrementalDOM.elementOpenStart(tagName);
-
-      var _renderAttributes = this.renderAttributes(elem, lexVarNames, lexVarValues);
-
-      var _renderAttributes2 = _slicedToArray(_renderAttributes, 2);
-
-      var modelName = _renderAttributes2[0];
-      var forRenderer = _renderAttributes2[1];
-      // console.log(`modelName:${modelName}, isForm:${isForm}, value:${modelValue}`);
-
-      if (modelName) {
-        var modelValue = this.expressionRunner.evalExpression(this.targetElement, modelName, lexVarNames, lexVarValues);
-        IncrementalDOM.attr("value", modelValue);
-      }
-      IncrementalDOM.elementOpenEnd(tagName);
-      var children = elem.childNodes;
-      if (forRenderer) {
-        forRenderer.render();
-      } else {
-        for (var i = 0, l = children.length; i < l; ++i) {
-          var child = children[i];
-          if (child.nodeType === Node.TEXT_NODE) {
-            IncrementalDOM.text(this.replaceVariables(child.textContent, lexVarNames, lexVarValues));
-          } else {
-            this.renderDOM(child, lexVarNames, lexVarValues);
-          }
+      // process `sj-if`
+      {
+        var cond = elem.getAttribute('sj-if');
+        if (cond) {
+          headers.push('if (' + cond + ') {');
+          footers.push('}');
         }
       }
-      IncrementalDOM.elementClose(tagName);
-    }
-  }, {
-    key: 'shouldHideElement',
-    value: function shouldHideElement(elem, lexVarNames, lexVarValues) {
-      var cond = elem.getAttribute('sj-if');
-      if (cond) {
-        var val = this.expressionRunner.evalExpression(this.targetElement, cond, lexVarNames, lexVarValues);
-        if (!val) {
-          return true;
-        }
-      }
-      return false;
-    }
-  }, {
-    key: 'renderAttributes',
-    value: function renderAttributes(elem, lexVarNames, lexVarValues) {
-      var modelName = void 0;
-      var attrs = elem.attributes;
-      var forRenderer = void 0;
-      for (var i = 0, l = attrs.length; i < l; ++i) {
-        var attr = attrs[i];
-        var attrName = attr.name;
 
-        var _renderAttribute = this.renderAttribute(attrName, attr, elem, lexVarNames, lexVarValues);
-
-        var _renderAttribute2 = _slicedToArray(_renderAttribute, 2);
-
-        var hasModelAttribute = _renderAttribute2[0];
-        var gotRepeatRenderer = _renderAttribute2[1];
-
-        if (hasModelAttribute) {
-          modelName = attr.value;
-        }
-        if (gotRepeatRenderer) {
-          forRenderer = gotRepeatRenderer;
-        }
-      }
-      return [modelName, forRenderer];
-    }
-  }, {
-    key: 'renderAttribute',
-    value: function renderAttribute(attrName, attr, elem, lexVarNames, lexVarValues) {
-      var _this2 = this;
-
-      var isModelAttribute = void 0;
-      var forRenderer = void 0;
-      if (attrName.substr(0, 3) === 'sj-') {
-        var event = sj_attr2event[attrName];
-        if (event) {
-          (function () {
-            var expression = attr.value;
-            IncrementalDOM.attr(event, function (e) {
-              _this2.expressionRunner.evalExpression(_this2.targetElement, expression, lexVarNames.concat(['$event']), lexVarValues.concat([e]));
-            });
-          })();
-        } else if (attr.name === 'sj-model') {
-          isModelAttribute = attr.value;
-          IncrementalDOM.attr("onchange", function (e) {
-            _this2.expressionRunner.setValueByPath(_this2.targetElement, attr.value, e.target.value);
-            _this2.render();
-          });
-        } else if (attr.name === 'sj-repeat') {
-          // TODO support (x,i) in bar
-          var m = attr.value.match(/^\s*(\w+)\s+in\s+([a-z][a-z0-9.]+)\s*$/);
+      // process `sj-repeat`
+      {
+        var _cond = elem.getAttribute('sj-repeat');
+        if (_cond) {
+          var m = _cond.match(/^\s*(\w+)\s+in\s+([a-z][a-z0-9.]+)\s*$/);
           if (!m) {
             throw 'Invalid sj-repeat value: ' + attr.value;
           }
@@ -3187,34 +2967,76 @@ var SJRenderer = function () {
           var varName = m[1];
           var container = m[2];
 
-          var e = elem.querySelector('*');
-          forRenderer = new RepeatRenderer(this, this.targetElement, e, container, varName, lexVarNames, lexVarValues);
+          // TODO support (x,i) in bar
+          headers.push('$container=' + container + '; for (var $index=0,$l=$container.length; $index<$l; $index++) {var ' + varName + '=$container[$index];');
+          footers.push('}');
+        }
+      }
+
+      var tagName = elem.tagName.toLowerCase();
+
+      // process attributes
+      body.push('IncrementalDOM.elementOpenStart("' + tagName + '")');
+      body = body.concat(this.renderAttributes(elem));
+      body.push('IncrementalDOM.elementOpenEnd("' + tagName + '")');
+
+      var children = elem.childNodes;
+      for (var i = 0, l = children.length; i < l; ++i) {
+        var child = children[i];
+        if (child.nodeType === Node.TEXT_NODE) {
+          // replaceVariables
+          body.push('IncrementalDOM.text("' + this.escape(child.textContent) + '"' + this.replaceVariables + ')');
+        } else {
+          body = body.concat(this.renderDOM(child));
+        }
+      }
+      body.push('IncrementalDOM.elementClose("' + tagName + '")');
+
+      var retval = headers.concat(body).concat(footers);
+      // console.log(`DONE renderDOM ${JSON.stringify(retval)}`);
+      return retval;
+    }
+  }, {
+    key: 'renderAttributes',
+    value: function renderAttributes(elem, lexVarNames, lexVarValues) {
+      var attrs = elem.attributes;
+      var codeList = [];
+      for (var i = 0, l = attrs.length; i < l; ++i) {
+        var _attr = attrs[i];
+        var code = this.renderAttribute(attrs[i]);
+        codeList.push(code);
+      }
+      // console.log(`DONE renderAttributes ${JSON.stringify(codeList)}`);
+      return codeList;
+    }
+  }, {
+    key: 'renderAttribute',
+    value: function renderAttribute(attr) {
+      // console.log(`renderAttribute: ${attr.name}=${attr.value}`);
+
+      var attrName = attr.name;
+      if (attrName.substr(0, 3) === 'sj-') {
+        var event = sj_attr2event[attrName];
+        if (event) {
+          var expression = attr.value;
+          return '\n          IncrementalDOM.attr("' + event + '", function ($event) {\n            ' + expression + ';\n          }.bind(this));\n        ';
+        } else if (attr.name === 'sj-model') {
+          return '\n          IncrementalDOM.attr("value", ' + attr.value + ');\n          IncrementalDOM.attr("onchange", function ($event) {\n            ' + attr.value + ' = $event.target.value;\n            this.update();\n          }.bind(this));\n        ';
         } else if (sj_boolean_attributes[attr.name]) {
           var attribute = sj_boolean_attributes[attr.name];
           var _expression = attr.value;
-          var result = this.expressionRunner.evalExpression(this.targetElement, _expression, lexVarNames, lexVarValues);
-          if (result) {
-            IncrementalDOM.attr(attribute, attribute);
-          }
+          return 'if (' + _expression + ') { IncrementalDOM.attr("' + attribute + '", "' + attribute + '"); }';
         }
+        return '';
       } else {
-        var labelValue = this.replaceVariables(attr.value, lexVarNames, lexVarValues);
-        IncrementalDOM.attr(attr.name, labelValue);
+        return 'IncrementalDOM.attr("' + attr.name + '", "' + this.escape(attr.value) + '"' + this.replaceVariables + ');';
       }
-      return [isModelAttribute, forRenderer];
     }
   }, {
-    key: 'replaceVariables',
-    value: function replaceVariables(label, lexVarNames, lexVarValues) {
-      var _this3 = this;
-
-      assert(arguments.length === 3);
-      return label.replace(/\{\{([$A-Za-z0-9_.-]+)\}\}/g, function (m, s) {
-        if (s === '$_') {
-          return JSON.stringify(_this3.targetElement);
-        } else {
-          return _this3.expressionRunner.evalExpression(_this3.targetElement, s, lexVarNames, lexVarValues);
-        }
+    key: 'escape',
+    value: function escape(s) {
+      return s.replace(/\n/g, function (m) {
+        return "\\n";
       });
     }
   }]);
@@ -3222,9 +3044,9 @@ var SJRenderer = function () {
   return SJRenderer;
 }();
 
-module.exports.SJRenderer = SJRenderer;
+module.exports = SJRenderer;
 
-},{"assert":11,"incremental-dom/dist/incremental-dom.js":1}],11:[function(require,module,exports){
+},{"assert":10,"incremental-dom/dist/incremental-dom.js":1}],10:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
 //
 // THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
@@ -3585,7 +3407,7 @@ var objectKeys = Object.keys || function (obj) {
   return keys;
 };
 
-},{"util/":15}],12:[function(require,module,exports){
+},{"util/":14}],11:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -3610,7 +3432,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],13:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -3706,14 +3528,14 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],15:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -4303,5 +4125,5 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":14,"_process":13,"inherits":12}]},{},[6])(6)
+},{"./support/isBuffer":13,"_process":12,"inherits":11}]},{},[5])(5)
 });
