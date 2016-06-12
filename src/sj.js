@@ -7,8 +7,6 @@ IncrementalDOM.attributes.value = function (el, name, value) {
   el.value = value
 };
 
-require('String.prototype.startsWith');
-
 const sj_attr2event = {
   'sj-click': 'onclick',
   'sj-blur': 'onblur',
@@ -169,7 +167,7 @@ class SJRenderer {
   renderAttribute(attrName, attr, elem, lexVarNames, lexVarValues) {
     let isModelAttribute;
     let forRenderer;
-    if (attrName.startsWith('sj-')) {
+    if (attrName.substr(0,3) === 'sj-') {
       const event = sj_attr2event[attrName];
       if (event) {
         const expression = attr.value;
