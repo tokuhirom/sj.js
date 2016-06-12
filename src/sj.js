@@ -33,12 +33,6 @@ const sj_boolean_attributes = {
   'sj-checked': 'checked'
 };
 
-function isFormElement(elem) {
-  return elem instanceof HTMLInputElement
-         || elem instanceof HTMLTextAreaElement
-         || elem instanceof HTMLSelectElement;
-}
-
 class RepeatRenderer {
   // forRenderer = new RepeatRenderer(this, this.targetElement, e, container, scope, varName);
   constructor(renderer, targetElement, element, container, varName, lexVarNames, lexVarValues) {
@@ -107,10 +101,9 @@ class SJRenderer {
 
     IncrementalDOM.elementOpenStart(tagName);
     const [modelName, forRenderer] = this.renderAttributes(elem, lexVarNames, lexVarValues);
-    const modelValue = modelName ? this.expressionRunner.evalExpression(this.targetElement, modelName, lexVarNames, lexVarValues) : null;
-    const isForm = isFormElement(elem);
     // console.log(`modelName:${modelName}, isForm:${isForm}, value:${modelValue}`);
-    if (modelName && isForm) {
+    if (modelName) {
+      const modelValue = this.expressionRunner.evalExpression(this.targetElement, modelName, lexVarNames, lexVarValues);
       IncrementalDOM.attr("value", modelValue);
     }
     IncrementalDOM.elementOpenEnd(tagName);
@@ -121,9 +114,7 @@ class SJRenderer {
       for (let i = 0, l = children.length; i < l; ++i) {
         const child = children[i];
         if (child.nodeType === Node.TEXT_NODE) {
-          if (!modelName) {
-            IncrementalDOM.text(this.replaceVariables(child.textContent, lexVarNames, lexVarValues));
-          }
+          IncrementalDOM.text(this.replaceVariables(child.textContent, lexVarNames, lexVarValues));
         } else {
           this.renderDOM(child, lexVarNames, lexVarValues);
         }
