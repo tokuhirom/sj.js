@@ -3122,9 +3122,6 @@ var SJRenderer = function () {
           }
         }
       }
-      if (modelName && modelValue && !isForm) {
-        IncrementalDOM.text(modelValue);
-      }
       IncrementalDOM.elementClose(tagName);
     }
   }, {
