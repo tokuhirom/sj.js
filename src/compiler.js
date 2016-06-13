@@ -42,14 +42,15 @@ class Compiler {
     const children = templateElement.childNodes;
     let code = [];
     for (let i = 0; i < children.length; ++i) {
-      code = code.concat(this.renderDOM(children[i]));
+      code = code.concat(this.renderDOM(children[i], []));
     }
     // console.log(code.join(";\n"));
     return new Function('IncrementalDOM', code.join(";\n"));
   }
 
-  renderDOM(elem) {
+  renderDOM(elem, vars) {
     assert(elem);
+    assert(vars);
     if (elem.nodeType === Node.TEXT_NODE) {
       return `IncrementalDOM.text(${this.text(elem.textContent)})`;
     } else if (elem.nodeType === Node.COMMENT_NODE) {
@@ -83,14 +84,17 @@ class Compiler {
           const varName = m[1];
           const container = m[4];
 
-          headers.push(`(function(IncrementalDOM) {\nvar $container=${container};\nfor (var $index=0,$l=$container.length; $index<$l; $index++) {\nvar ${varName}=$container[$index];`);
+          headers.push(`(function(IncrementalDOM) {\nvar $$container=${container};\nfor (var $index=0,$l=$$container.length; $index<$l; $index++) {\nvar ${varName}=$$container[$index];`);
           footers.push(`}\n}).apply(this, [IncrementalDOM]);`);
+
+          vars = vars.concat([varName, '$index']);
         } else {
           const keyName = m[2];
           const valueName = m[3];
           const container = m[4];
           headers.push(`(function(IncrementalDOM) {\n$$container=${container};for (var ${keyName} in $$container) {\nvar ${valueName}=$$container[${keyName}];`);
           footers.push(`}\n}).apply(this, [IncrementalDOM]);`);
+          vars = vars.concat([keyName, valueName]);
         }
       }
     }
@@ -99,7 +103,7 @@ class Compiler {
 
     // process attributes
     body.push(`IncrementalDOM.elementOpenStart("${tagName}")`);
-    body = body.concat(this.renderAttributes(elem));
+    body = body.concat(this.renderAttributes(elem, vars));
     body.push(`IncrementalDOM.elementOpenEnd("${tagName}")`);
 
     const children = elem.childNodes;
@@ -109,7 +113,7 @@ class Compiler {
         // replaceVariables
         body.push(`IncrementalDOM.text(${this.text(child.textContent)})`);
       } else {
-        body = body.concat(this.renderDOM(child));
+        body = body.concat(this.renderDOM(child, vars));
       }
     }
     body.push(`IncrementalDOM.elementClose("${tagName}")`);
@@ -119,19 +123,21 @@ class Compiler {
     return retval;
   }
 
-  renderAttributes(elem, lexVarNames, lexVarValues) {
+  renderAttributes(elem, vars) {
+    assert(vars);
     const attrs = elem.attributes;
     const codeList = [];
     for (let i = 0, l = attrs.length; i < l; ++i) {
       const attr = attrs[i];
-      const code = this.renderAttribute(attrs[i]);
+      const code = this.renderAttribute(attrs[i], vars);
       codeList.push(code);
     }
     // console.log(`DONE renderAttributes ${JSON.stringify(codeList)}`);
     return codeList;
   }
 
-  renderAttribute(attr) {
+  renderAttribute(attr, vars) {
+    assert(vars);
     // console.log(`renderAttribute: ${attr.name}=${attr.value}`);
 
     const attrName = attr.name;
@@ -140,17 +146,17 @@ class Compiler {
       if (event) {
         const expression = attr.value;
         return `
-          IncrementalDOM.attr("${event}", function ($index, $event) {
+          IncrementalDOM.attr("${event}", function (${vars.concat(['$event']).join(",")}) {
             ${expression};
-          }.bind(this, typeof $index !=='undefined' ? $index : null));
+          }.bind(${['this'].concat(vars).join(",")}));
         `;
       } else if (attr.name === 'sj-model') {
         return `
           IncrementalDOM.attr("value", ${attr.value});
-          IncrementalDOM.attr("onchange", function ($index, $event) {
+          IncrementalDOM.attr("onchange", function (${vars.concat(['$event']).join(",")}) {
             ${attr.value} = $event.target.value;
             this.update();
-          }.bind(this, typeof $index !=='undefined' ? $index : null));
+          }.bind(${['this'].concat(vars).join(",")}));
         `;
       } else if (sj_boolean_attributes[attr.name]) {
         const attribute = sj_boolean_attributes[attr.name];

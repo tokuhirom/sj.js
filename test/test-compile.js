@@ -53,12 +53,35 @@ test('sj-repeat', (t) => {
   const books = target.querySelectorAll('.book');
   t.equal(books.length, 2);
 });
+test('sj-repeat array kv', (t) => {
+  t.plan(3);
+  var div = document.createElement('div');
+  div.innerHTML = `
+    <div sj-repeat="(i,book) in this.books">
+      <div class="book">{{i}}:{{book.name}}</div>
+    </div>
+  `;
+  const code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () { };
+  target.books = [{name: 'hoge'}, {name: 'fuga'}];
+
+  IncrementalDOM.patch(target, () => {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+  const books = target.querySelectorAll('.book');
+  t.equal(books.length, 2);
+  t.equal(books[0].textContent, '0:hoge');
+  t.equal(books[1].textContent, '1:fuga');
+});
 test('sj-repeat(object)', (t) => {
-  t.plan(1);
+  t.plan(2);
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="(x,y) in this.obj">
-      <div class="item">{{x}}:{{y}}</div>
+      <div class="item" sj-click="this.result.push(x)">{{x}}:{{y}}</div>
     </div>
   `;
   const code = new Compiler().compile(div);
@@ -69,14 +92,19 @@ test('sj-repeat(object)', (t) => {
     a: 'b',
     c: 'd'
   };
+  target.result = [];
 
   IncrementalDOM.patch(target, () => {
     code.apply(target, [IncrementalDOM]);
   });
 
-
   const items = target.querySelectorAll('.item');
   t.equal(items.length, 2);
+
+  for (let i=0; i<items.length; i++) {
+    items[i].click();
+  }
+  t.deepEqual(target.result, ['a', 'c']);
 });
 test('sj-click', (t) => {
   t.plan(1);
@@ -167,7 +195,6 @@ test('nested for', (t) => {
   IncrementalDOM.patch(target, () => {
     code.apply(target, [IncrementalDOM]);
   });
-  console.log(target.innerHTML);
 
   t.ok(target.innerHTML.match(/hoge/));
   t.ok(target.innerHTML.match(/fuga/));
