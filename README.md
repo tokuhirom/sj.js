@@ -78,6 +78,17 @@ sample:
 
     <div sj-class="this.foo"></div>
 
+## sj-style
+
+    <div sj-style="<<EXPRESSION>>"></div>
+
+You can specify the styles for element via `sj-style` attribute.
+In expression, _this_ indicates your custom element.
+
+sample:
+
+    <div sj-style="{color: 'red'}"></div>
+
 ## Text replacement
 
     <div>Hello, {{this.name}}</div>
@@ -139,6 +150,15 @@ Mobile
     npm install -g uglify testling babelify browserify
     make
     make test
+
+## FAQ
+
+### Can't use `style="color: {{color}}"` in Internet Explorer
+
+IE returns DOM attributes from parsed DOM data.
+IE removes invalid stylesheet element like `color: {{color}}`.
+
+You should use `sj-style` instead.
 
 ## LICENSE
 

@@ -164,6 +164,8 @@ class Compiler {
         return `if (${expression}) { IncrementalDOM.attr("${attribute}", "${attribute}"); }`;
       } else if (attr.name === 'sj-class') {
         return `IncrementalDOM.attr("class", ${attr.value}.join(" "));`;
+      } else if (attr.name === 'sj-style') {
+        return `IncrementalDOM.attr("style", ${attr.value});`;
       } else {
         return '';
       }
