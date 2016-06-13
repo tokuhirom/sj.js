@@ -182,3 +182,12 @@ test('nested for', (t) => {
   }
   t.deepEqual(target.result, [0,1,0,1]);
 });
+test('text', (t) => {
+  const compiler = new Compiler();
+  const s = ["\n", `"`];
+  t.plan(s.length);
+  for (let i=0, l=s.length; i<l; i++) {
+    const m = s[i];
+    t.equal(eval(compiler.text(m)), m);
+  }
+});

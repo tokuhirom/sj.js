@@ -36,10 +36,6 @@ const sj_boolean_attributes = {
 class Compiler {
   constructor() {
     assert(arguments.length === 0);
-    // TODO optimize this
-    this.replaceVariables = `.replace(/\{\{([$A-Za-z0-9_.\(\)-]+)\}\}/g, function (m, s) {
-      return eval(s);
-    }.bind(this))`;
   }
 
   compile(templateElement) {
@@ -55,7 +51,7 @@ class Compiler {
   renderDOM(elem) {
     assert(elem);
     if (elem.nodeType === Node.TEXT_NODE) {
-      return `IncrementalDOM.text("${this.escape(elem.textContent)}"${this.replaceVariables})`;
+      return `IncrementalDOM.text(${this.text(elem.textContent)})`;
     } else if (elem.nodeType === Node.COMMENT_NODE) {
       // Ignore comment node
       return '';
@@ -104,7 +100,7 @@ class Compiler {
       const child = children[i];
       if (child.nodeType === Node.TEXT_NODE) {
         // replaceVariables
-        body.push(`IncrementalDOM.text("${this.escape(child.textContent)}"${this.replaceVariables})`);
+        body.push(`IncrementalDOM.text(${this.text(child.textContent)})`);
       } else {
         body = body.concat(this.renderDOM(child));
       }
@@ -156,15 +152,15 @@ class Compiler {
       }
       return '';
     } else {
-      return `IncrementalDOM.attr("${attr.name}", "${this.escape(attr.value)}"${this.replaceVariables});`;
+      return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)});`;
     }
   }
 
-  // TODO escape all required chars
-  escape(s) {
-    return s.replace(/\n/g, function (m) {
-      return "\\n";
-    });
+  text(s) {
+    // TODO optimize this
+    return JSON.stringify(s) + `.replace(/\{\{([$A-Za-z0-9_.\(\)-]+)\}\}/g, function (m, s) {
+      return eval(s);
+    }.bind(this))`;
   }
 }
 
