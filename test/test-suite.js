@@ -241,7 +241,7 @@ runTest('test-for-empty', sj.tag('test-for-empty', {
 runTest('test-attr-var', sj.tag('test-attr-var', {
   template: function () {/*
     <h1>Attr variable</h1>
-    <div style="color: {{this.ccc}}">CONTENT</div>`;
+    <div data-x="color: {{this.ccc}}">CONTENT</div>`;
   */},
   initialize: function () {
     this.ccc = "green";
@@ -249,7 +249,7 @@ runTest('test-attr-var', sj.tag('test-attr-var', {
 }), function (t, tagName) {
   var elems = this.querySelector('div');
   t.plan(1);
-  t.ok(elems.style.color === 'green', tagName);
+  t.ok(elems.getAttribute('data-x') === 'color: green', tagName);
 });
 
 runTest('test-if', sj.tag('test-if', {
