@@ -2658,15 +2658,16 @@ var Compiler = function () {
       var children = templateElement.childNodes;
       var code = [];
       for (var i = 0; i < children.length; ++i) {
-        code = code.concat(this.renderDOM(children[i]));
+        code = code.concat(this.renderDOM(children[i], []));
       }
       // console.log(code.join(";\n"));
       return new Function('IncrementalDOM', code.join(";\n"));
     }
   }, {
     key: 'renderDOM',
-    value: function renderDOM(elem) {
+    value: function renderDOM(elem, vars) {
       assert(elem);
+      assert(vars);
       if (elem.nodeType === Node.TEXT_NODE) {
         return 'IncrementalDOM.text(' + this.text(elem.textContent) + ')';
       } else if (elem.nodeType === Node.COMMENT_NODE) {
@@ -2700,14 +2701,17 @@ var Compiler = function () {
             var varName = m[1];
             var container = m[4];
 
-            headers.push('(function(IncrementalDOM) {\nvar $container=' + container + ';\nfor (var $index=0,$l=$container.length; $index<$l; $index++) {\nvar ' + varName + '=$container[$index];');
+            headers.push('(function(IncrementalDOM) {\nvar $$container=' + container + ';\nfor (var $index=0,$l=$$container.length; $index<$l; $index++) {\nvar ' + varName + '=$$container[$index];');
             footers.push('}\n}).apply(this, [IncrementalDOM]);');
+
+            vars = vars.concat([varName, '$index']);
           } else {
             var keyName = m[2];
             var valueName = m[3];
             var _container = m[4];
             headers.push('(function(IncrementalDOM) {\n$$container=' + _container + ';for (var ' + keyName + ' in $$container) {\nvar ' + valueName + '=$$container[' + keyName + '];');
             footers.push('}\n}).apply(this, [IncrementalDOM]);');
+            vars = vars.concat([keyName, valueName]);
           }
         }
       }
@@ -2716,7 +2720,7 @@ var Compiler = function () {
 
       // process attributes
       body.push('IncrementalDOM.elementOpenStart("' + tagName + '")');
-      body = body.concat(this.renderAttributes(elem));
+      body = body.concat(this.renderAttributes(elem, vars));
       body.push('IncrementalDOM.elementOpenEnd("' + tagName + '")');
 
       var children = elem.childNodes;
@@ -2726,7 +2730,7 @@ var Compiler = function () {
           // replaceVariables
           body.push('IncrementalDOM.text(' + this.text(child.textContent) + ')');
         } else {
-          body = body.concat(this.renderDOM(child));
+          body = body.concat(this.renderDOM(child, vars));
         }
       }
       body.push('IncrementalDOM.elementClose("' + tagName + '")');
@@ -2737,12 +2741,13 @@ var Compiler = function () {
     }
   }, {
     key: 'renderAttributes',
-    value: function renderAttributes(elem, lexVarNames, lexVarValues) {
+    value: function renderAttributes(elem, vars) {
+      assert(vars);
       var attrs = elem.attributes;
       var codeList = [];
       for (var i = 0, l = attrs.length; i < l; ++i) {
         var attr = attrs[i];
-        var code = this.renderAttribute(attrs[i]);
+        var code = this.renderAttribute(attrs[i], vars);
         codeList.push(code);
       }
       // console.log(`DONE renderAttributes ${JSON.stringify(codeList)}`);
@@ -2750,7 +2755,8 @@ var Compiler = function () {
     }
   }, {
     key: 'renderAttribute',
-    value: function renderAttribute(attr) {
+    value: function renderAttribute(attr, vars) {
+      assert(vars);
       // console.log(`renderAttribute: ${attr.name}=${attr.value}`);
 
       var attrName = attr.name;
@@ -2758,9 +2764,9 @@ var Compiler = function () {
         var event = sj_attr2event[attrName];
         if (event) {
           var expression = attr.value;
-          return '\n          IncrementalDOM.attr("' + event + '", function ($index, $event) {\n            ' + expression + ';\n          }.bind(this, typeof $index !==\'undefined\' ? $index : null));\n        ';
+          return '\n          IncrementalDOM.attr("' + event + '", function (' + vars.concat(['$event']).join(",") + ') {\n            ' + expression + ';\n          }.bind(' + ['this'].concat(vars).join(",") + '));\n        ';
         } else if (attr.name === 'sj-model') {
-          return '\n          IncrementalDOM.attr("value", ' + attr.value + ');\n          IncrementalDOM.attr("onchange", function ($index, $event) {\n            ' + attr.value + ' = $event.target.value;\n            this.update();\n          }.bind(this, typeof $index !==\'undefined\' ? $index : null));\n        ';
+          return '\n          IncrementalDOM.attr("value", ' + attr.value + ');\n          IncrementalDOM.attr("onchange", function (' + vars.concat(['$event']).join(",") + ') {\n            ' + attr.value + ' = $event.target.value;\n            this.update();\n          }.bind(' + ['this'].concat(vars).join(",") + '));\n        ';
         } else if (sj_boolean_attributes[attr.name]) {
           var attribute = sj_boolean_attributes[attr.name];
           var _expression = attr.value;
