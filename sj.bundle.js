@@ -2559,14 +2559,18 @@ function _classCallCheck(instance, Constructor) {
 
 var assert = require('assert');
 
-var DefaultValueAggregator = function () {
-  function DefaultValueAggregator(element) {
-    _classCallCheck(this, DefaultValueAggregator);
+/**
+ * Aggregate values from dom tree
+ */
+
+var Aggregator = function () {
+  function Aggregator(element) {
+    _classCallCheck(this, Aggregator);
 
     this.element = element;
   }
 
-  _createClass(DefaultValueAggregator, [{
+  _createClass(Aggregator, [{
     key: 'aggregate',
     value: function aggregate(scope) {
       var elems = this.element.querySelectorAll('input,select,textarea');
@@ -2582,40 +2586,205 @@ var DefaultValueAggregator = function () {
     }
   }]);
 
-  return DefaultValueAggregator;
+  return Aggregator;
 }();
 
-module.exports = DefaultValueAggregator;
+module.exports = Aggregator;
 
 },{"assert":10}],5:[function(require,module,exports){
 'use strict';
 
-// polyfills
-
-require('webcomponents.js/CustomElements.js');
-require('./polyfill.js');
-require('whatwg-fetch/fetch.js');
-
-var tag = require('./sj-tag.js');
-var elem = require('./sj-element.js');
-
-module.exports.Element = elem.Element;
-module.exports.tag = tag.sjtag;
-
-},{"./polyfill.js":6,"./sj-element.js":7,"./sj-tag.js":8,"webcomponents.js/CustomElements.js":2,"whatwg-fetch/fetch.js":3}],6:[function(require,module,exports){
-"use strict";
-
-// polyfill
-
-if (!window.customElements) {
-  window.customElements = {
-    define: function define(name, elem) {
-      document.registerElement(name, elem);
+var _createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
     }
+  }return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
   };
+}();
+
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
 }
 
-},{}],7:[function(require,module,exports){
+var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
+var assert = require('assert');
+
+// hack
+// https://github.com/google/incremental-dom/issues/239
+IncrementalDOM.attributes.value = function (el, name, value) {
+  el.value = value;
+};
+
+var sj_attr2event = {
+  'sj-click': 'onclick',
+  'sj-blur': 'onblur',
+  'sj-checked': 'onchecked',
+  'sj-dblclick': 'ondblclick',
+  'sj-focus': 'onfocus',
+  'sj-keydown': 'onkeydown',
+  'sj-keypress': 'onkeypress',
+  'sj-keyup': 'onkeyup',
+  'sj-mousedown': 'onmousedown',
+  'sj-mouseenter': 'onmouseenter',
+  'sj-mouseleave': 'onmouseleave',
+  'sj-mousemove': 'onmousemove',
+  'sj-mouseover': 'onmouseover',
+  'sj-mouseup': 'onmouseup',
+  'sj-paste': 'onpaste',
+  'sj-selected': 'onselected',
+  'sj-submit': 'onsubmit'
+};
+
+var sj_boolean_attributes = {
+  'sj-disabled': 'disabled',
+  'sj-required': 'required',
+  'sj-checked': 'checked'
+};
+
+var Compiler = function () {
+  function Compiler() {
+    _classCallCheck(this, Compiler);
+
+    assert(arguments.length === 0);
+  }
+
+  _createClass(Compiler, [{
+    key: 'compile',
+    value: function compile(templateElement) {
+      var children = templateElement.childNodes;
+      var code = [];
+      for (var i = 0; i < children.length; ++i) {
+        code = code.concat(this.renderDOM(children[i]));
+      }
+      // console.log(code.join(";\n"));
+      return new Function('IncrementalDOM', code.join(";\n"));
+    }
+  }, {
+    key: 'renderDOM',
+    value: function renderDOM(elem) {
+      assert(elem);
+      if (elem.nodeType === Node.TEXT_NODE) {
+        return 'IncrementalDOM.text(' + this.text(elem.textContent) + ')';
+      } else if (elem.nodeType === Node.COMMENT_NODE) {
+        // Ignore comment node
+        return '';
+      }
+
+      var headers = [];
+      var footers = [];
+      var body = [];
+
+      // process `sj-if`
+      {
+        var cond = elem.getAttribute('sj-if');
+        if (cond) {
+          headers.push('if (' + cond + ') {');
+          footers.push('}');
+        }
+      }
+
+      // process `sj-repeat`
+      {
+        var _cond = elem.getAttribute('sj-repeat');
+        if (_cond) {
+          var m = _cond.match(/^\s*(?:(\w+)|\(\s*(\w+)\s*,\s*(\w+)\s*\))\s+in\s+([a-z][a-z0-9.]*)\s*$/);
+          if (!m) {
+            throw 'Invalid sj-repeat value: ' + _cond;
+          }
+
+          if (m[1]) {
+            var varName = m[1];
+            var container = m[4];
+
+            headers.push('(function(IncrementalDOM) {\nvar $container=' + container + ';\nfor (var $index=0,$l=$container.length; $index<$l; $index++) {\nvar ' + varName + '=$container[$index];');
+            footers.push('}\n}).apply(this, [IncrementalDOM]);');
+          } else {
+            var keyName = m[2];
+            var valueName = m[3];
+            var _container = m[4];
+            headers.push('(function(IncrementalDOM) {\n$$container=' + _container + ';for (var ' + keyName + ' in $$container) {\nvar ' + valueName + '=$$container[' + keyName + '];');
+            footers.push('}\n}).apply(this, [IncrementalDOM]);');
+          }
+        }
+      }
+
+      var tagName = elem.tagName.toLowerCase();
+
+      // process attributes
+      body.push('IncrementalDOM.elementOpenStart("' + tagName + '")');
+      body = body.concat(this.renderAttributes(elem));
+      body.push('IncrementalDOM.elementOpenEnd("' + tagName + '")');
+
+      var children = elem.childNodes;
+      for (var i = 0, l = children.length; i < l; ++i) {
+        var child = children[i];
+        if (child.nodeType === Node.TEXT_NODE) {
+          // replaceVariables
+          body.push('IncrementalDOM.text(' + this.text(child.textContent) + ')');
+        } else {
+          body = body.concat(this.renderDOM(child));
+        }
+      }
+      body.push('IncrementalDOM.elementClose("' + tagName + '")');
+
+      var retval = [';'].concat(headers).concat(body).concat(footers);
+      // console.log(`DONE renderDOM ${JSON.stringify(retval)}`);
+      return retval;
+    }
+  }, {
+    key: 'renderAttributes',
+    value: function renderAttributes(elem, lexVarNames, lexVarValues) {
+      var attrs = elem.attributes;
+      var codeList = [];
+      for (var i = 0, l = attrs.length; i < l; ++i) {
+        var attr = attrs[i];
+        var code = this.renderAttribute(attrs[i]);
+        codeList.push(code);
+      }
+      // console.log(`DONE renderAttributes ${JSON.stringify(codeList)}`);
+      return codeList;
+    }
+  }, {
+    key: 'renderAttribute',
+    value: function renderAttribute(attr) {
+      // console.log(`renderAttribute: ${attr.name}=${attr.value}`);
+
+      var attrName = attr.name;
+      if (attrName.substr(0, 3) === 'sj-') {
+        var event = sj_attr2event[attrName];
+        if (event) {
+          var expression = attr.value;
+          return '\n          IncrementalDOM.attr("' + event + '", function ($index, $event) {\n            ' + expression + ';\n          }.bind(this, typeof $index !==\'undefined\' ? $index : null));\n        ';
+        } else if (attr.name === 'sj-model') {
+          return '\n          IncrementalDOM.attr("value", ' + attr.value + ');\n          IncrementalDOM.attr("onchange", function ($index, $event) {\n            ' + attr.value + ' = $event.target.value;\n            this.update();\n          }.bind(this, typeof $index !==\'undefined\' ? $index : null));\n        ';
+        } else if (sj_boolean_attributes[attr.name]) {
+          var attribute = sj_boolean_attributes[attr.name];
+          var _expression = attr.value;
+          return 'if (' + _expression + ') { IncrementalDOM.attr("' + attribute + '", "' + attribute + '"); }';
+        }
+        return '';
+      } else {
+        return 'IncrementalDOM.attr("' + attr.name + '", ' + this.text(attr.value) + ');';
+      }
+    }
+  }, {
+    key: 'text',
+    value: function text(s) {
+      // TODO optimize this
+      return JSON.stringify(s) + '.replace(/{{([$A-Za-z0-9_.()-]+)}}/g, function (m, s) {\n      return eval(s);\n    }.bind(this))';
+    }
+  }]);
+
+  return Compiler;
+}();
+
+module.exports = Compiler;
+
+},{"assert":10,"incremental-dom/dist/incremental-dom.js":1}],6:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -2648,8 +2817,8 @@ function _inherits(subClass, superClass) {
   }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
 }
 
-var Compiler = require('./sj');
-var Aggregator = require('./default-value-aggregator.js');
+var Compiler = require('./compiler.js');
+var Aggregator = require('./aggregator.js');
 var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
 // babel hacks
@@ -2660,16 +2829,16 @@ if (typeof HTMLElement !== 'function') {
   HTMLElement = _HTMLElement;
 }
 
-var SJElement = function (_HTMLElement2) {
-  _inherits(SJElement, _HTMLElement2);
+var Element = function (_HTMLElement2) {
+  _inherits(Element, _HTMLElement2);
 
-  function SJElement() {
-    _classCallCheck(this, SJElement);
+  function Element() {
+    _classCallCheck(this, Element);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(SJElement).apply(this, arguments));
+    return _possibleConstructorReturn(this, Object.getPrototypeOf(Element).apply(this, arguments));
   }
 
-  _createClass(SJElement, [{
+  _createClass(Element, [{
     key: 'createdCallback',
     value: function createdCallback() {
       // parse template
@@ -2727,12 +2896,42 @@ var SJElement = function (_HTMLElement2) {
     }
   }]);
 
-  return SJElement;
+  return Element;
 }(HTMLElement);
 
-module.exports.Element = SJElement;
+module.exports = Element;
 
-},{"./default-value-aggregator.js":4,"./sj":9,"incremental-dom/dist/incremental-dom.js":1}],8:[function(require,module,exports){
+},{"./aggregator.js":4,"./compiler.js":5,"incremental-dom/dist/incremental-dom.js":1}],7:[function(require,module,exports){
+'use strict';
+
+// polyfills
+
+require('webcomponents.js/CustomElements.js');
+require('./polyfill.js');
+require('whatwg-fetch/fetch.js');
+
+var tag = require('./tag.js');
+var Element = require('./element.js');
+
+module.exports.Element = Element;
+module.exports.tag = tag;
+
+},{"./element.js":6,"./polyfill.js":8,"./tag.js":9,"webcomponents.js/CustomElements.js":2,"whatwg-fetch/fetch.js":3}],8:[function(require,module,exports){
+'use strict';
+
+// polyfill
+
+require('webcomponents.js/CustomElements.js');
+
+if (!window.customElements) {
+  window.customElements = {
+    define: function define(name, elem) {
+      document.registerElement(name, elem);
+    }
+  };
+}
+
+},{"webcomponents.js/CustomElements.js":2}],9:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -2765,13 +2964,13 @@ function _inherits(subClass, superClass) {
   }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
 }
 
-var Compiler = require('./sj');
+var Compiler = require('./compiler');
 var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
-var Aggregator = require('./default-value-aggregator.js');
+var Aggregator = require('./aggregator.js');
 
 var unwrapComment = /\/\*!?(?:\@preserve)?[ \t]*(?:\r\n|\n)([\s\S]*?)(?:\r\n|\n)\s*\*\//;
 
-function sjtag(tagName, opts) {
+function tag(tagName, opts) {
   var template = opts.template;
   delete opts['template'];
   if (!template) {
@@ -2859,198 +3058,9 @@ function sjtag(tagName, opts) {
   customElements.define(tagName, elementClass);
 }
 
-module.exports.sjtag = sjtag;
+module.exports = tag;
 
-},{"./default-value-aggregator.js":4,"./sj":9,"incremental-dom/dist/incremental-dom.js":1}],9:[function(require,module,exports){
-'use strict';
-
-var _createClass = function () {
-  function defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }return function (Constructor, protoProps, staticProps) {
-    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
-  };
-}();
-
-function _classCallCheck(instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-}
-
-var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
-var assert = require('assert');
-
-// hack
-// https://github.com/google/incremental-dom/issues/239
-IncrementalDOM.attributes.value = function (el, name, value) {
-  el.value = value;
-};
-
-var sj_attr2event = {
-  'sj-click': 'onclick',
-  'sj-blur': 'onblur',
-  'sj-checked': 'onchecked',
-  'sj-dblclick': 'ondblclick',
-  'sj-focus': 'onfocus',
-  'sj-keydown': 'onkeydown',
-  'sj-keypress': 'onkeypress',
-  'sj-keyup': 'onkeyup',
-  'sj-mousedown': 'onmousedown',
-  'sj-mouseenter': 'onmouseenter',
-  'sj-mouseleave': 'onmouseleave',
-  'sj-mousemove': 'onmousemove',
-  'sj-mouseover': 'onmouseover',
-  'sj-mouseup': 'onmouseup',
-  'sj-paste': 'onpaste',
-  'sj-selected': 'onselected',
-  'sj-submit': 'onsubmit'
-};
-
-var sj_boolean_attributes = {
-  'sj-disabled': 'disabled',
-  'sj-required': 'required',
-  'sj-checked': 'checked'
-};
-
-var SJRenderer = function () {
-  function SJRenderer() {
-    _classCallCheck(this, SJRenderer);
-
-    assert(arguments.length === 0);
-    // TODO optimize this
-    this.replaceVariables = '.replace(/{{([$A-Za-z0-9_.()-]+)}}/g, function (m, s) {\n      return eval(s);\n    }.bind(this))';
-  }
-
-  _createClass(SJRenderer, [{
-    key: 'compile',
-    value: function compile(templateElement) {
-      var children = templateElement.childNodes;
-      var code = [];
-      for (var i = 0; i < children.length; ++i) {
-        code = code.concat(this.renderDOM(children[i]));
-      }
-      // console.log(code.join(";\n"));
-      return new Function('IncrementalDOM', code.join(";\n"));
-    }
-  }, {
-    key: 'renderDOM',
-    value: function renderDOM(elem) {
-      assert(elem);
-      if (elem.nodeType === Node.TEXT_NODE) {
-        return 'IncrementalDOM.text("' + this.escape(elem.textContent) + '"' + this.replaceVariables + ')';
-      } else if (elem.nodeType === Node.COMMENT_NODE) {
-        // Ignore comment node
-        return '';
-      }
-
-      var headers = [];
-      var footers = [];
-      var body = [];
-
-      // process `sj-if`
-      {
-        var cond = elem.getAttribute('sj-if');
-        if (cond) {
-          headers.push('if (' + cond + ') {');
-          footers.push('}');
-        }
-      }
-
-      // process `sj-repeat`
-      {
-        var _cond = elem.getAttribute('sj-repeat');
-        if (_cond) {
-          var m = _cond.match(/^\s*(\w+)\s+in\s+([a-z][a-z0-9.]+)\s*$/);
-          if (!m) {
-            throw 'Invalid sj-repeat value: ' + attr.value;
-          }
-
-          var varName = m[1];
-          var container = m[2];
-
-          // TODO support (x,i) in bar
-          headers.push('(function(IncrementalDOM) {\nvar $container=' + container + ';\nfor (var $index=0,$l=$container.length; $index<$l; $index++) {\nvar ' + varName + '=$container[$index];');
-          footers.push('}\n}).apply(this, [IncrementalDOM]);');
-        }
-      }
-
-      var tagName = elem.tagName.toLowerCase();
-
-      // process attributes
-      body.push('IncrementalDOM.elementOpenStart("' + tagName + '")');
-      body = body.concat(this.renderAttributes(elem));
-      body.push('IncrementalDOM.elementOpenEnd("' + tagName + '")');
-
-      var children = elem.childNodes;
-      for (var i = 0, l = children.length; i < l; ++i) {
-        var child = children[i];
-        if (child.nodeType === Node.TEXT_NODE) {
-          // replaceVariables
-          body.push('IncrementalDOM.text("' + this.escape(child.textContent) + '"' + this.replaceVariables + ')');
-        } else {
-          body = body.concat(this.renderDOM(child));
-        }
-      }
-      body.push('IncrementalDOM.elementClose("' + tagName + '")');
-
-      var retval = [';'].concat(headers).concat(body).concat(footers);
-      // console.log(`DONE renderDOM ${JSON.stringify(retval)}`);
-      return retval;
-    }
-  }, {
-    key: 'renderAttributes',
-    value: function renderAttributes(elem, lexVarNames, lexVarValues) {
-      var attrs = elem.attributes;
-      var codeList = [];
-      for (var i = 0, l = attrs.length; i < l; ++i) {
-        var _attr = attrs[i];
-        var code = this.renderAttribute(attrs[i]);
-        codeList.push(code);
-      }
-      // console.log(`DONE renderAttributes ${JSON.stringify(codeList)}`);
-      return codeList;
-    }
-  }, {
-    key: 'renderAttribute',
-    value: function renderAttribute(attr) {
-      // console.log(`renderAttribute: ${attr.name}=${attr.value}`);
-
-      var attrName = attr.name;
-      if (attrName.substr(0, 3) === 'sj-') {
-        var event = sj_attr2event[attrName];
-        if (event) {
-          var expression = attr.value;
-          return '\n          IncrementalDOM.attr("' + event + '", function ($index, $event) {\n            ' + expression + ';\n          }.bind(this, typeof $index !==\'undefined\' ? $index : null));\n        ';
-        } else if (attr.name === 'sj-model') {
-          return '\n          IncrementalDOM.attr("value", ' + attr.value + ');\n          IncrementalDOM.attr("onchange", function ($index, $event) {\n            ' + attr.value + ' = $event.target.value;\n            this.update();\n          }.bind(this, typeof $index !==\'undefined\' ? $index : null));\n        ';
-        } else if (sj_boolean_attributes[attr.name]) {
-          var attribute = sj_boolean_attributes[attr.name];
-          var _expression = attr.value;
-          return 'if (' + _expression + ') { IncrementalDOM.attr("' + attribute + '", "' + attribute + '"); }';
-        }
-        return '';
-      } else {
-        return 'IncrementalDOM.attr("' + attr.name + '", "' + this.escape(attr.value) + '"' + this.replaceVariables + ');';
-      }
-    }
-  }, {
-    key: 'escape',
-    value: function escape(s) {
-      return s.replace(/\n/g, function (m) {
-        return "\\n";
-      });
-    }
-  }]);
-
-  return SJRenderer;
-}();
-
-module.exports = SJRenderer;
-
-},{"assert":10,"incremental-dom/dist/incremental-dom.js":1}],10:[function(require,module,exports){
+},{"./aggregator.js":4,"./compiler":5,"incremental-dom/dist/incremental-dom.js":1}],10:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
 //
 // THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
@@ -4129,5 +4139,5 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":13,"_process":12,"inherits":11}]},{},[5])(5)
+},{"./support/isBuffer":13,"_process":12,"inherits":11}]},{},[7])(7)
 });
