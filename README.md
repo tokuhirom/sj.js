@@ -67,6 +67,17 @@ You can repeat over the object.
 Hide element if evaluated value is falsy. You can write any ecmascript expression in there.
 In expression, _this_ indicates your custom element.
 
+## sj-class
+
+    <div sj-class="<<EXPRESSION>>"></div>
+
+Specify the element's class by sj.
+In expression, _this_ indicates your custom element.
+
+sample:
+
+    <div sj-class="this.foo"></div>
+
 ## Text replacement
 
     <div>Hello, {{this.name}}</div>

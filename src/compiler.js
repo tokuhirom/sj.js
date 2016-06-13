@@ -162,8 +162,11 @@ class Compiler {
         const attribute = sj_boolean_attributes[attr.name];
         const expression = attr.value;
         return `if (${expression}) { IncrementalDOM.attr("${attribute}", "${attribute}"); }`;
+      } else if (attr.name === 'sj-class') {
+        return `IncrementalDOM.attr("class", ${attr.value}.join(" "));`;
+      } else {
+        return '';
       }
-      return '';
     } else {
       return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)});`;
     }

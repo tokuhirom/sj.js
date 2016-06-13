@@ -243,3 +243,23 @@ test('text', (t) => {
     t.equal(eval(compiler.text(m)), m);
   }
 });
+test('sj-class', (t) => {
+  t.plan(1);
+  var div = document.createElement('div');
+  div.innerHTML = `
+    <div sj-class='this.klass'>
+    </div>
+  `;
+  const code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () { };
+  target.klass = ['a', 'b'];
+
+  IncrementalDOM.patch(target, () => {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+  const got = target.querySelector('div');
+  t.deepEqual(got.getAttribute('class'), 'a b');
+});
