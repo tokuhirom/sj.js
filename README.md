@@ -123,6 +123,12 @@ Mobile
  * Tokuhiro Matsuno
  * Yasuhiro MATSUMOTO
 
+## development
+
+    npm install -g uglify testling babelify browserify
+    make
+    make test
+
 ## LICENSE
 
     The MIT License (MIT)
