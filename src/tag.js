@@ -23,6 +23,10 @@ function tag(tagName, opts) {
         }
       })();
 
+      if (opts.prepare) {
+        opts.prepare.apply(this);
+      }
+
       new Aggregator(html).aggregate(this);
       this.compiled = new Compiler().compile(html);
 

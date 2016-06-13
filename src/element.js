@@ -21,6 +21,9 @@ class Element extends HTMLElement {
 
     const html = document.createElement("div");
     html.innerHTML = template;
+
+    this.prepare();
+
     new Aggregator(html).aggregate(this);
     this.compiled = new Compiler().compile(html);
 
@@ -36,6 +39,10 @@ class Element extends HTMLElement {
   attributeChangedCallback(key) {
     this[key] = this.getAttribute(key);
     this.update();
+  }
+
+  prepare() {
+    // nop. abstract method.
   }
 
   initialize() {

@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset=utf8>
+    <title>sj.js</title>
+    <style>
+      .container {
+        max-width: 640px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>sj.js</h1>
+      <hr>
+      <h2>Hello</h2>
+      <x-hello>
+      <hr>
+      <x-todo-list>
+    </div>
+    <template id="tmpl-hello">
+      <input type="text" sj-model="this.newitem" sj-keyup="this.update()">
+      Hello, {{this.newitem}}.
+    </template>
+    <template id="tmpl-todo-list">
+      <input type="text" sj-model="this.newitem">
+      {{this.newitem}}
+    </template>
+    <script type="text/javascript" src="sj.bundle.min.js"></script>
+    <script type="text/javascript">
+      // Note. should i add 'sj.ready()' function?
+      document.addEventListener("DOMContentLoaded", function(event) {
+        sj.tag('x-hello', {
+          template: document.getElementById('tmpl-hello').innerHTML
+        });
+        sj.tag('x-todo-list', {
+          template: document.getElementById('tmpl-todo-list').innerHTML,
+          initialize: function () {
+            this.newitem = '';
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

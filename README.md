@@ -122,6 +122,14 @@ Following event handlers are supported now.
   'sj-selected': 'onselected',
   'sj-submit': 'onsubmit'
 
+## LIFE CYCLE
+
+On created custom element:
+
+    Call this.prepare()
+    Aggregate default values from template DOM
+    Call this.initialize()
+
 ## Browser support
 
 (Same as jQuery 3.0)

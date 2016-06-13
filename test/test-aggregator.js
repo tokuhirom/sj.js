@@ -12,6 +12,17 @@ test('input', (t) => {
   });
 });
 
+test('input(empty)', (t) => {
+  t.plan(1);
+  const div = document.createElement('div');
+  div.innerHTML = '<input sj-model="this.hoge" value="">';
+  const scope = {};
+  new Aggregator(div).aggregate(scope);
+  t.deepEqual(scope, {
+    hoge: ''
+  });
+});
+
 test('textarea', (t) => {
   t.plan(1);
   const div = document.createElement('div');
