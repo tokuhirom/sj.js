@@ -75,8 +75,8 @@ test('sj-repeat(object)', (t) => {
   });
 
 
-  const books = target.querySelectorAll('.book');
-  t.equal(books.length, 2);
+  const items = target.querySelectorAll('.item');
+  t.equal(items.length, 2);
 });
 test('sj-click', (t) => {
   t.plan(1);
