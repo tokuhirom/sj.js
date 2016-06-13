@@ -1,5 +1,3 @@
-const assert = require('assert');
-
 /**
  * Aggregate values from dom tree
  */

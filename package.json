@@ -22,7 +22,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "assert": "^1.4.1",
     "incremental-dom": "^0.4.1",
     "webcomponents.js": "^0.7.22",
     "whatwg-fetch": "^1.0.0"
