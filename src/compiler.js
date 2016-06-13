@@ -1,5 +1,6 @@
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 const assert = require('assert');
+const scan = require('./text-expression-scanner.js');
 
 // hack
 // https://github.com/google/incremental-dom/issues/239
@@ -176,9 +177,7 @@ class Compiler {
 
   text(s) {
     // TODO optimize this
-    return JSON.stringify(s) + `.replace(/\{\{([$A-Za-z0-9_.\(\)-]+)\}\}/g, function (m, s) {
-      return eval(s);
-    }.bind(this))`;
+    return scan(s);
   }
 }
 
