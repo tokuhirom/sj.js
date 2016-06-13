@@ -13,17 +13,25 @@
     <div class="container">
       <h1>sj.js</h1>
       <hr>
-      <h2>Hello</h2>
-      <x-hello>
+      <div>
+        <h2>Hello</h2>
+        <x-hello>
+      </div>
       <hr>
-      <x-todo-list>
+      <div>
+        <h2>TODO</h2>
+        <x-todo-list>
+      </div>
     </div>
     <template id="tmpl-hello">
-      <input type="text" sj-model="this.newitem" sj-keyup="this.update()">
+      <input type="text" sj-model="this.newitem" sj-keyup="this.update()"/>
       Hello, {{this.newitem}}.
     </template>
     <template id="tmpl-todo-list">
-      <input type="text" sj-model="this.newitem">
+      <input type="text" sj-model="this.newitem"/>
+      <div sj-repeat="item in this.items">
+        <div><input type="checkbox" sj-model="item.checked">{{item.title}}</div>
+      </div>
       {{this.newitem}}
     </template>
     <script type="text/javascript" src="sj.bundle.min.js"></script>
@@ -35,8 +43,10 @@
         });
         sj.tag('x-todo-list', {
           template: document.getElementById('tmpl-todo-list').innerHTML,
-          initialize: function () {
-            this.newitem = '';
+          prepare: function () {
+            this.items = [
+              {title:'buy milk'}
+            ];
           }
         });
       });

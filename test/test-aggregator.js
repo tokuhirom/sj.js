@@ -23,6 +23,18 @@ test('input(empty)', (t) => {
   });
 });
 
+test('input(repeat)', (t) => {
+  t.plan(1);
+  const div = document.createElement('div');
+  div.innerHTML = `
+  <div sj-repeat="item in this.items">
+    <input sj-model="item.hoge" value="">
+  </div>`;
+  const scope = {};
+  new Aggregator(div).aggregate(scope);
+  t.deepEqual(scope, { });
+});
+
 test('textarea', (t) => {
   t.plan(1);
   const div = document.createElement('div');
