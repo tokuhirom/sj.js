@@ -7,8 +7,7 @@
     "build": "browserify -t babelify --standalone sj src/main.js -o dist/sj.bundle.js",
     "watch": "watchify -t babelify --standalone sj src/main.js -o dist/sj.bundle.js",
     "build.min": "uglify -s dist/sj.bundle.js -o dist/sj.bundle.min.js",
-    "test": "tape test/*.js",
-    "browserTest": "browserify -t babelify test/*.js | testling"
+    "test": "testling"
   },
   "browserify": {
     "transform": [

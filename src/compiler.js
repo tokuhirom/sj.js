@@ -74,17 +74,23 @@ class Compiler {
     {
       const cond = elem.getAttribute('sj-repeat');
       if (cond) {
-        const m = cond.match(/^\s*(\w+)\s+in\s+([a-z][a-z0-9.]+)\s*$/);
+        const m = cond.match(/^\s*(?:(\w+)|\(\s*(\w+)\s*,\s*(\w+)\s*\))\s+in\s+([a-z][a-z0-9.]*)\s*$/);
         if (!m) {
-          throw `Invalid sj-repeat value: ${attr.value}`;
+          throw `Invalid sj-repeat value: ${cond}`;
         }
 
-        const varName = m[1];
-        const container = m[2];
+        if (m[1]) {
+          const varName = m[1];
+          const container = m[4];
 
-        // TODO support (x,i) in bar
-        headers.push(`(function(IncrementalDOM) {\nvar $container=${container};\nfor (var $index=0,$l=$container.length; $index<$l; $index++) {\nvar ${varName}=$container[$index];`);
-        footers.push(`}\n}).apply(this, [IncrementalDOM]);`);
+          // TODO support (x,i) in bar
+          headers.push(`(function(IncrementalDOM) {\nvar $container=${container};\nfor (var $index=0,$l=$container.length; $index<$l; $index++) {\nvar ${varName}=$container[$index];`);
+          footers.push(`}\n}).apply(this, [IncrementalDOM]);`);
+        } else {
+          const keyName = m[2];
+          const valueName = m[3];
+          const container = m[4];
+        }
       }
     }
 

@@ -53,6 +53,31 @@ test('sj-repeat', (t) => {
   const books = target.querySelectorAll('.book');
   t.equal(books.length, 2);
 });
+test('sj-repeat(object)', (t) => {
+  t.plan(1);
+  var div = document.createElement('div');
+  div.innerHTML = `
+    <div sj-repeat="(x,y) in this.obj">
+      <div class="item">{{x}}:{{y}}</div>
+    </div>
+  `;
+  const code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () { };
+  target.obj = {
+    a: 'b',
+    c: 'd'
+  };
+
+  IncrementalDOM.patch(target, () => {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+
+  const books = target.querySelectorAll('.book');
+  t.equal(books.length, 2);
+});
 test('sj-click', (t) => {
   t.plan(1);
   var div = document.createElement('div');
