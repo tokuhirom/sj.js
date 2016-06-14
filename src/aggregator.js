@@ -13,7 +13,7 @@ class Aggregator {
       const modelName = elem.getAttribute('sj-model');
       if (modelName && modelName.substr(0,5) === 'this.') {
         const val = elem.type === 'checkbox' ? elem.checked : elem.value;
-        new Function('$val', `${modelName}=$val`).apply(scope, [val]);
+        new Function('$val', `if (!${modelName}) { ${modelName}=$val; }`).apply(scope, [val]);
       }
     }
   }

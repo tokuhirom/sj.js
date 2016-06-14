@@ -27,12 +27,16 @@
       <input type="text" sj-model="this.newitem" sj-keyup="this.update()"/>
       Hello, {{this.newitem}}.
     </template>
+
     <template id="tmpl-todo-list">
       <input type="text" sj-model="this.newitem"/>
+      <button sj-click="this.add()">Add</button>
       <div sj-repeat="item in this.items">
+        ITEM
         <x-todo-item title="{{item.title}}"></x-todo-item>
       </div>
     </template>
+
     <template id="tmpl-todo-item">
       <div sj-style="this.getStyle()">
         <label>
@@ -54,6 +58,18 @@
             this.items = [
               {title:'buy milk'}
             ];
+          },
+          methods: {
+            add: function () {
+              if (this.newitem==='') {
+                return;
+              }
+              this.items.push({
+                title: this.newitem
+              });
+              this.newitem = '';
+              this.update();
+            }
           }
         });
         sj.tag('x-todo-item', {
@@ -61,8 +77,13 @@
           prepare: function () {
           },
           methods: {
+            attachedCallback: function () {
+              console.log('attached');
+            },
+            detachedCallback: function () {
+              console.log('detached');
+            },
             getStyle: function () {
-              console.log(this.dump());
               if (this.checked) {
                 return {
                   'text-decoration': 'line-through'

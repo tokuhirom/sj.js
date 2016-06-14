@@ -139,8 +139,8 @@ runTest('test-input-nested', sj.tag('test-input-nested', {
     <input type="text" name="name" sj-model="this.x.y" id="myInput">
     Hello, <span sj-model="this.name"></span>
   */},
-  prepare: function () {
-    this.x = {};
+  default: {
+    x: { }
   },
   initialize: function() {
     this.x = {

@@ -11,24 +11,30 @@ function tag(tagName, opts) {
     throw "Missing template";
   }
 
+  const scope = opts['default'] || {};
+  let compiled;
+
   const elementClassPrototype = Object.create(HTMLElement.prototype);
   const elementClass = class extends HTMLElement {
     createdCallback() {
-      const html = document.createElement("div");
-      html.innerHTML = (function () {
-        if (typeof(template) === 'function') {
-          return unwrapComment.exec(template.toString())[1];
-        } else {
-          return template;
-        }
-      })();
-
-      if (opts.prepare) {
-        opts.prepare.apply(this);
+      if (!compiled) {
+        const html = document.createElement("div");
+        html.innerHTML = (function () {
+          if (typeof(template) === 'function') {
+            return unwrapComment.exec(template.toString())[1];
+          } else {
+            return template;
+          }
+        })();
+        new Aggregator(html).aggregate(scope);
+        compiled = new Compiler().compile(html);
       }
 
-      new Aggregator(html).aggregate(this);
-      this.compiled = new Compiler().compile(html);
+      for (const key in scope) {
+        if (scope.hasOwnProperty(key)) {
+          this[key] = scope[key];
+        }
+      }
 
       if (opts.initialize) {
         opts.initialize.apply(this);
@@ -43,7 +49,7 @@ function tag(tagName, opts) {
 
     update() {
       IncrementalDOM.patch(this, () => {
-        this.compiled.apply(this, [IncrementalDOM]);
+        compiled.apply(this, [IncrementalDOM]);
       });
     }
 

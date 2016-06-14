@@ -24,6 +24,7 @@ class Element extends HTMLElement {
 
     this.prepare();
 
+    // TODO cache result as class variable.
     new Aggregator(html).aggregate(this);
     this.compiled = new Compiler().compile(html);
 
