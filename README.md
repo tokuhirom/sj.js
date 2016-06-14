@@ -23,7 +23,7 @@ This library supports angular1 like templating.
         </script>
 
         <x-foo></x-foo>
-    </dody>
+    </body>
     </html>
 
 ## sj.tag
