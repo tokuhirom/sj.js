@@ -12,6 +12,21 @@ test('input', (t) => {
   });
 });
 
+test('input(checkbox)', (t) => {
+  t.plan(1);
+  const div = document.createElement('div');
+  div.innerHTML = `
+  <input type="checkbox" sj-model="this.a" checked="checked">
+  <input type="checkbox" sj-model="this.b">
+  `;
+  const scope = {};
+  new Aggregator(div).aggregate(scope);
+  t.deepEqual(scope, {
+    a: true,
+    b: false
+  });
+});
+
 test('input(empty)', (t) => {
   t.plan(1);
   const div = document.createElement('div');

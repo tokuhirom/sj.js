@@ -130,14 +130,14 @@ class Compiler {
     const codeList = [];
     for (let i = 0, l = attrs.length; i < l; ++i) {
       const attr = attrs[i];
-      const code = this.renderAttribute(attrs[i], vars);
+      const code = this.renderAttribute(elem, attrs[i], vars);
       codeList.push(code);
     }
     // console.log(`DONE renderAttributes ${JSON.stringify(codeList)}`);
     return codeList;
   }
 
-  renderAttribute(attr, vars) {
+  renderAttribute(elem, attr, vars) {
     assert(vars);
     // console.log(`renderAttribute: ${attr.name}=${attr.value}`);
 
@@ -152,13 +152,25 @@ class Compiler {
           }.bind(${['this'].concat(vars).join(",")}));
         `;
       } else if (attr.name === 'sj-model') {
-        return `
-          IncrementalDOM.attr("value", ${attr.value});
-          IncrementalDOM.attr("onchange", function (${vars.concat(['$event']).join(",")}) {
-            ${attr.value} = $event.target.value;
-            this.update();
-          }.bind(${['this'].concat(vars).join(",")}));
-        `;
+        if (elem.type === 'checkbox') {
+          return `
+            if (${attr.value}) {
+              IncrementalDOM.attr("checked", 'checked');
+            }
+            IncrementalDOM.attr("onchange", function (${vars.concat(['$event']).join(",")}) {
+              ${attr.value} = $event.target.checked;
+              this.update();
+            }.bind(${['this'].concat(vars).join(",")}));
+          `;
+        } else {
+          return `
+            IncrementalDOM.attr("value", ${attr.value});
+            IncrementalDOM.attr("onchange", function (${vars.concat(['$event']).join(",")}) {
+              ${attr.value} = $event.target.value;
+              this.update();
+            }.bind(${['this'].concat(vars).join(",")}));
+          `;
+        }
       } else if (sj_boolean_attributes[attr.name]) {
         const attribute = sj_boolean_attributes[attr.name];
         const expression = attr.value;

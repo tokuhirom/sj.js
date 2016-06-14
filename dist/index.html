@@ -30,9 +30,16 @@
     <template id="tmpl-todo-list">
       <input type="text" sj-model="this.newitem"/>
       <div sj-repeat="item in this.items">
-        <div><input type="checkbox" sj-model="item.checked">{{item.title}}</div>
+        <x-todo-item title="{{item.title}}"></x-todo-item>
       </div>
-      {{this.newitem}}
+    </template>
+    <template id="tmpl-todo-item">
+      <div sj-style="this.getStyle()">
+        <label>
+          <input type="checkbox" sj-model="this.checked">
+          {{this.title}}
+        </label>
+      </div>
     </template>
     <script type="text/javascript" src="sj.bundle.min.js"></script>
     <script type="text/javascript">
@@ -47,6 +54,22 @@
             this.items = [
               {title:'buy milk'}
             ];
+          }
+        });
+        sj.tag('x-todo-item', {
+          template: document.getElementById('tmpl-todo-item').innerHTML,
+          prepare: function () {
+          },
+          methods: {
+            getStyle: function () {
+              console.log(this.dump());
+              if (this.checked) {
+                return {
+                  'text-decoration': 'line-through'
+                }
+              }
+              return { };
+            }
           }
         });
       });

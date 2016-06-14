@@ -8,6 +8,16 @@ function runTest(tagName, elementClass, code) {
   });
 }
 
+function invokeOnChange(elem) {
+  if ("createEvent" in document) {
+    var evt = document.createEvent("HTMLEvents");
+    evt.initEvent("change", false, true);
+    elem.dispatchEvent(evt);
+  } else {
+    elem.fireEvent("onchange");
+  }
+}
+
 test('export', function (t) {
   t.plan(2);
   t.ok(sj.tag, 'sj.tag');
@@ -105,6 +115,22 @@ runTest('test-input', sj.tag('test-input', {
 
   t.plan(1);
   t.ok(this.querySelector('span').textContent === "foo", tagName);
+});
+
+runTest('test-input-checkbox', sj.tag('test-input-checkbox', {
+  template: function () {/*
+                            <input class='a' type="checkbox" sj-model="this.a">
+                            <input type="checkbox" sj-model="this.b">
+                            */}
+}), function (t, tagName) {
+  const a=this.querySelector('.a');
+  a.checked = true;
+
+  invokeOnChange(a);
+
+  t.plan(2);
+  t.equal(this.a, true);
+  t.equal(this.b, false);
 });
 
 runTest('test-input-nested', sj.tag('test-input-nested', {
