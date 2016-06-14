@@ -36,6 +36,12 @@ function tag(tagName, opts) {
         }
       }
 
+      const attrs = this.attributes;
+      for (let i = 0, l = attrs.length; i < l; ++i) {
+        const attr = attrs[i];
+        this[attr.name] = attr.value;
+      }
+
       if (opts.initialize) {
         opts.initialize.apply(this);
       }

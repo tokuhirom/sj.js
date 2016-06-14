@@ -32,7 +32,7 @@
       <input type="text" sj-model="this.newitem"/>
       <button sj-click="this.add()">Add</button>
       <div sj-repeat="item in this.items">
-        <x-todo-item title="{{item.title}}"></x-todo-item>
+        <x-todo-item title="{{item.title}}" checked="{{item.checked}}"></x-todo-item>
       </div>
     </template>
 
@@ -44,7 +44,7 @@
         </label>
       </div>
     </template>
-    <script type="text/javascript" src="sj.bundle.min.js"></script>
+    <script type="text/javascript" src="sj.bundle.js"></script>
     <script type="text/javascript">
       // Note. should i add 'sj.ready()' function?
       document.addEventListener("DOMContentLoaded", function(event) {
@@ -55,7 +55,8 @@
           template: document.getElementById('tmpl-todo-list').innerHTML,
           default: {
             items: [
-              {title:'buy milk'}
+              {title:'buy milk', checked: true},
+              {title:'tel nick'}
             ]
           },
           methods: {
@@ -73,15 +74,7 @@
         });
         sj.tag('x-todo-item', {
           template: document.getElementById('tmpl-todo-item').innerHTML,
-          prepare: function () {
-          },
           methods: {
-            attachedCallback: function () {
-              console.log('attached');
-            },
-            detachedCallback: function () {
-              console.log('detached');
-            },
             getStyle: function () {
               if (this.checked) {
                 return {

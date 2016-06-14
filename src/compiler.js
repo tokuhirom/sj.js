@@ -107,14 +107,18 @@ class Compiler {
     body = body.concat(this.renderAttributes(elem, vars));
     body.push(`IncrementalDOM.elementOpenEnd("${tagName}")`);
 
-    const children = elem.childNodes;
-    for (let i = 0, l = children.length; i < l; ++i) {
+    if (tagName.indexOf('-') >= 0) {
+      body.push(`IncrementalDOM.skip()`);
+    } else {
+      const children = elem.childNodes;
+      for (let i = 0, l = children.length; i < l; ++i) {
       const child = children[i];
       if (child.nodeType === Node.TEXT_NODE) {
         // replaceVariables
         body.push(`IncrementalDOM.text(${this.text(child.textContent)})`);
       } else {
         body = body.concat(this.renderDOM(child, vars));
+      }
       }
     }
     body.push(`IncrementalDOM.elementClose("${tagName}")`);
