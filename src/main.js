@@ -19,6 +19,5 @@ window.addEventListener("DOMContentLoaded", () => {
   }
   customElements.define('sj-template', class extends sj.Element {
     template() { return this.innerHTML; }
-    initialize() { }
   });
 });
