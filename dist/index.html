@@ -15,12 +15,12 @@
       <hr>
       <div>
         <h2>Hello</h2>
-        <x-hello>
+        <x-hello></x-hello>
       </div>
       <hr>
       <div>
         <h2>TODO</h2>
-        <x-todo-list>
+        <x-todo-list></x-todo-list>
       </div>
     </div>
     <template id="tmpl-hello">
@@ -32,7 +32,6 @@
       <input type="text" sj-model="this.newitem"/>
       <button sj-click="this.add()">Add</button>
       <div sj-repeat="item in this.items">
-        ITEM
         <x-todo-item title="{{item.title}}"></x-todo-item>
       </div>
     </template>
@@ -54,10 +53,10 @@
         });
         sj.tag('x-todo-list', {
           template: document.getElementById('tmpl-todo-list').innerHTML,
-          prepare: function () {
-            this.items = [
+          default: {
+            items: [
               {title:'buy milk'}
-            ];
+            ]
           },
           methods: {
             add: function () {
