@@ -155,7 +155,7 @@ Mobile
 
 ## development
 
-    npm install -g uglify testling babelify browserify
+    make setup
     make
     make test
 

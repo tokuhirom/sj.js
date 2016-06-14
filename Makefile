@@ -4,7 +4,7 @@ test.js: src/*.js test/test-suite.js
 	browserify -t babelify test/test-suite.js -o test.js
 
 setup:
-	npm install uglify-js -g
+	npm install -g uglify-js testling babelify browserify
 
 dist/sj.bundle.js: src/*.js
 	browserify --debug -t babelify --standalone sj src/main.js -o dist/sj.bundle.js
