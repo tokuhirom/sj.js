@@ -36,7 +36,7 @@ test('sj-repeat', (t) => {
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="book in this.books">
-      <div class="book">{{book.name}}</div>
+      <div class="book" sj-bind="book.name"></div>
     </div>
   `;
   const code = new Compiler().compile(div);
@@ -58,7 +58,7 @@ test('sj-repeat array kv', (t) => {
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="(i,book) in this.books">
-      <div class="book">{{i}}:{{book.name}}</div>
+      <div class="book"><span sj-bind="i"></span>:<span sj-bind="book.name"></span></div>
     </div>
   `;
   const code = new Compiler().compile(div);
@@ -81,7 +81,7 @@ test('sj-repeat(object)', (t) => {
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="(x,y) in this.obj">
-      <div class="item" sj-click="this.result.push(x)">{{x}}:{{y}}</div>
+      <div class="item" sj-click="this.result.push(x)"><span sj-bind="x"></span>:<span sj-bind="y"></span></div>
     </div>
   `;
   const code = new Compiler().compile(div);
@@ -145,35 +145,31 @@ test('sj-disabled', (t) => {
   t.equal(target.querySelector('.t').getAttribute('disabled'), 'disabled');
   t.ok(!target.querySelector('.f').getAttribute('disabled'));
 });
-test('replace {{}}', (t) => {
-  t.plan(2);
+test('sj-bind', (t) => {
+  t.plan(1);
   var div = document.createElement('div');
   div.innerHTML = `
-    {{this.foo}}
-    <div>{{this.bar}}</div>
+    <div sj-bind="this.foo"></div>
   `;
   const code = new Compiler().compile(div);
 
   var target = document.createElement('target');
   target.update = function () { };
   target.foo = 'foo';
-  target.bar = 'bar';
 
   IncrementalDOM.patch(target, () => {
     code.apply(target, [IncrementalDOM]);
   });
 
   t.ok(target.innerHTML.match(/foo/));
-  t.ok(target.innerHTML.match(/bar/));
 });
 test('nested for', (t) => {
   t.plan(2);
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="blog in this.blogs">
-  {{$index}}
       <div sj-repeat="entry in blog.entries">
-        <div class="book">{{entry.title}}:{{$index}}</div>
+        <div class="book"><span sj-bind="entry.title"></span>:<span sj-bind="$index"></span></div>
       </div>
     </div>
   `;
@@ -205,7 +201,7 @@ test('nested for', (t) => {
   div.innerHTML = `
     <div sj-repeat="blog in this.blogs">
       <div sj-repeat="entry in blog.entries">
-        <div class="book" sj-click="this.result.push($index)">{{entry.title}}:{{$index}}</div>
+        <div class="book" sj-click="this.result.push($index)"><span sj-bind="entry.title"></span>:<span sj-bind="$index"></span></div>
       </div>
     </div>
   `;

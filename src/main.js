@@ -5,6 +5,7 @@ require('whatwg-fetch/fetch.js');
 
 const tag = require('./tag.js');
 const Element = require('./element.js');
+require('./app.js');
 
 module.exports.Element = Element;
 module.exports.tag = tag;

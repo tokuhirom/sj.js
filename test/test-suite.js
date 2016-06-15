@@ -59,7 +59,7 @@ runTest('test-disabled', sj.tag('test-disabled', {
 runTest('test-multi-attributes', sj.tag('test-multi-attributes', {
   template: function() {/*
       <div class="b" sj-repeat="x in this.books">
-          <div class='book'>{{x.name}}</div>
+          <div class='book'><span sj-bind="x.name"></span></div>
       </div>
   */},
   initialize: function() {
@@ -88,7 +88,7 @@ runTest('test-events', sj.tag('test-events', {
 });
 
 runTest('test-set-attrs', sj.tag('test-set-attrs', {
-  template: '<div>{{this.foo}}</div>'
+  template: '<div sj-bind="this.foo"></div>'
 }), function (t, tagName) {
   this.setAttribute('foo', 'bar');
   t.plan(1);
@@ -99,7 +99,7 @@ runTest('test-input', sj.tag('test-input', {
   template: function () {/*
                             <h1>Input</h1>
                             <input type="text" name="name" sj-model="this.name" id="myInput">
-                            Hello, <span>{{this.name}}</span>
+                            Hello, <span sj-bind="this.name"></span>
                             */}
 }), function (t, tagName) {
   var input = this.querySelector('input');
@@ -155,7 +155,7 @@ runTest('test-textarea', sj.tag('test-textarea', {
   template: function () {/*
     <h1>Textarea</h1>
     <textarea name="hoge" sj-model="this.hoge"></textarea>
-    Hello, <span>{{this.hoge}}</span>
+    Hello, <span sj-bind="this.hoge"></span>
   */}
 }), function (t, tagName) {
   var input = this.querySelector('textarea');
@@ -186,7 +186,7 @@ runTest('test-select', sj.tag('test-select', {
     <option value="ppp">ppp</option>
     <option value="qqq">qqq</option>
     </select>
-    SSS: <span>{{this.sss}}</span>
+    SSS: <span sj-bind="this.sss"></span>
   */}
 }), function (t, tagName) {
   t.plan(1);
@@ -197,7 +197,7 @@ runTest('test-for', sj.tag('test-for', {
   template: function() {/*
     <h1>bar</h1>
     <div sj-repeat="x in this.bar">
-    <div class="item">{{x.boo}}</div>
+    <div class="item" sj-bind="x.boo"></div>
     </div>
   */},
   initialize: function () {
@@ -219,7 +219,7 @@ runTest('test-for-index', sj.tag('test-for-index', {
   template: function () {/*
     <h1>For index</h1>
     <div sj-repeat="x in this.bar">
-    <div class="item">{{x.boo}}:{{$index}}</div>
+    <div class="item"><span sj-bind="x.boo"></span>:<span sj-bind="$index"></span></div>
     </div>
   */},
   initialize: function () {
@@ -253,20 +253,6 @@ runTest('test-for-empty', sj.tag('test-for-empty', {
   t.ok(elems.length == 0, tagName);
 });
 
-runTest('test-attr-var', sj.tag('test-attr-var', {
-  template: function () {/*
-    <h1>Attr variable</h1>
-    <div data-x="color: {{this.ccc}}">CONTENT</div>`;
-  */},
-  initialize: function () {
-    this.ccc = "green";
-  }
-}), function (t, tagName) {
-  var elems = this.querySelector('div');
-  t.plan(1);
-  t.ok(elems.getAttribute('data-x') === 'color: green', tagName);
-});
-
 runTest('test-if', sj.tag('test-if', {
   template: function () {/*
     <h1>Test if</h1>
@@ -292,7 +278,7 @@ runTest('test-if-array', sj.tag('test-if-array', {
     return `
     <h1>Test if</h1>
     <div sj-repeat="x in this.bar">
-      <div sj-if="this.matched(x)" class="target">{{x.foo}}</div>
+      <div sj-if="this.matched(x)" class="target" sj-bind="x.foo"></div>
     </div>
   */},
   initialize: function () {
@@ -312,7 +298,7 @@ runTest('test-if-array', sj.tag('test-if-array', {
 runTest('test-text-var', sj.tag('test-text-var', {
   template: function() {/*
     <h1>Test text var</h1>
-    <div>Hello, {{this.name}}</div>
+    <div>Hello, <span sj-bind="this.name"></span></div>
   */},
   initialize: function () {
     this.name = 'John';
@@ -356,10 +342,10 @@ runTest('test-comment', sj.tag('test-comment', {
 
 runTest('test-sanitize-href', sj.tag('test-sanitize-href', {
   template: function () {/*
-                            <a class='unsafe' href="{{this.href}}"></a>
-                            <a class='unsafe2' href="jscript:alert(3)"></a>
-                            <a class='unsafe3' href="view-source:alert(3)"></a>
-                            <a class='safe' href="http://example.com"></a>
+                            <a class='unsafe' sj-href="this.href"></a>
+                            <a class='unsafe2' sj-href="'jscript:alert(3)'"></a>
+                            <a class='unsafe3' sj-href="'view-source:alert(3)'"></a>
+                            <a class='safe' sj-href="'http://example.com'"></a>
   */},
   default: {
     'href': 'javascript:this.x=3',

@@ -13,7 +13,7 @@ This library supports angular1 like templating.
     </head>
     <body>
         <template id="x-foo-template">
-            <div>{{this.foo}}</div>
+            <div sj-bind="this.foo"></div>
         </template>
 
         <script>
@@ -48,8 +48,8 @@ TBD
 
 You can iterate over array via sj-repeat.
 
-    <select sj-repeat="x in this.ary">
-        <option value="{{x.value}}" sj-model="x.label"></option>
+    <select sj-repeat="x in this.ary" sj-model="x.label">
+        <option sj-value="x.value"></option>
     </select>
 
 _this_ indicates custom element.
@@ -57,7 +57,7 @@ _this_ indicates custom element.
 You can repeat over the object.
 
     <select sj-repeat="(key, value) in this.obj">
-        {{key}}:{{value}}
+        <span sj-bind="key"></span>:<span sj-bind="value"></span>
     </select>
 
 ## sj-if
@@ -98,16 +98,26 @@ In the expression, _this_ indicates your custom element.
 
 ## sj-src
 
-    <iframe sj-src"<<EXPRESSION>>"></iframe>
+    <iframe sj-src="<<EXPRESSION>>"></iframe>
 
-You can specify the srs for element via `sj-src` attribute.
+You can specify the src for element via `sj-src` attribute.
 In the expression, _this_ indicates your custom element.
 
-## Text replacement(DEPRECATED)
+## sj-value
 
-    <div>Hello, {{this.name}}</div>
+    <option sj-value="<<EXPRESSION>>"></option>
 
-sj replaces `{{EXPR}}` in text node. In expression, _this_ indicates your custom element.
+You can specify the value for element via `sj-value` attribute.
+In the expression, _this_ indicates your custom element.
+
+## sj-href
+
+    <a sj-href="<<EXPRESSION>>"></a>
+
+You can specify the href for element via `sj-href` attribute.
+In the expression, _this_ indicates your custom element.
+
+If the eavaluation result contains unsafe url scheme, sj will sanitize it.
 
 ## Event Handler
 
@@ -166,13 +176,6 @@ Mobile
     make test
 
 ## FAQ
-
-### Can't use `style="color: {{color}}"` in Internet Explorer
-
-IE returns DOM attributes from parsed DOM data.
-IE removes invalid stylesheet element like `color: {{color}}`.
-
-You should use `sj-style` instead.
 
 ### Is there an angular's ng-bind-html?
 

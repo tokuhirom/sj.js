@@ -226,23 +226,24 @@ class Compiler {
         return `IncrementalDOM.attr("style", ${attr.value});`;
       } else if (attr.name === 'sj-src') {
         return `IncrementalDOM.attr("src", ${attr.value});`;
+      } else if (attr.name === 'sj-value') {
+        return `IncrementalDOM.attr("value", ${attr.value});`;
+      } else if (attr.name === 'sj-href') {
+        return `IncrementalDOM.attr("href", ${attr.value}.replace(/^[^:]+?:/, function (scheme) { return (scheme === 'http:' || scheme === 'https://') ? scheme : 'unsafe:' + scheme }));`;
       } else {
         return '';
       }
     } else {
-      if (attr.name === 'href') {
-        return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)}.replace(/^[^:]+?:/, function (scheme) { return (scheme === 'http:' || scheme === 'https://') ? scheme : 'unsafe:' + scheme }));`;
+      if (elem.tagName.indexOf('-') > 0) {
+        return `IncrementalDOM.attr("${attr.name}", ${scan(attr.value)});`;
       } else {
-        if ((attr.name.substr(0, 2) === 'on') && (attr.value =~ /\{\{/)) {
-          throw `You can't include {{}} expression in event handler(Security reason). You should use sj-* instead.`;
-        }
         return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)});`;
       }
     }
   }
 
   text(s) {
-    return scan(s);
+    return JSON.stringify(s);
   }
 }
 
