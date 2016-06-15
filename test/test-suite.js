@@ -356,14 +356,16 @@ runTest('test-comment', sj.tag('test-comment', {
 
 runTest('test-sanitize-href', sj.tag('test-sanitize-href', {
   template: function () {/*
-                            <a href="{{this.href}}"></div>
+                            <a class='unsafe' href="{{this.href}}"></div>
+                            <a class='safe' href="http://example.com"></div>
   */},
   default: {
     'href': 'javascript:this.x=3',
     x: 5
   }
 }), function (t, tagName) {
-  t.plan(1);
-  t.equal(this.querySelector('a').getAttribute('href'), 'unsafe:javascript:this.x=3');
+  t.plan(2);
+  t.equal(this.querySelector('a.unsafe').getAttribute('href'), 'unsafe:javascript:this.x=3');
+  t.equal(this.querySelector('a.safe').getAttribute('href'), 'http://example.com');
 });
 
