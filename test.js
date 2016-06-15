@@ -4710,6 +4710,8 @@ var Compiler = function () {
           return 'IncrementalDOM.attr("class", ' + attr.value + '.join(" "));';
         } else if (attr.name === 'sj-style') {
           return 'IncrementalDOM.attr("style", ' + attr.value + ');';
+        } else if (attr.name === 'sj-src') {
+          return 'IncrementalDOM.attr("src", ' + attr.value + ');';
         } else {
           return '';
         }

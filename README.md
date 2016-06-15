@@ -96,6 +96,13 @@ sample:
 This element's textContent will replaced by evaluation result of EXPRESSION.
 In the expression, _this_ indicates your custom element.
 
+## sj-src
+
+    <iframe sj-src"<<EXPRESSION>>"></iframe>
+
+You can specify the srs for element via `sj-src` attribute.
+In the expression, _this_ indicates your custom element.
+
 ## Text replacement(DEPRECATED)
 
     <div>Hello, {{this.name}}</div>
@@ -166,6 +173,25 @@ IE returns DOM attributes from parsed DOM data.
 IE removes invalid stylesheet element like `color: {{color}}`.
 
 You should use `sj-style` instead.
+
+### Is there an angular's ng-bind-html?
+
+No. But you can write a code like following.
+
+    <div>
+        <h2>Preview</h2>
+        <div sj-app="PreviewApp">
+            <textarea sj-model="this.html">Hello <B>John</B></textarea>
+            <iframe sj-src="this.src()"></iframe>
+        </div>
+    </div>
+    <script type="text/javascript">
+        function PreviewApp() {
+            this.src = function () {
+                return "data:text/html," + encodeURIComponent(this.html);
+            };
+        }
+    </script>
 
 ## LICENSE
 

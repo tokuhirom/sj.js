@@ -29,6 +29,13 @@
           <p>{{ this.counter }}</p>
         </div>
       </div>
+      <div>
+        <h2>Preview</h2>
+        <div sj-app="PreviewApp">
+          <textarea sj-model="this.html">Hello <B>John</B></textarea>
+          <iframe sj-src="this.src()"></iframe>
+        </div>
+      </div>
     </div>
 
     <template id="tmpl-hello">
@@ -103,6 +110,12 @@ function CounterApp() {
   };
 }
 
+function PreviewApp() {
+  this.src = function () {
+    return "data:text/html," + encodeURIComponent(this.html);
+  };
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   const elems = document.querySelectorAll('[sj-app]');
   for (let i=0, l=elems.length; i<l; ++i) {
@@ -113,7 +126,11 @@ window.addEventListener("DOMContentLoaded", () => {
     const replaced = elem.parentNode.replaceChild(template, elem);
     if (app) {
       const func = window[app];
-      func.apply(template);
+      if (func) {
+        func.apply(template);
+      } else {
+        throw `Unknown function '${app}', specefied by sj-app`;
+      }
     }
   }
   customElements.define('sj-template', class extends sj.Element {
