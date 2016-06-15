@@ -22,7 +22,15 @@
         <h2>TODO</h2>
         <x-todo-list></x-todo-list>
       </div>
+      <div>
+        <h2>Counter</h2>
+        <div sj-app="CounterApp">
+          <button sj-click="this.count()">Click Me!</button>
+          <p>{{ this.counter }}</p>
+        </div>
+      </div>
     </div>
+
     <template id="tmpl-hello">
       <input type="text" sj-model="this.newitem" sj-keyup="this.update()"/>
       Hello, {{this.newitem}}.
@@ -86,6 +94,32 @@
           }
         });
       });
+
+function CounterApp() {
+  this.counter = 0;
+  this.count = function () {
+    this.counter++;
+    this.update();
+  };
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const elems = document.querySelectorAll('[sj-app]');
+  for (let i=0, l=elems.length; i<l; ++i) {
+    const elem = elems[i];
+    const template = document.createElement("sj-template");
+    const app = elem.getAttribute('sj-app');
+    template.innerHTML = elem.innerHTML;
+    const replaced = elem.parentNode.replaceChild(template, elem);
+    if (app) {
+      const func = window[app];
+      func.apply(template);
+    }
+  }
+  customElements.define('sj-template', class extends sj.Element {
+    template() { return this.innerHTML; }
+  });
+});
     </script>
   </body>
 </html>
