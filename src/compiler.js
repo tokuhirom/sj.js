@@ -226,7 +226,7 @@ class Compiler {
       }
     } else {
       if (attr.name === 'href') {
-        return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)}.replace(/^\\w+?:/, function (scheme) { return (scheme === 'http:' || scheme === 'https://') ? scheme : 'unsafe:' + scheme }));`;
+        return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)}.replace(/^[^:]+?:/, function (scheme) { return (scheme === 'http:' || scheme === 'https://') ? scheme : 'unsafe:' + scheme }));`;
       } else {
         if ((attr.name.substr(0, 2) === 'on') && (attr.value =~ /\{\{/)) {
           throw `You can't include {{}} expression in event handler(Security reason). You should use sj-* instead.`;
