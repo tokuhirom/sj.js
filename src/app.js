@@ -9,6 +9,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const template = document.createElement("div");
 
+    // copy attributes
+    const attributes = elem.attributes;
+    for (let i=0, l=attributes.length; i<l; i++) {
+      const attr = attributes[i];
+      template.setAttribute(attr.name, attr.value);
+    }
+
     new Aggregator(elem).aggregate(template);
     const compiled = new Compiler().compile(elem);
     template.update = function () {
