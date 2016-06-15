@@ -354,3 +354,16 @@ runTest('test-comment', sj.tag('test-comment', {
   t.ok(this.querySelector('h1'), tagName);
 });
 
+runTest('test-sanitize-href', sj.tag('test-sanitize-href', {
+  template: function () {/*
+                            <a href="{{this.href}}"></div>
+  */},
+  default: {
+    'href': 'javascript:this.x=3',
+    x: 5
+  }
+}), function (t, tagName) {
+  t.plan(1);
+  t.equal(this.querySelector('a').getAttribute('href'), 'unsafe:javascript:this.x=3');
+});
+

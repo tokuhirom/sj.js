@@ -9713,7 +9713,14 @@ var Compiler = function () {
           return '';
         }
       } else {
-        return 'IncrementalDOM.attr("' + attr.name + '", ' + this.text(attr.value) + ');';
+        if (attr.name === 'href') {
+          return 'IncrementalDOM.attr("' + attr.name + '", ' + this.text(attr.value) + '.replace(/^javascript:/, \'unsafe:javascript:\'));';
+        } else {
+          if (attr.name.substr(0, 2) === 'on' && (attr.value = ~/\{\{/)) {
+            throw 'You can\'t include {{}} expression in event handler(Security reason). You should use sj-* instead.';
+          }
+          return 'IncrementalDOM.attr("' + attr.name + '", ' + this.text(attr.value) + ');';
+        }
       }
     }
   }, {
@@ -10400,6 +10407,19 @@ runTest('test-comment', sj.tag('test-comment', {
 }), function (t, tagName) {
   t.plan(1);
   t.ok(this.querySelector('h1'), tagName);
+});
+
+runTest('test-sanitize-href', sj.tag('test-sanitize-href', {
+  template: function template() {/*
+                                    <a href="{{this.href}}"></div>
+                                 */},
+  default: {
+    'href': 'javascript:this.x=3',
+    x: 5
+  }
+}), function (t, tagName) {
+  t.plan(1);
+  t.equal(this.querySelector('a').getAttribute('href'), 'unsafe:javascript:this.x=3');
 });
 
 },{"../src/main.js":65,"tape":55}]},{},[69]);

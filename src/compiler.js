@@ -225,7 +225,14 @@ class Compiler {
         return '';
       }
     } else {
-      return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)});`;
+      if (attr.name === 'href') {
+        return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)}.replace(/^javascript:/, 'unsafe:javascript:'));`;
+      } else {
+        if ((attr.name.substr(0, 2) === 'on') && (attr.value =~ /\{\{/)) {
+          throw `You can't include {{}} expression in event handler(Security reason). You should use sj-* instead.`;
+        }
+        return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)});`;
+      }
     }
   }
 
