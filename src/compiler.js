@@ -107,8 +107,11 @@ class Compiler {
     body = body.concat(this.renderAttributes(elem, vars));
     body.push(`IncrementalDOM.elementOpenEnd("${tagName}")`);
 
+    const bind = elem.getAttribute('sj-bind');
     if (tagName.indexOf('-') >= 0) {
       body.push(`IncrementalDOM.skip()`);
+    } else if (bind) {
+      body.push(`IncrementalDOM.text(${bind});`);
     } else {
       const children = elem.childNodes;
       for (let i = 0, l = children.length; i < l; ++i) {

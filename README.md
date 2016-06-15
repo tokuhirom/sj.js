@@ -89,7 +89,14 @@ sample:
 
     <div sj-style="{color: 'red'}"></div>
 
-## Text replacement
+## sj-bind
+
+    <div sj-bind="<<EXPRESSION>>"></div>
+
+This element's textContent will replaced by evaluation result of EXPRESSION.
+In the expression, _this_ indicates your custom element.
+
+## Text replacement(DEPRECATED)
 
     <div>Hello, {{this.name}}</div>
 

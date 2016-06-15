@@ -356,10 +356,10 @@ runTest('test-comment', sj.tag('test-comment', {
 
 runTest('test-sanitize-href', sj.tag('test-sanitize-href', {
   template: function () {/*
-                            <a class='unsafe' href="{{this.href}}"></div>
-                            <a class='unsafe2' href="jscript:alert(3)"></div>
-                            <a class='unsafe3' href="view-source:alert(3)"></div>
-                            <a class='safe' href="http://example.com"></div>
+                            <a class='unsafe' href="{{this.href}}"></a>
+                            <a class='unsafe2' href="jscript:alert(3)"></a>
+                            <a class='unsafe3' href="view-source:alert(3)"></a>
+                            <a class='safe' href="http://example.com"></a>
   */},
   default: {
     'href': 'javascript:this.x=3',
@@ -371,5 +371,18 @@ runTest('test-sanitize-href', sj.tag('test-sanitize-href', {
   t.equal(this.querySelector('a.unsafe2').getAttribute('href'), 'unsafe:jscript:alert(3)');
   t.equal(this.querySelector('a.unsafe3').getAttribute('href'), 'unsafe:view-source:alert(3)');
   t.equal(this.querySelector('a.safe').getAttribute('href'), 'http://example.com');
+});
+
+runTest('test-bind', sj.tag('test-bind', {
+  template: function () {/*
+                            <span sj-bind="this.text"></span>
+  */},
+  default: {
+    'text': '<xmp>hoge'
+  }
+}), function (t, tagName) {
+  t.plan(1);
+  console.log(this.outerHTML);
+  t.ok(this.querySelector('span').outerHTML.match(/\&lt;xmp&gt;hoge/));
 });
 
