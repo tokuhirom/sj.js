@@ -8,13 +8,15 @@ function runTest(tagName, elementClass, code) {
   });
 }
 
-function invokeOnChange(elem) {
+// simulate onchange event
+// http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
+function invokeEvent(elem, name) {
   if ("createEvent" in document) {
     var evt = document.createEvent("HTMLEvents");
-    evt.initEvent("change", false, true);
+    evt.initEvent(name, false, true);
     elem.dispatchEvent(evt);
   } else {
-    elem.fireEvent("onchange");
+    elem.fireEvent(`on${name}`);
   }
 }
 
@@ -82,7 +84,7 @@ runTest('test-events', sj.tag('test-events', {
   elem.click();
 
   t.plan(1);
-  t.ok(!!this.clicked, 'test-events');
+  t.ok(!!this.clicked);
 });
 
 runTest('test-set-attrs', sj.tag('test-set-attrs', {
@@ -103,15 +105,7 @@ runTest('test-input', sj.tag('test-input', {
   var input = this.querySelector('input');
   input.value = 'foo';
 
-  // simulate onchange event
-  // http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
-  if ("createEvent" in document) {
-    var evt = document.createEvent("HTMLEvents");
-    evt.initEvent("change", false, true);
-    input.dispatchEvent(evt);
-  } else {
-    input.fireEvent("onchange");
-  }
+  invokeEvent(input, 'input');
 
   t.plan(1);
   t.ok(this.querySelector('span').textContent === "foo", tagName);
@@ -126,10 +120,10 @@ runTest('test-input-checkbox', sj.tag('test-input-checkbox', {
   const a=this.querySelector('.a');
   a.checked = true;
 
-  invokeOnChange(a);
+  invokeEvent(a, 'change');
 
   t.plan(2);
-  t.equal(this.a, true);
+  t.equal(this.a, true, 'this.a is checked');
   t.equal(this.b, false);
 });
 
@@ -151,15 +145,7 @@ runTest('test-input-nested', sj.tag('test-input-nested', {
   var input = this.querySelector('input');
   input.value = 'foo';
 
-  // simulate onchange event
-  // http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
-  if ("createEvent" in document) {
-    var evt = document.createEvent("HTMLEvents");
-    evt.initEvent("change", false, true);
-    input.dispatchEvent(evt);
-  } else {
-    input.fireEvent("onchange");
-  }
+  invokeEvent(input, 'input');
 
   t.plan(1);
   t.ok(this.x.y === 'foo', tagName);
@@ -174,7 +160,7 @@ runTest('test-textarea', sj.tag('test-textarea', {
 }), function (t, tagName) {
   var input = this.querySelector('textarea');
   input.value = "foo";
-  input.dispatchEvent(new Event("change"));
+  invokeEvent(input, 'input');
 
   t.plan(1);
   t.ok(this.querySelector('span').textContent === "foo", tagName);
