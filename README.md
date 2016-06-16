@@ -119,6 +119,20 @@ In the expression, _this_ indicates your custom element.
 
 If the eavaluation result contains unsafe url scheme, sj will sanitize it.
 
+## `sj-attr-*`
+
+    <div sj-attr-ATTR_NAME="<<EXPRESSION>>"></a>
+
+`sj-attr-*` attribute compiled as attributes.
+
+Example:
+
+    <div sj-attr-data-foo="5963"></div>
+
+Will be interpreted as:
+
+    <div data-foo="5963"></div>
+
 ## Event Handler
 
     <button sj-click="this.click($event)"></button>

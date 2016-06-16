@@ -230,6 +230,8 @@ class Compiler {
         return `IncrementalDOM.attr("value", ${attr.value});`;
       } else if (attr.name === 'sj-href') {
         return `IncrementalDOM.attr("href", ${attr.value}.replace(/^[^:]+?:/, function (scheme) { return (scheme === 'http:' || scheme === 'https://') ? scheme : 'unsafe:' + scheme }));`;
+      } else if (attr.name.substr(0,8) === 'sj-attr-') {
+        return `IncrementalDOM.attr(${JSON.stringify(attr.name.substr(8))}, ${attr.value});`;
       } else {
         return '';
       }

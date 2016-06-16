@@ -372,3 +372,12 @@ runTest('test-bind', sj.tag('test-bind', {
   t.ok(this.querySelector('span').outerHTML.match(/\&lt;xmp&gt;hoge/));
 });
 
+runTest('test-sj-attr', sj.tag('test-sj-attr', {
+  template: function () {/*
+                            <span sj-attr-data-foo="5963"></span>
+  */}
+}), function (t, tagName) {
+  t.plan(1);
+  t.equal(this.querySelector('span').getAttribute('data-foo'), '5963');
+});
+
