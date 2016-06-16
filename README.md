@@ -196,6 +196,10 @@ No. But you can write a code like following.
         }
     </script>
 
+### Is there a `{{expr}}` form support?
+
+No. It may cause security issue.
+
 ## LICENSE
 
     The MIT License (MIT)
