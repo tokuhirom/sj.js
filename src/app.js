@@ -26,15 +26,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const app = elem.getAttribute('sj-app');
     const replaced = elem.parentNode.replaceChild(template, elem);
-    if (app) {
+    if (app) { // Note. sj allows sj-app="" for demo app.
       const func = window[app];
       if (func) {
         func.apply(template);
-        template.update();
       } else {
         throw `Unknown function '${app}', specefied by sj-app`;
       }
     }
+    template.update();
   }
 });
 
