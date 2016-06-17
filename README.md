@@ -26,6 +26,34 @@ This library supports angular1 like templating.
     </body>
     </html>
 
+## `sj.fireEvent(element, eventName, options)`
+
+You can send a custom event to the _element_ by this method.
+
+_element_ is a target element to send event.
+
+_eventName_ is an event name.
+
+_options_ is argument for custom events. That can contain following parameters:
+
+
+    * detail: message object
+    * bubbles: True if event goes through its target attribute value’s ancestors in reverse tree order, and false otherwise
+    * cancelable: True if event is cancellable, false otherwise.
+
+Example:
+
+    sj.tag('x-foo', {
+        template: '<div sj-bind="this.gotEvent"></div>'
+        events: {
+            foo: function ($event) {
+                this.gotEvent = $event.detail;
+            }
+        }
+    });
+
+    sj.fireEvent(document.querySelector('x-foo', 'foo', {hello: 'nick'});
+
 ## sj.tag
 
 `sj.tag(TAGNAME, OPTIONS)` is an entry point to create custom element.

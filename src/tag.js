@@ -42,6 +42,14 @@ function tag(tagName, opts) {
         this[attr.name] = attr.value;
       }
 
+      // set event listeners
+      if (opts.events) {
+        for (const event in opts.events) {
+          console.log(event);
+          this.addEventListener(event, opts.events[event].bind(this));
+        }
+      }
+
       if (opts.initialize) {
         opts.initialize.apply(this);
       }

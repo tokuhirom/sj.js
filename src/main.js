@@ -9,3 +9,5 @@ require('./app.js');
 
 module.exports.Element = Element;
 module.exports.tag = tag;
+module.exports.fireEvent = require('./fire-event.js');
+

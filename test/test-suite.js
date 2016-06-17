@@ -381,3 +381,20 @@ runTest('test-sj-attr', sj.tag('test-sj-attr', {
   t.equal(this.querySelector('span').getAttribute('data-foo'), '5963');
 });
 
+runTest('test-fireEvent', sj.tag('test-fireevent', {
+  template: function () {/*
+                            <div></div>
+  */},
+  events: {
+    foo: function ($event) {
+      this.gotEvent = $event.detail;
+    }
+  }
+}), function (t, tagName) {
+  t.plan(1);
+  sj.fireEvent(this, 'foo', {
+    detail: {hello: 'nick'}
+  });
+  t.deepEqual(this.gotEvent, {hello: 'nick'});
+});
+
