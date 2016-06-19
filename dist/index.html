@@ -128,6 +128,7 @@
             checked: {
               set: function (value) {
                 this.scope.checked = value === 'true' || value === true;
+                console.trace(`SET CHECKED ${this.scope.checked} ${this.title}`);
               },
               get: function () {
                 return this.scope.checked;

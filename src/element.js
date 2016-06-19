@@ -27,15 +27,15 @@ class Element extends HTMLElement {
       html.innerHTML = template;
 
       scopes[this.tagName] = {};
-      this.prepare(scopes[this.tagName]);
       new Aggregator(html).aggregate(scopes[this.tagName]);
       compiled[this.tagName] = new Compiler().compile(html);
     }
 
-    const attrs = this.attributes;
-    for (let i = 0, l = attrs.length; i < l; ++i) {
-      const attr = attrs[i];
-      this[attr.name] = attr.value;
+    const def = this.default();
+    for (const key in def) {
+      if (def.hasOwnProperty(key)) {
+        this[key] = def[key];
+      }
     }
 
     const scope = scopes[this.tagName];
@@ -45,9 +45,19 @@ class Element extends HTMLElement {
       }
     }
 
+    const attrs = this.attributes;
+    for (let i = 0, l = attrs.length; i < l; ++i) {
+      const attr = attrs[i];
+      this[attr.name] = attr.value;
+    }
+
     this.initialize();
 
     this.update();
+  }
+
+  default() {
+    return {};
   }
 
   template() {
@@ -55,12 +65,9 @@ class Element extends HTMLElement {
   }
 
   attributeChangedCallback(key) {
+    console.log(`ATTRIBUTE CHANGED: ${key}`);
     this[key] = this.getAttribute(key);
     this.update();
-  }
-
-  prepare(scope) {
-    // nop. abstract method.
   }
 
   initialize() {

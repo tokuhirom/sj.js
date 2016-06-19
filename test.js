@@ -4884,6 +4884,7 @@ var Element = function (_HTMLElement2) {
   }, {
     key: 'attributeChangedCallback',
     value: function attributeChangedCallback(key) {
+      console.log('ATTRIBUTE CHANGED: ' + key);
       this[key] = this.getAttribute(key);
       this.update();
     }

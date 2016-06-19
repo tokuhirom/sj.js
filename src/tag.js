@@ -39,10 +39,8 @@ function tag(tagName, opts) {
       return template;
     }
 
-    prepare(scope) {
-      for (const key in opts.default) {
-        scope[key] = opts.default[key];
-      }
+    default() {
+      return opts.default || {};
     }
 
     initialize() {
