@@ -259,23 +259,3 @@ test('sj-class', (t) => {
   const got = target.querySelector('div');
   t.deepEqual(got.getAttribute('class'), 'a b');
 });
-test('sj-style', (t) => {
-  t.plan(1);
-  var div = document.createElement('div');
-  div.innerHTML = `
-    <div sj-style="this.s">
-    </div>
-  `;
-  const code = new Compiler().compile(div);
-
-  var target = document.createElement('target');
-  target.update = function () { };
-  target.s = { color: 'red' };
-
-  IncrementalDOM.patch(target, () => {
-    code.apply(target, [IncrementalDOM]);
-  });
-
-  const got = target.querySelector('div');
-  t.deepEqual(got.style.color, 'red');
-});

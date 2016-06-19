@@ -77,7 +77,7 @@ TBD
 You can iterate over array via sj-repeat.
 
     <select sj-repeat="x in this.ary" sj-model="x.label">
-        <option sj-value="x.value"></option>
+        <option sj-attr-value="x.value"></option>
     </select>
 
 _this_ indicates custom element.
@@ -106,36 +106,11 @@ sample:
 
     <div sj-class="this.foo"></div>
 
-## sj-style
-
-    <div sj-style="<<EXPRESSION>>"></div>
-
-You can specify the styles for element via `sj-style` attribute.
-In expression, _this_ indicates your custom element.
-
-sample:
-
-    <div sj-style="{color: 'red'}"></div>
-
 ## sj-bind
 
     <div sj-bind="<<EXPRESSION>>"></div>
 
 This element's textContent will replaced by evaluation result of EXPRESSION.
-In the expression, _this_ indicates your custom element.
-
-## sj-src
-
-    <iframe sj-src="<<EXPRESSION>>"></iframe>
-
-You can specify the src for element via `sj-src` attribute.
-In the expression, _this_ indicates your custom element.
-
-## sj-value
-
-    <option sj-value="<<EXPRESSION>>"></option>
-
-You can specify the value for element via `sj-value` attribute.
 In the expression, _this_ indicates your custom element.
 
 ## sj-href
@@ -227,7 +202,7 @@ No. But you can write a code like following.
         <h2>Preview</h2>
         <div sj-app="PreviewApp">
             <textarea sj-model="this.html">Hello <B>John</B></textarea>
-            <iframe sj-src="this.src()"></iframe>
+            <iframe sj-attr-src="this.src()"></iframe>
         </div>
     </div>
     <script type="text/javascript">

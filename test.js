@@ -4760,12 +4760,6 @@ var Compiler = function () {
           return 'if (' + _expression + ') { IncrementalDOM.attr("' + attribute + '", "' + attribute + '"); }';
         } else if (attr.name === 'sj-class') {
           return 'IncrementalDOM.attr("class", ' + attr.value + '.join(" "));';
-        } else if (attr.name === 'sj-style') {
-          return 'IncrementalDOM.attr("style", ' + attr.value + ');';
-        } else if (attr.name === 'sj-src') {
-          return 'IncrementalDOM.attr("src", ' + attr.value + ');';
-        } else if (attr.name === 'sj-value') {
-          return 'IncrementalDOM.attr("value", ' + attr.value + ');';
         } else if (attr.name === 'sj-href') {
           return 'IncrementalDOM.attr("href", ' + attr.value + '.replace(/^[^:]+?:/, function (scheme) { return (scheme === \'http:\' || scheme === \'https://\') ? scheme : \'unsafe:\' + scheme }));';
         } else if (attr.name.substr(0, 8) === 'sj-attr-') {

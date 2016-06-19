@@ -33,7 +33,7 @@
         <h2>Preview</h2>
         <div sj-app="PreviewApp">
           <textarea sj-model="this.html">Hello <B>John</B></textarea>
-          <iframe sj-src="this.src()"></iframe>
+          <iframe sj-attr-src="this.src()"></iframe>
         </div>
       </div>
     </div>
@@ -53,7 +53,7 @@
     </template>
 
     <template id="tmpl-todo-item">
-      <div sj-style="this.getStyle()">
+      <div sj-attr-style="this.getStyle()">
         <label>
           <input type="checkbox" sj-model="this.checked" sj-change="this.change()">
           <span sj-bind="this.title"></span>
