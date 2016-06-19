@@ -44,17 +44,18 @@
     </template>
 
     <template id="tmpl-todo-list">
+      <div><a sj-click="this.archive()">Archive</a></div>
       <input type="text" sj-model="this.newitem"/>
       <button sj-click="this.add()">Add</button>
       <div sj-repeat="item in this.items">
-        <x-todo-item title="{{item.title}}" checked="{{item.checked}}"></x-todo-item>
+        <x-todo-item sj-attr-index="$index" sj-attr-title="item.title" sj-attr-checked="item.checked"></x-todo-item>
       </div>
     </template>
 
     <template id="tmpl-todo-item">
       <div sj-style="this.getStyle()">
         <label>
-          <input type="checkbox" sj-model="this.checked">
+          <input type="checkbox" sj-model="this.checked" sj-change="this.change()">
           <span sj-bind="this.title"></span>
         </label>
       </div>
@@ -84,6 +85,21 @@
               });
               this.newitem = '';
               this.update();
+            },
+            archive: function () {
+              this.items = this.items.filter(function (e) {
+                return !e.checked;
+              });
+              this.update();
+            }
+          },
+          events: {
+            todoItemChanged: function ($event) {
+              var elem = $event.detail;
+              this.items[elem.index] = {
+                title: elem.title,
+                checked: elem.checked
+              };
             }
           }
         });
@@ -97,6 +113,12 @@
                 }
               }
               return { };
+            },
+            change: function () {
+              sj.fireEvent(this, 'todoItemChanged', {
+                detail: this,
+                bubbles: true
+              });
             }
           }
         });

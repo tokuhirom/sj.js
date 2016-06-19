@@ -52,7 +52,7 @@ Example:
         }
     });
 
-    sj.fireEvent(document.querySelector('x-foo', 'foo', {hello: 'nick'});
+    sj.fireEvent(document.querySelector('x-foo', 'foo', {detail:{hello: 'nick'}});
 
 ## sj.tag
 

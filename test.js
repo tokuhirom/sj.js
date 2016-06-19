@@ -4593,6 +4593,7 @@ var sj_attr2event = {
   'sj-mouseup': 'onmouseup',
   'sj-paste': 'onpaste',
   'sj-selected': 'onselected',
+  'sj-change': 'onchange',
   'sj-submit': 'onsubmit'
 };
 
@@ -4717,16 +4718,16 @@ var Compiler = function () {
         codeList.push(code);
       }
 
-      var normalEvents = ['onclick', 'onblur', 'onchecked', 'ondblclick', 'onfocus', 'onkeydown', 'onkeypress', 'onkeyup', 'onmousedown', 'onmouseenter', 'onmouseleave', 'onmousemove', 'onmouseover', 'onmouseup', 'onpaste', 'onselected', 'onchange', 'onsubmit'];
+      var normalEvents = ['onclick', 'onblur', 'onchecked', 'ondblclick', 'onfocus', 'onkeydown', 'onkeypress', 'onkeyup', 'onmousedown', 'onmouseenter', 'onmouseleave', 'onmousemove', 'onmouseover', 'onmouseup', 'onpaste', 'onselected', 'onsubmit'];
       if (model) {
         if (elem.type === 'checkbox' || elem.type === 'radio') {
           normalEvents.push('oninput');
           var _code = events['onchange'] || '';
-          codeList.push('\n          if (' + model + ') {\n            IncrementalDOM.attr("checked", \'checked\');\n          }\n          IncrementalDOM.attr("onchange", function (' + vars.concat(['$event']).join(",") + ') {\n            ' + _code + ';\n            ' + model + ' = $event.target.checked;\n            this.update();\n          }.bind(' + ['this'].concat(vars).join(",") + '));\n        ');
+          codeList.push('\n          if (' + model + ') {\n            IncrementalDOM.attr("checked", \'checked\');\n          }\n          IncrementalDOM.attr("onchange", function (' + vars.concat(['$event']).join(",") + ') {\n            ' + model + ' = $event.target.checked;\n            ' + _code + ';\n            this.update();\n          }.bind(' + ['this'].concat(vars).join(",") + '));\n        ');
         } else {
           normalEvents.push('onchange');
           var _code2 = events['oninput'] || '';
-          codeList.push('\n          IncrementalDOM.attr("value", ' + model + ');\n          IncrementalDOM.attr("oninput", function (' + vars.concat(['$event']).join(",") + ') {\n            ' + _code2 + ';\n            ' + model + ' = $event.target.value;\n            this.update();\n          }.bind(' + ['this'].concat(vars).join(",") + '));\n        ');
+          codeList.push('\n          IncrementalDOM.attr("value", ' + model + ');\n          IncrementalDOM.attr("oninput", function (' + vars.concat(['$event']).join(",") + ') {\n            ' + model + ' = $event.target.value;\n            ' + _code2 + ';\n            this.update();\n          }.bind(' + ['this'].concat(vars).join(",") + '));\n        ');
         }
       }
       for (var _i = 0, _l = normalEvents.length; _i < _l; _i++) {
@@ -4773,11 +4774,7 @@ var Compiler = function () {
           return '';
         }
       } else {
-        if (elem.tagName.indexOf('-') > 0) {
-          return 'IncrementalDOM.attr("' + attr.name + '", ' + scan(attr.value) + ');';
-        } else {
-          return 'IncrementalDOM.attr("' + attr.name + '", ' + this.text(attr.value) + ');';
-        }
+        return 'IncrementalDOM.attr("' + attr.name + '", ' + this.text(attr.value) + ');';
       }
     }
   }, {

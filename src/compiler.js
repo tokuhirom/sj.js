@@ -25,6 +25,7 @@ const sj_attr2event = {
   'sj-mouseup': 'onmouseup',
   'sj-paste': 'onpaste',
   'sj-selected': 'onselected',
+  'sj-change': 'onchange',
   'sj-submit': 'onsubmit'
 };
 
@@ -160,7 +161,6 @@ class Compiler {
       'onmouseup',
       'onpaste',
       'onselected',
-      'onchange',
       'onsubmit'
     ];
     if (model) {
@@ -172,8 +172,8 @@ class Compiler {
             IncrementalDOM.attr("checked", 'checked');
           }
           IncrementalDOM.attr("onchange", function (${vars.concat(['$event']).join(",")}) {
-            ${code};
             ${model} = $event.target.checked;
+            ${code};
             this.update();
           }.bind(${['this'].concat(vars).join(",")}));
         `);
@@ -183,8 +183,8 @@ class Compiler {
         codeList.push(`
           IncrementalDOM.attr("value", ${model});
           IncrementalDOM.attr("oninput", function (${vars.concat(['$event']).join(",")}) {
-            ${code};
             ${model} = $event.target.value;
+            ${code};
             this.update();
           }.bind(${['this'].concat(vars).join(",")}));
         `);
@@ -236,11 +236,7 @@ class Compiler {
         return '';
       }
     } else {
-      if (elem.tagName.indexOf('-') > 0) {
-        return `IncrementalDOM.attr("${attr.name}", ${scan(attr.value)});`;
-      } else {
-        return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)});`;
-      }
+      return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)});`;
     }
   }
 
