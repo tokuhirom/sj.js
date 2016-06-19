@@ -5008,6 +5008,12 @@ var Aggregator = require('./aggregator.js');
 
 var unwrapComment = /\/\*!?(?:\@preserve)?[ \t]*(?:\r\n|\n)([\s\S]*?)(?:\r\n|\n)\s*\*\//;
 
+var knownOpts = ['template', 'accessors', 'default', 'events', 'methods'];
+var knownOptMap = {};
+knownOpts.forEach(function (e) {
+  knownOptMap[e] = e;
+});
+
 function tag(tagName, opts) {
   var template = opts.template;
   delete opts['template'];
@@ -5017,6 +5023,12 @@ function tag(tagName, opts) {
 
   var scope = opts['default'] || {};
   var compiled = void 0;
+
+  for (var key in opts) {
+    if (!knownOptMap[key]) {
+      throw 'Unknown options for sj.tag: ' + tagName + ':' + key + '(Known keys: ' + knownOpts + ')';
+    }
+  }
 
   var elementClassPrototype = Object.create(HTMLElement.prototype);
   var elementClass = function (_HTMLElement) {
@@ -5044,9 +5056,9 @@ function tag(tagName, opts) {
           compiled = new Compiler().compile(html);
         }
 
-        for (var key in scope) {
-          if (scope.hasOwnProperty(key)) {
-            this[key] = scope[key];
+        for (var _key in scope) {
+          if (scope.hasOwnProperty(_key)) {
+            this[_key] = scope[_key];
           }
         }
 
@@ -5059,7 +5071,6 @@ function tag(tagName, opts) {
         // set event listeners
         if (opts.events) {
           for (var event in opts.events) {
-            console.log(event);
             this.addEventListener(event, opts.events[event].bind(this));
           }
         }

@@ -4,6 +4,18 @@ const Aggregator = require('./aggregator.js');
 
 var unwrapComment = /\/\*!?(?:\@preserve)?[ \t]*(?:\r\n|\n)([\s\S]*?)(?:\r\n|\n)\s*\*\//;
 
+const knownOpts = [
+  'template',
+  'accessors',
+  'default',
+  'events',
+  'methods'
+];
+const knownOptMap = {};
+knownOpts.forEach(e => {
+  knownOptMap[e] = e;
+});
+
 function tag(tagName, opts) {
   const template = opts.template;
   delete opts['template'];
@@ -13,6 +25,12 @@ function tag(tagName, opts) {
 
   const scope = opts['default'] || {};
   let compiled;
+
+  for (const key in opts) {
+    if (!knownOptMap[key]) {
+      throw `Unknown options for sj.tag: ${tagName}:${key}(Known keys: ${knownOpts})`;
+    }
+  }
 
   const elementClassPrototype = Object.create(HTMLElement.prototype);
   const elementClass = class extends HTMLElement {
@@ -45,7 +63,6 @@ function tag(tagName, opts) {
       // set event listeners
       if (opts.events) {
         for (const event in opts.events) {
-          console.log(event);
           this.addEventListener(event, opts.events[event].bind(this));
         }
       }
