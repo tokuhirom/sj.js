@@ -33,7 +33,6 @@ function tag(tagName, opts) {
     }
   }
 
-  const elementClassPrototype = Object.create(HTMLElement.prototype);
   const elementClass = class extends HTMLElement {
     createdCallback() {
       if (!compiled) {

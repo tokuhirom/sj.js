@@ -11,22 +11,35 @@ if (typeof HTMLElement !== 'function') {
   HTMLElement = _HTMLElement;
 }
 
+const scopes = {};
+const compiled = {};
+
 class Element extends HTMLElement {
   createdCallback() {
-    // parse template
-    var template = this.template();
-    if (!template) {
-      throw `template shouldn't be null`;
+    if (!scopes[this.tagName]) {
+      // parse template
+      var template = this.template();
+      if (!template) {
+        throw `template shouldn't be null`;
+      }
+
+      const html = document.createElement("div");
+      html.innerHTML = template;
+
+      this.prepare();
+
+      // TODO cache result as class variable.
+      scopes[this.tagName] = {};
+      new Aggregator(html).aggregate(scopes[this.tagName]);
+      compiled[this.tagName] = new Compiler().compile(html);
     }
 
-    const html = document.createElement("div");
-    html.innerHTML = template;
-
-    this.prepare();
-
-    // TODO cache result as class variable.
-    new Aggregator(html).aggregate(this);
-    this.compiled = new Compiler().compile(html);
+    const scope = scopes[this.tagName];
+    for (const key in scope) {
+      if (scope.hasOwnProperty(key)) {
+        this[key] = scope[key];
+      }
+    }
 
     this.initialize();
 
@@ -52,7 +65,7 @@ class Element extends HTMLElement {
 
   update() {
     IncrementalDOM.patch(this, () => {
-      this.compiled.apply(this, [IncrementalDOM]);
+      compiled[this.tagName].apply(this, [IncrementalDOM]);
     });
   }
 
