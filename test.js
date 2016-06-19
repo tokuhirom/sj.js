@@ -4618,7 +4618,7 @@ var Compiler = function () {
       for (var i = 0; i < children.length; ++i) {
         code = code.concat(this.renderDOM(children[i], []));
       }
-      // console.log(code.join(";\n"));
+      console.log(code.join(";\n"));
       return new Function('IncrementalDOM', code.join(";\n"));
     }
   }, {
@@ -4843,6 +4843,7 @@ var Element = function (_HTMLElement2) {
   _createClass(Element, [{
     key: 'createdCallback',
     value: function createdCallback() {
+      console.log("CREATED " + this.tagName);
       if (!scopes[this.tagName]) {
         // parse template
         var template = this.template();
@@ -4854,27 +4855,46 @@ var Element = function (_HTMLElement2) {
         html.innerHTML = template;
 
         scopes[this.tagName] = {};
-        this.prepare(scopes[this.tagName]);
         new Aggregator(html).aggregate(scopes[this.tagName]);
         compiled[this.tagName] = new Compiler().compile(html);
       }
 
-      var attrs = this.attributes;
-      for (var i = 0, l = attrs.length; i < l; ++i) {
-        var attr = attrs[i];
-        this[attr.name] = attr.value;
-      }
+      var def = this.default();
 
+      // overwrite by scope values
       var scope = scopes[this.tagName];
       for (var key in scope) {
         if (scope.hasOwnProperty(key)) {
-          this[key] = scope[key];
+          def[key] = scope[key];
+        }
+      }
+
+      //  // overwrite by attribute values
+      //  const attrs = this.attributes;
+      //  for (let i = 0, l = attrs.length; i < l; ++i) {
+      //    const attr = attrs[i];
+      //    if (attr.name.substr(0, 8) !== 'sj-attr-') {
+      //      def[attr.name] = attr.value;
+      //    }
+      //  }
+
+      // and set to tag attributes
+      console.trace("SETTING VALUES");
+      console.log(def);
+      for (var _key in def) {
+        if (def.hasOwnProperty(_key)) {
+          this[_key] = def[_key];
         }
       }
 
       this.initialize();
 
       this.update();
+    }
+  }, {
+    key: 'default',
+    value: function _default() {
+      return {};
     }
   }, {
     key: 'template',
@@ -4884,14 +4904,9 @@ var Element = function (_HTMLElement2) {
   }, {
     key: 'attributeChangedCallback',
     value: function attributeChangedCallback(key) {
-      console.log('ATTRIBUTE CHANGED: ' + key);
+      console.log('SET ATTRIBUTE: ' + key);
       this[key] = this.getAttribute(key);
       this.update();
-    }
-  }, {
-    key: 'prepare',
-    value: function prepare(scope) {
-      // nop. abstract method.
     }
   }, {
     key: 'initialize',
@@ -4903,6 +4918,7 @@ var Element = function (_HTMLElement2) {
     value: function update() {
       var _this2 = this;
 
+      console.log("UPDATE");
       IncrementalDOM.patch(this, function () {
         compiled[_this2.tagName].apply(_this2, [IncrementalDOM]);
       });
@@ -5064,11 +5080,9 @@ function tag(tagName, opts) {
         return _template;
       }
     }, {
-      key: 'prepare',
-      value: function prepare(scope) {
-        for (var _key in opts.default) {
-          scope[_key] = opts.default[_key];
-        }
+      key: 'default',
+      value: function _default() {
+        return opts.default || {};
       }
     }, {
       key: 'initialize',
@@ -5146,18 +5160,39 @@ module.exports = scan;
 },{}],44:[function(require,module,exports){
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+var _createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
+  };
+}();
+
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+
+function _possibleConstructorReturn(self, call) {
+  if (!self) {
+    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+  }return call && ((typeof call === "undefined" ? "undefined" : _typeof(call)) === "object" || typeof call === "function") ? call : self;
+}
+
+function _inherits(subClass, superClass) {
+  if (typeof superClass !== "function" && superClass !== null) {
+    throw new TypeError("Super expression must either be null or a function, not " + (typeof superClass === "undefined" ? "undefined" : _typeof(superClass)));
+  }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+}
+
 var test = require('tape');
 var sj = require('../src/main.js');
 
-function runTest(tagName, elementClass, code) {
-  test(tagName, function (t) {
-    var elem = document.createElement(tagName);
-    code.apply(elem, [t, tagName]);
-  });
-}
-
-// simulate onchange event
-// http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
 function invokeEvent(elem, name) {
   if ("createEvent" in document) {
     var evt = document.createEvent("HTMLEvents");
@@ -5168,370 +5203,146 @@ function invokeEvent(elem, name) {
   }
 }
 
-test('export', function (t) {
-  t.plan(2);
-  t.ok(sj.tag, 'sj.tag');
-  t.ok(sj.Element, 'sj.Element');
-});
-
-runTest('test-input-value', sj.tag('test-input-value', {
-  template: function template() {/*
-                                     <input type="text" sj-model="this.filter" value="hoge">
-                                 */}
-}), function (t, tagName) {
-  t.plan(2);
-  var input = this.querySelector('input');
-
-  t.equal(input.value, 'hoge', 'input.value');
-  t.equal(this.filter, 'hoge', tagName);
-});
-
-runTest('test-disabled', sj.tag('test-disabled', {
-  template: function template() {/*
-                                 <div sj-disabled="this.f">f</div>
-                                 <div sj-disabled="this.t">t</div>
-                                 */},
-  initialize: function initialize() {
-    this.t = true;
-    this.f = false;
-  }
-}), function (t, tagName) {
-  t.plan(3);
-  var divs = this.querySelectorAll('div');
-  t.ok(divs.length == 2, tagName);
-  t.ok(!divs[0].getAttribute('disabled'), tagName);
-  t.ok(divs[1].getAttribute('disabled') === 'disabled', tagName);
-});
-
-// regression test
-runTest('test-multi-attributes', sj.tag('test-multi-attributes', {
-  template: function template() {/*
-                                 <div class="b" sj-repeat="x in this.books">
-                                 <div class='book'><span sj-bind="x.name"></span></div>
-                                 </div>
-                                 */},
-  initialize: function initialize() {
-    this.books = [{ "name": "foo" }, { "name": "bar" }];
-  }
-}), function (t, tagName) {
-  t.plan(1);
-  t.equal(this.querySelectorAll('div.book').length, 2, tagName);
-});
-
-runTest('test-events', sj.tag('test-events', {
-  template: function template() {/*
-                                     <button id="clickTest" sj-click="this.btnclick($event)">yay</button>
-                                     */},
-  methods: {
-    btnclick: function btnclick() {
-      this.clicked = true;
-    }
-  }
-}), function (t) {
-  var elem = this.querySelector("#clickTest");
-  elem.click();
-
-  t.plan(1);
-  t.ok(!!this.clicked);
-});
-
-runTest('test-set-attrs', sj.tag('test-set-attrs', {
-  template: '<div sj-bind="this.foo"></div>'
-}), function (t, tagName) {
-  this.setAttribute('foo', 'bar');
-  t.plan(1);
-  t.equal(this.querySelector('div').textContent, 'bar');
-});
-
-runTest('test-input', sj.tag('test-input', {
-  template: function template() {/*
-                                    <h1>Input</h1>
-                                    <input type="text" name="name" sj-model="this.name" id="myInput">
-                                    Hello, <span sj-bind="this.name"></span>
-                                    */}
-}), function (t, tagName) {
-  var input = this.querySelector('input');
-  input.value = 'foo';
-
-  invokeEvent(input, 'input');
-
-  t.plan(1);
-  t.ok(this.querySelector('span').textContent === "foo", tagName);
-});
-
-runTest('test-input-checkbox', sj.tag('test-input-checkbox', {
-  template: function template() {/*
-                                    <input class='a' type="checkbox" sj-model="this.a">
-                                    <input type="checkbox" sj-model="this.b">
-                                    */}
-}), function (t, tagName) {
-  var a = this.querySelector('.a');
-  a.checked = true;
-
-  invokeEvent(a, 'change');
-
-  t.plan(2);
-  t.equal(this.a, true, 'this.a is checked');
-  t.equal(this.b, false);
-});
-
-runTest('test-input-nested', sj.tag('test-input-nested', {
-  template: function template() {/*
-                                 <h1>Input</h1>
-                                 <input type="text" name="name" sj-model="this.x.y" id="myInput">
-                                 Hello, <span sj-model="this.name"></span>
-                                 */},
+sj.tag('x-todo-list', {
+  template: '\n      <div><a sj-click="this.archive()">Archive</a></div>\n      <input type="text" sj-model="this.newitem" class="newitem" />\n      <button sj-click="this.add()" class="addButton">Add</button>\n      <div sj-repeat="item in this.items">\n        <x-todo-item sj-attr-index="$index" sj-attr-title="item.title" sj-attr-checked="item.checked"></x-todo-item>\n      </div>\n  ',
   default: {
-    x: {}
+    items: [{ title: 'buy milk', checked: true }, { title: 'tel nick', checked: false }]
   },
-  initialize: function initialize() {
-    this.x = {
-      y: 3
-    };
-  }
-}), function (t, tagName) {
-  var input = this.querySelector('input');
-  input.value = 'foo';
-
-  invokeEvent(input, 'input');
-
-  t.plan(1);
-  t.ok(this.x.y === 'foo', tagName);
-});
-
-runTest('test-textarea', sj.tag('test-textarea', {
-  template: function template() {/*
-                                 <h1>Textarea</h1>
-                                 <textarea name="hoge" sj-model="this.hoge"></textarea>
-                                 Hello, <span sj-bind="this.hoge"></span>
-                                 */}
-}), function (t, tagName) {
-  var input = this.querySelector('textarea');
-  input.value = "foo";
-  invokeEvent(input, 'input');
-
-  t.plan(1);
-  t.ok(this.querySelector('span').textContent === "foo", tagName);
-});
-
-runTest('test-from-controller', sj.tag('test-from-controller', {
-  initialize: function initialize() {
-    this.hogehoge = "foo";
-  },
-  template: function template() {/*
-                                 <h1>Passed from controller</h1>
-                                 <input type="text" name="bar" sj-model="this.hogehoge">
-                                 */}
-}), function (t, tagName) {
-  t.plan(1);
-  t.ok(this.querySelector('input').value === "foo", tagName);
-});
-
-runTest('test-select', sj.tag('test-select', {
-  template: function template() {/*
-                                 <h1>Select</h1>
-                                 <select sj-model="this.sss">
-                                 <option value="ppp">ppp</option>
-                                 <option value="qqq">qqq</option>
-                                 </select>
-                                 SSS: <span sj-bind="this.sss"></span>
-                                 */}
-}), function (t, tagName) {
-  t.plan(1);
-  t.equal(this.querySelector('span').textContent, "ppp");
-});
-
-runTest('test-for', sj.tag('test-for', {
-  template: function template() {/*
-                                 <h1>bar</h1>
-                                 <div sj-repeat="x in this.bar">
-                                 <div class="item" sj-bind="x.boo"></div>
-                                 </div>
-                                 */},
-  initialize: function initialize() {
-    this.bar = [{ boo: 4649 }, { boo: 1 }, { boo: 2 }, { boo: 3 }];
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div.item');
-  t.plan(1);
-  t.ok(elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' && elems[2].textContent === '2' && elems[3].textContent === '3', tagName);
-});
-
-runTest('test-for-index', sj.tag('test-for-index', {
-  template: function template() {/*
-                                 <h1>For index</h1>
-                                 <div sj-repeat="x in this.bar">
-                                 <div class="item"><span sj-bind="x.boo"></span>:<span sj-bind="$index"></span></div>
-                                 </div>
-                                 */},
-  initialize: function initialize() {
-    this.bar = [{ boo: 4649 }, { boo: 1 }, { boo: 2 }, { boo: 3 }];
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div.item');
-  t.plan(1);
-  t.ok(elems.length == 4 && elems[0].textContent == "4649:0" && elems[1].textContent === '1:1' && elems[2].textContent === '2:2' && elems[3].textContent === '3:3', tagName);
-});
-
-runTest('test-for-empty', sj.tag('test-for-empty', {
-  template: function template() {/*
-                                 <h1>sj-repeat with empty value</h1>
-                                 <div sj-repeat="x in this.bar">
-                                 <div class="item" sj-model="x.boo">replace here</div>
-                                 </div>
-                                 */},
-  initialize: function initialize() {
-    this.bar = [];
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div.item');
-  t.plan(1);
-  t.ok(elems.length == 0, tagName);
-});
-
-runTest('test-if', sj.tag('test-if', {
-  template: function template() {/*
-                                 <h1>Test if</h1>
-                                 <div sj-if="this.getFalse()">FALSE</div>
-                                 <div sj-if="this.getTrue()">TRUE</div>
-                                 */},
   methods: {
-    getTrue: function getTrue() {
-      return true;
+    add: function add() {
+      if (this.newitem === '') {
+        return;
+      }
+      this.items.push({
+        title: this.newitem,
+        checked: false
+      });
+      this.newitem = '';
+      this.update();
     },
-    getFalse: function getFalse() {
-      return false;
+    archive: function archive() {
+      console.log("ARRRRRRRRRRRRRRRRRRRRCHIVE");
+      this.items = this.items.filter(function (e) {
+        return !e.checked;
+      });
+      console.log(JSON.stringify(this.items));
+      this.update();
     }
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div');
-  t.plan(1);
-  t.ok(elems.length == 1 && elems[0].textContent === 'TRUE', tagName);
-});
-
-runTest('test-if-array', sj.tag('test-if-array', {
-  template: function template() {/*
-                                 return `
-                                 <h1>Test if</h1>
-                                 <div sj-repeat="x in this.bar">
-                                 <div sj-if="this.matched(x)" class="target" sj-bind="x.foo"></div>
-                                 </div>
-                                 */},
-  initialize: function initialize() {
-    this.bar = [{ "foo": 1 }];
   },
-  methods: {
-    matched: function matched(x) {
-      return x.foo == 1;
-    }
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div.target');
-  t.plan(1);
-  t.ok(elems.length === 1 && elems[0].textContent === '1', tagName);
-});
-
-runTest('test-text-var', sj.tag('test-text-var', {
-  template: function template() {/*
-                                 <h1>Test text var</h1>
-                                 <div>Hello, <span sj-bind="this.name"></span></div>
-                                 */},
-  initialize: function initialize() {
-    this.name = 'John';
-  }
-}), function (t, tagName) {
-  var elem = this.querySelector('div');
-  t.plan(1);
-  t.ok(elem.textContent === 'Hello, John', tagName);
-});
-
-runTest('test-filter', sj.tag('test-filter', {
-  template: function template() {/*
-                                 <h1>Test filter</h1>
-                                 <div sj-if="this.filter(this.x.y)">Hello</div>
-                                 <div sj-if="this.filter(this.x.z)">Hi</div>
-                                 */},
-  initialize: function initialize() {
-    this.x = {
-      y: true,
-      z: false
-    };
-    this.filter = function (e) {
-      return e;
-    };
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div');
-  t.plan(1);
-  t.ok(elems.length === 1 && elems[0].textContent === 'Hello', tagName);
-});
-
-runTest('test-comment', sj.tag('test-comment', {
-  template: function template() {/*
-                                 <h1>Test comment</h1>
-                                 <!-- foo -->
-                                 */}
-}), function (t, tagName) {
-  t.plan(1);
-  t.ok(this.querySelector('h1'), tagName);
-});
-
-runTest('test-sanitize-href', sj.tag('test-sanitize-href', {
-  template: function template() {/*
-                                    <a class='unsafe' sj-href="this.href"></a>
-                                    <a class='unsafe2' sj-href="'jscript:alert(3)'"></a>
-                                    <a class='unsafe3' sj-href="'view-source:alert(3)'"></a>
-                                    <a class='safe' sj-href="'http://example.com'"></a>
-                                 */},
-  default: {
-    'href': 'javascript:this.x=3',
-    x: 5
-  }
-}), function (t, tagName) {
-  t.plan(4);
-  t.equal(this.querySelector('a.unsafe').getAttribute('href'), 'unsafe:javascript:this.x=3');
-  t.equal(this.querySelector('a.unsafe2').getAttribute('href'), 'unsafe:jscript:alert(3)');
-  t.equal(this.querySelector('a.unsafe3').getAttribute('href'), 'unsafe:view-source:alert(3)');
-  t.equal(this.querySelector('a.safe').getAttribute('href'), 'http://example.com');
-});
-
-runTest('test-bind', sj.tag('test-bind', {
-  template: function template() {/*
-                                    <span sj-bind="this.text"></span>
-                                 */},
-  default: {
-    'text': '<xmp>hoge'
-  }
-}), function (t, tagName) {
-  t.plan(1);
-  console.log(this.outerHTML);
-  t.ok(this.querySelector('span').outerHTML.match(/\&lt;xmp&gt;hoge/));
-});
-
-runTest('test-sj-attr', sj.tag('test-sj-attr', {
-  template: function template() {/*
-                                    <span sj-attr-data-foo="5963"></span>
-                                 */}
-}), function (t, tagName) {
-  t.plan(1);
-  t.equal(this.querySelector('span').getAttribute('data-foo'), '5963');
-});
-
-runTest('test-fireEvent', sj.tag('test-fireevent', {
-  template: function template() {/*
-                                    <div></div>
-                                 */},
   events: {
-    foo: function foo($event) {
-      this.gotEvent = $event.detail;
+    todoItemChanged: function todoItemChanged($event) {
+      var elem = $event.detail;
+      this.items[elem.index] = {
+        title: elem.title,
+        checked: elem.checked
+      };
     }
   }
-}), function (t, tagName) {
-  t.plan(1);
-  sj.fireEvent(this, 'foo', {
-    detail: { hello: 'nick' }
-  });
-  t.deepEqual(this.gotEvent, { hello: 'nick' });
+});
+document.registerElement('x-todo-item', function (_sj$Element) {
+  _inherits(_class, _sj$Element);
+
+  function _class() {
+    _classCallCheck(this, _class);
+
+    return _possibleConstructorReturn(this, Object.getPrototypeOf(_class).apply(this, arguments));
+  }
+
+  _createClass(_class, [{
+    key: 'template',
+    value: function template() {
+      return '\n      <div sj-attr-style="this.getStyle()">\n        <label>\n          <input type="checkbox" sj-model="this.checked" sj-change="this.change()">\n          <span sj-bind="this.title"></span>\n        </label>\n      </div>\n    ';
+    }
+  }, {
+    key: 'default',
+    value: function _default() {
+      return { scope: {} };
+    }
+  }, {
+    key: 'getStyle',
+    value: function getStyle() {
+      console.log('GET STYLE: ' + this.title + ', ' + this.scope.checked);
+      if (this.scope.checked) {
+        return {
+          'text-decoration': 'line-through'
+        };
+      }
+      return {};
+    }
+  }, {
+    key: 'attachedCallback',
+    value: function attachedCallback(key) {
+      console.log('ATTACHED ' + this.outerHTML);
+      this.update();
+    }
+  }, {
+    key: 'attributeChangedCallback',
+    value: function attributeChangedCallback(key) {
+      console.log('ATTRIBUTE CHANGED ' + this.outerHTML);
+      this[key] = this.getAttribute(key);
+      this.update();
+    }
+  }, {
+    key: 'change',
+    value: function change() {
+      console.log("send todoItemChanged");
+      sj.fireEvent(this, 'todoItemChanged', {
+        detail: this,
+        bubbles: true
+      });
+    }
+  }, {
+    key: 'checked',
+    set: function set(value) {
+      console.log(value);
+      this.scope.checked = value === 'true' || value === true;
+      console.trace('SET CHECKED ' + this.scope.checked + ' ' + this.title);
+      console.log(this);
+    },
+    get: function get() {
+      console.trace('GET checked: ' + this.scope.checked);
+      return this.scope.checked;
+    }
+  }]);
+
+  return _class;
+}(sj.Element));
+
+test('todo', function (t) {
+  t.plan(3);
+
+  var elem = document.createElement('x-todo-list');
+  document.body.appendChild(elem);
+
+  {
+    var newitemInputBox = elem.querySelector('.newitem');
+    newitemInputBox.value = 'hoge';
+    invokeEvent(newitemInputBox, 'input');
+
+    var addButton = elem.querySelector('.addButton');
+    invokeEvent(addButton, 'click');
+  }
+
+  {
+    var _newitemInputBox = elem.querySelector('.newitem');
+    _newitemInputBox.value = 'fuga';
+    invokeEvent(_newitemInputBox, 'input');
+
+    var _addButton = elem.querySelector('.addButton');
+    invokeEvent(_addButton, 'click');
+  }
+  {
+    var input = elem.querySelector('div:nth-child(5) > x-todo-item > div > label > input[type="checkbox"]');
+    input.checked = true;
+    invokeEvent(input, 'change');
+  }
+  elem.archive();
+  t.equal(elem.querySelector('x-todo-list > div:nth-child(5) > x-todo-item > div > label > input[type="checkbox"]').checked, false);
+  {
+    var items = elem.querySelectorAll('x-todo-item');
+    t.equal(items[0].querySelector('span').textContent, 'hoge');
+    t.equal(items[1].querySelector('span').textContent, 'fuga');
+  }
 });
 
 },{"../src/main.js":40,"tape":28}],45:[function(require,module,exports){

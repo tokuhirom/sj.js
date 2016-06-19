@@ -72,7 +72,7 @@
           default: {
             items: [
               {title:'buy milk', checked: true},
-              {title:'tel nick'}
+              {title:'tel nick', checked: false}
             ]
           },
           methods: {
@@ -81,7 +81,8 @@
                 return;
               }
               this.items.push({
-                title: this.newitem
+                title: this.newitem,
+                checked: false
               });
               this.newitem = '';
               this.update();
@@ -90,6 +91,7 @@
               this.items = this.items.filter(function (e) {
                 return !e.checked;
               });
+              console.log(JSON.stringify(this.items));
               this.update();
             }
           },
@@ -129,8 +131,10 @@
               set: function (value) {
                 this.scope.checked = value === 'true' || value === true;
                 console.trace(`SET CHECKED ${this.scope.checked} ${this.title}`);
+                this.update();
               },
               get: function () {
+                // console.log(`GET checked: ${this.scope.checked}`);
                 return this.scope.checked;
               }
             }

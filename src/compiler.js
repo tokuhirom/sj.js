@@ -46,7 +46,7 @@ class Compiler {
     for (let i = 0; i < children.length; ++i) {
       code = code.concat(this.renderDOM(children[i], []));
     }
-    // console.log(code.join(";\n"));
+    console.log(code.join(";\n"));
     return new Function('IncrementalDOM', code.join(";\n"));
   }
 
