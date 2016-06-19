@@ -5008,7 +5008,7 @@ var Aggregator = require('./aggregator.js');
 
 var unwrapComment = /\/\*!?(?:\@preserve)?[ \t]*(?:\r\n|\n)([\s\S]*?)(?:\r\n|\n)\s*\*\//;
 
-var knownOpts = ['template', 'accessors', 'default', 'events', 'methods'];
+var knownOpts = ['template', 'accessors', 'default', 'events', 'initialize', 'methods'];
 var knownOptMap = {};
 knownOpts.forEach(function (e) {
   knownOptMap[e] = e;

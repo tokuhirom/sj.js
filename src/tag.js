@@ -9,6 +9,7 @@ const knownOpts = [
   'accessors',
   'default',
   'events',
+  'initialize',
   'methods'
 ];
 const knownOptMap = {};
