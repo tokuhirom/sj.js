@@ -1,6 +1,7 @@
 const Compiler = require('./compiler');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 const Aggregator = require('./aggregator.js');
+const Element = require('./element.js');
 
 var unwrapComment = /\/\*!?(?:\@preserve)?[ \t]*(?:\r\n|\n)([\s\S]*?)(?:\r\n|\n)\s*\*\//;
 
@@ -18,80 +19,42 @@ knownOpts.forEach(e => {
 });
 
 function tag(tagName, opts) {
-  const template = opts.template;
-  delete opts['template'];
-  if (!template) {
-    throw "Missing template";
-  }
-
-  const scope = opts['default'] || {};
-  let compiled;
-
   for (const key in opts) {
     if (!knownOptMap[key]) {
       throw `Unknown options for sj.tag: ${tagName}:${key}(Known keys: ${knownOpts})`;
     }
   }
 
-  const elementClass = class extends HTMLElement {
-    createdCallback() {
-      if (!compiled) {
-        const html = document.createElement("div");
-        html.innerHTML = (function () {
-          if (typeof(template) === 'function') {
-            return unwrapComment.exec(template.toString())[1];
-          } else {
-            return template;
-          }
-        })();
-        new Aggregator(html).aggregate(scope);
-        compiled = new Compiler().compile(html);
-      }
+  let template;
 
-      for (const key in scope) {
-        if (scope.hasOwnProperty(key)) {
-          this[key] = scope[key];
+  const elementClass = class extends Element {
+    template() {
+      if (!template) {
+        if (typeof(opts.template) === 'function') {
+          template = unwrapComment.exec(opts.template.toString())[1];
+        } else {
+          template = opts.template;
         }
       }
+      return template;
+    }
 
-      const attrs = this.attributes;
-      for (let i = 0, l = attrs.length; i < l; ++i) {
-        const attr = attrs[i];
-        this[attr.name] = attr.value;
+    prepare(scope) {
+      for (const key in opts.default) {
+        scope[key] = opts.default[key];
       }
+    }
 
+    initialize() {
       // set event listeners
       if (opts.events) {
         for (const event in opts.events) {
           this.addEventListener(event, opts.events[event].bind(this));
         }
       }
-
       if (opts.initialize) {
         opts.initialize.apply(this);
       }
-      this.update();
-    }
-
-    attributeChangedCallback(key) {
-      this[key] = this.getAttribute(key);
-      this.update();
-    }
-
-    update() {
-      IncrementalDOM.patch(this, () => {
-        compiled.apply(this, [IncrementalDOM]);
-      });
-    }
-
-    dump() {
-      const scope = {};
-      Object.keys(this).forEach(key => {
-        if (key !== 'renderer') {
-          scope[key] = this[key];
-        }
-      });
-      return scope;
     }
   };
 

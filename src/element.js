@@ -26,12 +26,16 @@ class Element extends HTMLElement {
       const html = document.createElement("div");
       html.innerHTML = template;
 
-      this.prepare();
-
-      // TODO cache result as class variable.
       scopes[this.tagName] = {};
+      this.prepare(scopes[this.tagName]);
       new Aggregator(html).aggregate(scopes[this.tagName]);
       compiled[this.tagName] = new Compiler().compile(html);
+    }
+
+    const attrs = this.attributes;
+    for (let i = 0, l = attrs.length; i < l; ++i) {
+      const attr = attrs[i];
+      this[attr.name] = attr.value;
     }
 
     const scope = scopes[this.tagName];
@@ -55,7 +59,7 @@ class Element extends HTMLElement {
     this.update();
   }
 
-  prepare() {
+  prepare(scope) {
     // nop. abstract method.
   }
 
