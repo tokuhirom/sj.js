@@ -27,12 +27,12 @@ class Element extends HTMLElement {
       const html = document.createElement("div");
       html.innerHTML = template;
 
-      scopes[this.tagName] = {};
+      scopes[this.tagName] = this.default();
       new Aggregator(html).aggregate(scopes[this.tagName]);
       compiled[this.tagName] = new Compiler().compile(html);
     }
 
-    const def = this.default();
+    const def = {};
 
     // overwrite by scope values
     const scope = scopes[this.tagName];
