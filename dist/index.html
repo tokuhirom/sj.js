@@ -105,6 +105,9 @@
         });
         sj.tag('x-todo-item', {
           template: document.getElementById('tmpl-todo-item').innerHTML,
+          default: {
+            scope: {}
+          },
           methods: {
             getStyle: function () {
               if (this.checked) {
@@ -119,6 +122,16 @@
                 detail: this,
                 bubbles: true
               });
+            }
+          },
+          accessors: {
+            checked: {
+              set: function (value) {
+                this.scope.checked = value === 'true' || value === true;
+              },
+              get: function () {
+                return this.scope.checked;
+              }
             }
           }
         });
