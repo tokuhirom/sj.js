@@ -1924,7 +1924,7 @@ module.exports = function (write, end) {
 };
 
 }).call(this,require('_process'))
-},{"_process":58,"through":32}],24:[function(require,module,exports){
+},{"_process":49,"through":32}],24:[function(require,module,exports){
 'use strict';
 
 var bind = require('function-bind');
@@ -2139,7 +2139,7 @@ function createHarness (conf_) {
 }
 
 }).call(this,require('_process'))
-},{"./lib/default_stream":29,"./lib/results":30,"./lib/test":31,"_process":58,"defined":5,"through":32}],29:[function(require,module,exports){
+},{"./lib/default_stream":29,"./lib/results":30,"./lib/test":31,"_process":49,"defined":5,"through":32}],29:[function(require,module,exports){
 (function (process){
 var through = require('through');
 var fs = require('fs');
@@ -2174,7 +2174,7 @@ module.exports = function () {
 };
 
 }).call(this,require('_process'))
-},{"_process":58,"fs":47,"through":32}],30:[function(require,module,exports){
+},{"_process":49,"fs":38,"through":32}],30:[function(require,module,exports){
 (function (process){
 var EventEmitter = require('events').EventEmitter;
 var inherits = require('inherits');
@@ -2365,7 +2365,7 @@ function invalidYaml (str) {
 }
 
 }).call(this,require('_process'))
-},{"_process":58,"events":51,"function-bind":15,"has":16,"inherits":18,"object-inspect":20,"resumer":23,"through":32}],31:[function(require,module,exports){
+},{"_process":49,"events":42,"function-bind":15,"has":16,"inherits":18,"object-inspect":20,"resumer":23,"through":32}],31:[function(require,module,exports){
 (function (process,__dirname){
 var deepEqual = require('deep-equal');
 var defined = require('defined');
@@ -2869,7 +2869,7 @@ Test.skip = function (name_, _opts, _cb) {
 
 
 }).call(this,require('_process'),"/node_modules/tape/lib")
-},{"_process":58,"deep-equal":1,"defined":5,"events":51,"has":16,"inherits":18,"path":56,"string.prototype.trim":25}],32:[function(require,module,exports){
+},{"_process":49,"deep-equal":1,"defined":5,"events":42,"has":16,"inherits":18,"path":47,"string.prototype.trim":25}],32:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -2981,1573 +2981,7 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":58,"stream":69}],33:[function(require,module,exports){
-/**
- * @license
- * Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
- * This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
- * The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
- * The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
- * Code distributed by Google as part of the polymer project is also
- * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
- */
-// @version 0.7.22
-if (typeof WeakMap === "undefined") {
-  (function() {
-    var defineProperty = Object.defineProperty;
-    var counter = Date.now() % 1e9;
-    var WeakMap = function() {
-      this.name = "__st" + (Math.random() * 1e9 >>> 0) + (counter++ + "__");
-    };
-    WeakMap.prototype = {
-      set: function(key, value) {
-        var entry = key[this.name];
-        if (entry && entry[0] === key) entry[1] = value; else defineProperty(key, this.name, {
-          value: [ key, value ],
-          writable: true
-        });
-        return this;
-      },
-      get: function(key) {
-        var entry;
-        return (entry = key[this.name]) && entry[0] === key ? entry[1] : undefined;
-      },
-      "delete": function(key) {
-        var entry = key[this.name];
-        if (!entry || entry[0] !== key) return false;
-        entry[0] = entry[1] = undefined;
-        return true;
-      },
-      has: function(key) {
-        var entry = key[this.name];
-        if (!entry) return false;
-        return entry[0] === key;
-      }
-    };
-    window.WeakMap = WeakMap;
-  })();
-}
-
-(function(global) {
-  if (global.JsMutationObserver) {
-    return;
-  }
-  var registrationsTable = new WeakMap();
-  var setImmediate;
-  if (/Trident|Edge/.test(navigator.userAgent)) {
-    setImmediate = setTimeout;
-  } else if (window.setImmediate) {
-    setImmediate = window.setImmediate;
-  } else {
-    var setImmediateQueue = [];
-    var sentinel = String(Math.random());
-    window.addEventListener("message", function(e) {
-      if (e.data === sentinel) {
-        var queue = setImmediateQueue;
-        setImmediateQueue = [];
-        queue.forEach(function(func) {
-          func();
-        });
-      }
-    });
-    setImmediate = function(func) {
-      setImmediateQueue.push(func);
-      window.postMessage(sentinel, "*");
-    };
-  }
-  var isScheduled = false;
-  var scheduledObservers = [];
-  function scheduleCallback(observer) {
-    scheduledObservers.push(observer);
-    if (!isScheduled) {
-      isScheduled = true;
-      setImmediate(dispatchCallbacks);
-    }
-  }
-  function wrapIfNeeded(node) {
-    return window.ShadowDOMPolyfill && window.ShadowDOMPolyfill.wrapIfNeeded(node) || node;
-  }
-  function dispatchCallbacks() {
-    isScheduled = false;
-    var observers = scheduledObservers;
-    scheduledObservers = [];
-    observers.sort(function(o1, o2) {
-      return o1.uid_ - o2.uid_;
-    });
-    var anyNonEmpty = false;
-    observers.forEach(function(observer) {
-      var queue = observer.takeRecords();
-      removeTransientObserversFor(observer);
-      if (queue.length) {
-        observer.callback_(queue, observer);
-        anyNonEmpty = true;
-      }
-    });
-    if (anyNonEmpty) dispatchCallbacks();
-  }
-  function removeTransientObserversFor(observer) {
-    observer.nodes_.forEach(function(node) {
-      var registrations = registrationsTable.get(node);
-      if (!registrations) return;
-      registrations.forEach(function(registration) {
-        if (registration.observer === observer) registration.removeTransientObservers();
-      });
-    });
-  }
-  function forEachAncestorAndObserverEnqueueRecord(target, callback) {
-    for (var node = target; node; node = node.parentNode) {
-      var registrations = registrationsTable.get(node);
-      if (registrations) {
-        for (var j = 0; j < registrations.length; j++) {
-          var registration = registrations[j];
-          var options = registration.options;
-          if (node !== target && !options.subtree) continue;
-          var record = callback(options);
-          if (record) registration.enqueue(record);
-        }
-      }
-    }
-  }
-  var uidCounter = 0;
-  function JsMutationObserver(callback) {
-    this.callback_ = callback;
-    this.nodes_ = [];
-    this.records_ = [];
-    this.uid_ = ++uidCounter;
-  }
-  JsMutationObserver.prototype = {
-    observe: function(target, options) {
-      target = wrapIfNeeded(target);
-      if (!options.childList && !options.attributes && !options.characterData || options.attributeOldValue && !options.attributes || options.attributeFilter && options.attributeFilter.length && !options.attributes || options.characterDataOldValue && !options.characterData) {
-        throw new SyntaxError();
-      }
-      var registrations = registrationsTable.get(target);
-      if (!registrations) registrationsTable.set(target, registrations = []);
-      var registration;
-      for (var i = 0; i < registrations.length; i++) {
-        if (registrations[i].observer === this) {
-          registration = registrations[i];
-          registration.removeListeners();
-          registration.options = options;
-          break;
-        }
-      }
-      if (!registration) {
-        registration = new Registration(this, target, options);
-        registrations.push(registration);
-        this.nodes_.push(target);
-      }
-      registration.addListeners();
-    },
-    disconnect: function() {
-      this.nodes_.forEach(function(node) {
-        var registrations = registrationsTable.get(node);
-        for (var i = 0; i < registrations.length; i++) {
-          var registration = registrations[i];
-          if (registration.observer === this) {
-            registration.removeListeners();
-            registrations.splice(i, 1);
-            break;
-          }
-        }
-      }, this);
-      this.records_ = [];
-    },
-    takeRecords: function() {
-      var copyOfRecords = this.records_;
-      this.records_ = [];
-      return copyOfRecords;
-    }
-  };
-  function MutationRecord(type, target) {
-    this.type = type;
-    this.target = target;
-    this.addedNodes = [];
-    this.removedNodes = [];
-    this.previousSibling = null;
-    this.nextSibling = null;
-    this.attributeName = null;
-    this.attributeNamespace = null;
-    this.oldValue = null;
-  }
-  function copyMutationRecord(original) {
-    var record = new MutationRecord(original.type, original.target);
-    record.addedNodes = original.addedNodes.slice();
-    record.removedNodes = original.removedNodes.slice();
-    record.previousSibling = original.previousSibling;
-    record.nextSibling = original.nextSibling;
-    record.attributeName = original.attributeName;
-    record.attributeNamespace = original.attributeNamespace;
-    record.oldValue = original.oldValue;
-    return record;
-  }
-  var currentRecord, recordWithOldValue;
-  function getRecord(type, target) {
-    return currentRecord = new MutationRecord(type, target);
-  }
-  function getRecordWithOldValue(oldValue) {
-    if (recordWithOldValue) return recordWithOldValue;
-    recordWithOldValue = copyMutationRecord(currentRecord);
-    recordWithOldValue.oldValue = oldValue;
-    return recordWithOldValue;
-  }
-  function clearRecords() {
-    currentRecord = recordWithOldValue = undefined;
-  }
-  function recordRepresentsCurrentMutation(record) {
-    return record === recordWithOldValue || record === currentRecord;
-  }
-  function selectRecord(lastRecord, newRecord) {
-    if (lastRecord === newRecord) return lastRecord;
-    if (recordWithOldValue && recordRepresentsCurrentMutation(lastRecord)) return recordWithOldValue;
-    return null;
-  }
-  function Registration(observer, target, options) {
-    this.observer = observer;
-    this.target = target;
-    this.options = options;
-    this.transientObservedNodes = [];
-  }
-  Registration.prototype = {
-    enqueue: function(record) {
-      var records = this.observer.records_;
-      var length = records.length;
-      if (records.length > 0) {
-        var lastRecord = records[length - 1];
-        var recordToReplaceLast = selectRecord(lastRecord, record);
-        if (recordToReplaceLast) {
-          records[length - 1] = recordToReplaceLast;
-          return;
-        }
-      } else {
-        scheduleCallback(this.observer);
-      }
-      records[length] = record;
-    },
-    addListeners: function() {
-      this.addListeners_(this.target);
-    },
-    addListeners_: function(node) {
-      var options = this.options;
-      if (options.attributes) node.addEventListener("DOMAttrModified", this, true);
-      if (options.characterData) node.addEventListener("DOMCharacterDataModified", this, true);
-      if (options.childList) node.addEventListener("DOMNodeInserted", this, true);
-      if (options.childList || options.subtree) node.addEventListener("DOMNodeRemoved", this, true);
-    },
-    removeListeners: function() {
-      this.removeListeners_(this.target);
-    },
-    removeListeners_: function(node) {
-      var options = this.options;
-      if (options.attributes) node.removeEventListener("DOMAttrModified", this, true);
-      if (options.characterData) node.removeEventListener("DOMCharacterDataModified", this, true);
-      if (options.childList) node.removeEventListener("DOMNodeInserted", this, true);
-      if (options.childList || options.subtree) node.removeEventListener("DOMNodeRemoved", this, true);
-    },
-    addTransientObserver: function(node) {
-      if (node === this.target) return;
-      this.addListeners_(node);
-      this.transientObservedNodes.push(node);
-      var registrations = registrationsTable.get(node);
-      if (!registrations) registrationsTable.set(node, registrations = []);
-      registrations.push(this);
-    },
-    removeTransientObservers: function() {
-      var transientObservedNodes = this.transientObservedNodes;
-      this.transientObservedNodes = [];
-      transientObservedNodes.forEach(function(node) {
-        this.removeListeners_(node);
-        var registrations = registrationsTable.get(node);
-        for (var i = 0; i < registrations.length; i++) {
-          if (registrations[i] === this) {
-            registrations.splice(i, 1);
-            break;
-          }
-        }
-      }, this);
-    },
-    handleEvent: function(e) {
-      e.stopImmediatePropagation();
-      switch (e.type) {
-       case "DOMAttrModified":
-        var name = e.attrName;
-        var namespace = e.relatedNode.namespaceURI;
-        var target = e.target;
-        var record = new getRecord("attributes", target);
-        record.attributeName = name;
-        record.attributeNamespace = namespace;
-        var oldValue = e.attrChange === MutationEvent.ADDITION ? null : e.prevValue;
-        forEachAncestorAndObserverEnqueueRecord(target, function(options) {
-          if (!options.attributes) return;
-          if (options.attributeFilter && options.attributeFilter.length && options.attributeFilter.indexOf(name) === -1 && options.attributeFilter.indexOf(namespace) === -1) {
-            return;
-          }
-          if (options.attributeOldValue) return getRecordWithOldValue(oldValue);
-          return record;
-        });
-        break;
-
-       case "DOMCharacterDataModified":
-        var target = e.target;
-        var record = getRecord("characterData", target);
-        var oldValue = e.prevValue;
-        forEachAncestorAndObserverEnqueueRecord(target, function(options) {
-          if (!options.characterData) return;
-          if (options.characterDataOldValue) return getRecordWithOldValue(oldValue);
-          return record;
-        });
-        break;
-
-       case "DOMNodeRemoved":
-        this.addTransientObserver(e.target);
-
-       case "DOMNodeInserted":
-        var changedNode = e.target;
-        var addedNodes, removedNodes;
-        if (e.type === "DOMNodeInserted") {
-          addedNodes = [ changedNode ];
-          removedNodes = [];
-        } else {
-          addedNodes = [];
-          removedNodes = [ changedNode ];
-        }
-        var previousSibling = changedNode.previousSibling;
-        var nextSibling = changedNode.nextSibling;
-        var record = getRecord("childList", e.target.parentNode);
-        record.addedNodes = addedNodes;
-        record.removedNodes = removedNodes;
-        record.previousSibling = previousSibling;
-        record.nextSibling = nextSibling;
-        forEachAncestorAndObserverEnqueueRecord(e.relatedNode, function(options) {
-          if (!options.childList) return;
-          return record;
-        });
-      }
-      clearRecords();
-    }
-  };
-  global.JsMutationObserver = JsMutationObserver;
-  if (!global.MutationObserver) {
-    global.MutationObserver = JsMutationObserver;
-    JsMutationObserver._isPolyfilled = true;
-  }
-})(self);
-
-(function(scope) {
-  "use strict";
-  if (!window.performance) {
-    var start = Date.now();
-    window.performance = {
-      now: function() {
-        return Date.now() - start;
-      }
-    };
-  }
-  if (!window.requestAnimationFrame) {
-    window.requestAnimationFrame = function() {
-      var nativeRaf = window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame;
-      return nativeRaf ? function(callback) {
-        return nativeRaf(function() {
-          callback(performance.now());
-        });
-      } : function(callback) {
-        return window.setTimeout(callback, 1e3 / 60);
-      };
-    }();
-  }
-  if (!window.cancelAnimationFrame) {
-    window.cancelAnimationFrame = function() {
-      return window.webkitCancelAnimationFrame || window.mozCancelAnimationFrame || function(id) {
-        clearTimeout(id);
-      };
-    }();
-  }
-  var workingDefaultPrevented = function() {
-    var e = document.createEvent("Event");
-    e.initEvent("foo", true, true);
-    e.preventDefault();
-    return e.defaultPrevented;
-  }();
-  if (!workingDefaultPrevented) {
-    var origPreventDefault = Event.prototype.preventDefault;
-    Event.prototype.preventDefault = function() {
-      if (!this.cancelable) {
-        return;
-      }
-      origPreventDefault.call(this);
-      Object.defineProperty(this, "defaultPrevented", {
-        get: function() {
-          return true;
-        },
-        configurable: true
-      });
-    };
-  }
-  var isIE = /Trident/.test(navigator.userAgent);
-  if (!window.CustomEvent || isIE && typeof window.CustomEvent !== "function") {
-    window.CustomEvent = function(inType, params) {
-      params = params || {};
-      var e = document.createEvent("CustomEvent");
-      e.initCustomEvent(inType, Boolean(params.bubbles), Boolean(params.cancelable), params.detail);
-      return e;
-    };
-    window.CustomEvent.prototype = window.Event.prototype;
-  }
-  if (!window.Event || isIE && typeof window.Event !== "function") {
-    var origEvent = window.Event;
-    window.Event = function(inType, params) {
-      params = params || {};
-      var e = document.createEvent("Event");
-      e.initEvent(inType, Boolean(params.bubbles), Boolean(params.cancelable));
-      return e;
-    };
-    window.Event.prototype = origEvent.prototype;
-  }
-})(window.WebComponents);
-
-window.CustomElements = window.CustomElements || {
-  flags: {}
-};
-
-(function(scope) {
-  var flags = scope.flags;
-  var modules = [];
-  var addModule = function(module) {
-    modules.push(module);
-  };
-  var initializeModules = function() {
-    modules.forEach(function(module) {
-      module(scope);
-    });
-  };
-  scope.addModule = addModule;
-  scope.initializeModules = initializeModules;
-  scope.hasNative = Boolean(document.registerElement);
-  scope.isIE = /Trident/.test(navigator.userAgent);
-  scope.useNative = !flags.register && scope.hasNative && !window.ShadowDOMPolyfill && (!window.HTMLImports || window.HTMLImports.useNative);
-})(window.CustomElements);
-
-window.CustomElements.addModule(function(scope) {
-  var IMPORT_LINK_TYPE = window.HTMLImports ? window.HTMLImports.IMPORT_LINK_TYPE : "none";
-  function forSubtree(node, cb) {
-    findAllElements(node, function(e) {
-      if (cb(e)) {
-        return true;
-      }
-      forRoots(e, cb);
-    });
-    forRoots(node, cb);
-  }
-  function findAllElements(node, find, data) {
-    var e = node.firstElementChild;
-    if (!e) {
-      e = node.firstChild;
-      while (e && e.nodeType !== Node.ELEMENT_NODE) {
-        e = e.nextSibling;
-      }
-    }
-    while (e) {
-      if (find(e, data) !== true) {
-        findAllElements(e, find, data);
-      }
-      e = e.nextElementSibling;
-    }
-    return null;
-  }
-  function forRoots(node, cb) {
-    var root = node.shadowRoot;
-    while (root) {
-      forSubtree(root, cb);
-      root = root.olderShadowRoot;
-    }
-  }
-  function forDocumentTree(doc, cb) {
-    _forDocumentTree(doc, cb, []);
-  }
-  function _forDocumentTree(doc, cb, processingDocuments) {
-    doc = window.wrap(doc);
-    if (processingDocuments.indexOf(doc) >= 0) {
-      return;
-    }
-    processingDocuments.push(doc);
-    var imports = doc.querySelectorAll("link[rel=" + IMPORT_LINK_TYPE + "]");
-    for (var i = 0, l = imports.length, n; i < l && (n = imports[i]); i++) {
-      if (n.import) {
-        _forDocumentTree(n.import, cb, processingDocuments);
-      }
-    }
-    cb(doc);
-  }
-  scope.forDocumentTree = forDocumentTree;
-  scope.forSubtree = forSubtree;
-});
-
-window.CustomElements.addModule(function(scope) {
-  var flags = scope.flags;
-  var forSubtree = scope.forSubtree;
-  var forDocumentTree = scope.forDocumentTree;
-  function addedNode(node, isAttached) {
-    return added(node, isAttached) || addedSubtree(node, isAttached);
-  }
-  function added(node, isAttached) {
-    if (scope.upgrade(node, isAttached)) {
-      return true;
-    }
-    if (isAttached) {
-      attached(node);
-    }
-  }
-  function addedSubtree(node, isAttached) {
-    forSubtree(node, function(e) {
-      if (added(e, isAttached)) {
-        return true;
-      }
-    });
-  }
-  var hasThrottledAttached = window.MutationObserver._isPolyfilled && flags["throttle-attached"];
-  scope.hasPolyfillMutations = hasThrottledAttached;
-  scope.hasThrottledAttached = hasThrottledAttached;
-  var isPendingMutations = false;
-  var pendingMutations = [];
-  function deferMutation(fn) {
-    pendingMutations.push(fn);
-    if (!isPendingMutations) {
-      isPendingMutations = true;
-      setTimeout(takeMutations);
-    }
-  }
-  function takeMutations() {
-    isPendingMutations = false;
-    var $p = pendingMutations;
-    for (var i = 0, l = $p.length, p; i < l && (p = $p[i]); i++) {
-      p();
-    }
-    pendingMutations = [];
-  }
-  function attached(element) {
-    if (hasThrottledAttached) {
-      deferMutation(function() {
-        _attached(element);
-      });
-    } else {
-      _attached(element);
-    }
-  }
-  function _attached(element) {
-    if (element.__upgraded__ && !element.__attached) {
-      element.__attached = true;
-      if (element.attachedCallback) {
-        element.attachedCallback();
-      }
-    }
-  }
-  function detachedNode(node) {
-    detached(node);
-    forSubtree(node, function(e) {
-      detached(e);
-    });
-  }
-  function detached(element) {
-    if (hasThrottledAttached) {
-      deferMutation(function() {
-        _detached(element);
-      });
-    } else {
-      _detached(element);
-    }
-  }
-  function _detached(element) {
-    if (element.__upgraded__ && element.__attached) {
-      element.__attached = false;
-      if (element.detachedCallback) {
-        element.detachedCallback();
-      }
-    }
-  }
-  function inDocument(element) {
-    var p = element;
-    var doc = window.wrap(document);
-    while (p) {
-      if (p == doc) {
-        return true;
-      }
-      p = p.parentNode || p.nodeType === Node.DOCUMENT_FRAGMENT_NODE && p.host;
-    }
-  }
-  function watchShadow(node) {
-    if (node.shadowRoot && !node.shadowRoot.__watched) {
-      flags.dom && console.log("watching shadow-root for: ", node.localName);
-      var root = node.shadowRoot;
-      while (root) {
-        observe(root);
-        root = root.olderShadowRoot;
-      }
-    }
-  }
-  function handler(root, mutations) {
-    if (flags.dom) {
-      var mx = mutations[0];
-      if (mx && mx.type === "childList" && mx.addedNodes) {
-        if (mx.addedNodes) {
-          var d = mx.addedNodes[0];
-          while (d && d !== document && !d.host) {
-            d = d.parentNode;
-          }
-          var u = d && (d.URL || d._URL || d.host && d.host.localName) || "";
-          u = u.split("/?").shift().split("/").pop();
-        }
-      }
-      console.group("mutations (%d) [%s]", mutations.length, u || "");
-    }
-    var isAttached = inDocument(root);
-    mutations.forEach(function(mx) {
-      if (mx.type === "childList") {
-        forEach(mx.addedNodes, function(n) {
-          if (!n.localName) {
-            return;
-          }
-          addedNode(n, isAttached);
-        });
-        forEach(mx.removedNodes, function(n) {
-          if (!n.localName) {
-            return;
-          }
-          detachedNode(n);
-        });
-      }
-    });
-    flags.dom && console.groupEnd();
-  }
-  function takeRecords(node) {
-    node = window.wrap(node);
-    if (!node) {
-      node = window.wrap(document);
-    }
-    while (node.parentNode) {
-      node = node.parentNode;
-    }
-    var observer = node.__observer;
-    if (observer) {
-      handler(node, observer.takeRecords());
-      takeMutations();
-    }
-  }
-  var forEach = Array.prototype.forEach.call.bind(Array.prototype.forEach);
-  function observe(inRoot) {
-    if (inRoot.__observer) {
-      return;
-    }
-    var observer = new MutationObserver(handler.bind(this, inRoot));
-    observer.observe(inRoot, {
-      childList: true,
-      subtree: true
-    });
-    inRoot.__observer = observer;
-  }
-  function upgradeDocument(doc) {
-    doc = window.wrap(doc);
-    flags.dom && console.group("upgradeDocument: ", doc.baseURI.split("/").pop());
-    var isMainDocument = doc === window.wrap(document);
-    addedNode(doc, isMainDocument);
-    observe(doc);
-    flags.dom && console.groupEnd();
-  }
-  function upgradeDocumentTree(doc) {
-    forDocumentTree(doc, upgradeDocument);
-  }
-  var originalCreateShadowRoot = Element.prototype.createShadowRoot;
-  if (originalCreateShadowRoot) {
-    Element.prototype.createShadowRoot = function() {
-      var root = originalCreateShadowRoot.call(this);
-      window.CustomElements.watchShadow(this);
-      return root;
-    };
-  }
-  scope.watchShadow = watchShadow;
-  scope.upgradeDocumentTree = upgradeDocumentTree;
-  scope.upgradeDocument = upgradeDocument;
-  scope.upgradeSubtree = addedSubtree;
-  scope.upgradeAll = addedNode;
-  scope.attached = attached;
-  scope.takeRecords = takeRecords;
-});
-
-window.CustomElements.addModule(function(scope) {
-  var flags = scope.flags;
-  function upgrade(node, isAttached) {
-    if (node.localName === "template") {
-      if (window.HTMLTemplateElement && HTMLTemplateElement.decorate) {
-        HTMLTemplateElement.decorate(node);
-      }
-    }
-    if (!node.__upgraded__ && node.nodeType === Node.ELEMENT_NODE) {
-      var is = node.getAttribute("is");
-      var definition = scope.getRegisteredDefinition(node.localName) || scope.getRegisteredDefinition(is);
-      if (definition) {
-        if (is && definition.tag == node.localName || !is && !definition.extends) {
-          return upgradeWithDefinition(node, definition, isAttached);
-        }
-      }
-    }
-  }
-  function upgradeWithDefinition(element, definition, isAttached) {
-    flags.upgrade && console.group("upgrade:", element.localName);
-    if (definition.is) {
-      element.setAttribute("is", definition.is);
-    }
-    implementPrototype(element, definition);
-    element.__upgraded__ = true;
-    created(element);
-    if (isAttached) {
-      scope.attached(element);
-    }
-    scope.upgradeSubtree(element, isAttached);
-    flags.upgrade && console.groupEnd();
-    return element;
-  }
-  function implementPrototype(element, definition) {
-    if (Object.__proto__) {
-      element.__proto__ = definition.prototype;
-    } else {
-      customMixin(element, definition.prototype, definition.native);
-      element.__proto__ = definition.prototype;
-    }
-  }
-  function customMixin(inTarget, inSrc, inNative) {
-    var used = {};
-    var p = inSrc;
-    while (p !== inNative && p !== HTMLElement.prototype) {
-      var keys = Object.getOwnPropertyNames(p);
-      for (var i = 0, k; k = keys[i]; i++) {
-        if (!used[k]) {
-          Object.defineProperty(inTarget, k, Object.getOwnPropertyDescriptor(p, k));
-          used[k] = 1;
-        }
-      }
-      p = Object.getPrototypeOf(p);
-    }
-  }
-  function created(element) {
-    if (element.createdCallback) {
-      element.createdCallback();
-    }
-  }
-  scope.upgrade = upgrade;
-  scope.upgradeWithDefinition = upgradeWithDefinition;
-  scope.implementPrototype = implementPrototype;
-});
-
-window.CustomElements.addModule(function(scope) {
-  var isIE = scope.isIE;
-  var upgradeDocumentTree = scope.upgradeDocumentTree;
-  var upgradeAll = scope.upgradeAll;
-  var upgradeWithDefinition = scope.upgradeWithDefinition;
-  var implementPrototype = scope.implementPrototype;
-  var useNative = scope.useNative;
-  function register(name, options) {
-    var definition = options || {};
-    if (!name) {
-      throw new Error("document.registerElement: first argument `name` must not be empty");
-    }
-    if (name.indexOf("-") < 0) {
-      throw new Error("document.registerElement: first argument ('name') must contain a dash ('-'). Argument provided was '" + String(name) + "'.");
-    }
-    if (isReservedTag(name)) {
-      throw new Error("Failed to execute 'registerElement' on 'Document': Registration failed for type '" + String(name) + "'. The type name is invalid.");
-    }
-    if (getRegisteredDefinition(name)) {
-      throw new Error("DuplicateDefinitionError: a type with name '" + String(name) + "' is already registered");
-    }
-    if (!definition.prototype) {
-      definition.prototype = Object.create(HTMLElement.prototype);
-    }
-    definition.__name = name.toLowerCase();
-    if (definition.extends) {
-      definition.extends = definition.extends.toLowerCase();
-    }
-    definition.lifecycle = definition.lifecycle || {};
-    definition.ancestry = ancestry(definition.extends);
-    resolveTagName(definition);
-    resolvePrototypeChain(definition);
-    overrideAttributeApi(definition.prototype);
-    registerDefinition(definition.__name, definition);
-    definition.ctor = generateConstructor(definition);
-    definition.ctor.prototype = definition.prototype;
-    definition.prototype.constructor = definition.ctor;
-    if (scope.ready) {
-      upgradeDocumentTree(document);
-    }
-    return definition.ctor;
-  }
-  function overrideAttributeApi(prototype) {
-    if (prototype.setAttribute._polyfilled) {
-      return;
-    }
-    var setAttribute = prototype.setAttribute;
-    prototype.setAttribute = function(name, value) {
-      changeAttribute.call(this, name, value, setAttribute);
-    };
-    var removeAttribute = prototype.removeAttribute;
-    prototype.removeAttribute = function(name) {
-      changeAttribute.call(this, name, null, removeAttribute);
-    };
-    prototype.setAttribute._polyfilled = true;
-  }
-  function changeAttribute(name, value, operation) {
-    name = name.toLowerCase();
-    var oldValue = this.getAttribute(name);
-    operation.apply(this, arguments);
-    var newValue = this.getAttribute(name);
-    if (this.attributeChangedCallback && newValue !== oldValue) {
-      this.attributeChangedCallback(name, oldValue, newValue);
-    }
-  }
-  function isReservedTag(name) {
-    for (var i = 0; i < reservedTagList.length; i++) {
-      if (name === reservedTagList[i]) {
-        return true;
-      }
-    }
-  }
-  var reservedTagList = [ "annotation-xml", "color-profile", "font-face", "font-face-src", "font-face-uri", "font-face-format", "font-face-name", "missing-glyph" ];
-  function ancestry(extnds) {
-    var extendee = getRegisteredDefinition(extnds);
-    if (extendee) {
-      return ancestry(extendee.extends).concat([ extendee ]);
-    }
-    return [];
-  }
-  function resolveTagName(definition) {
-    var baseTag = definition.extends;
-    for (var i = 0, a; a = definition.ancestry[i]; i++) {
-      baseTag = a.is && a.tag;
-    }
-    definition.tag = baseTag || definition.__name;
-    if (baseTag) {
-      definition.is = definition.__name;
-    }
-  }
-  function resolvePrototypeChain(definition) {
-    if (!Object.__proto__) {
-      var nativePrototype = HTMLElement.prototype;
-      if (definition.is) {
-        var inst = document.createElement(definition.tag);
-        nativePrototype = Object.getPrototypeOf(inst);
-      }
-      var proto = definition.prototype, ancestor;
-      var foundPrototype = false;
-      while (proto) {
-        if (proto == nativePrototype) {
-          foundPrototype = true;
-        }
-        ancestor = Object.getPrototypeOf(proto);
-        if (ancestor) {
-          proto.__proto__ = ancestor;
-        }
-        proto = ancestor;
-      }
-      if (!foundPrototype) {
-        console.warn(definition.tag + " prototype not found in prototype chain for " + definition.is);
-      }
-      definition.native = nativePrototype;
-    }
-  }
-  function instantiate(definition) {
-    return upgradeWithDefinition(domCreateElement(definition.tag), definition);
-  }
-  var registry = {};
-  function getRegisteredDefinition(name) {
-    if (name) {
-      return registry[name.toLowerCase()];
-    }
-  }
-  function registerDefinition(name, definition) {
-    registry[name] = definition;
-  }
-  function generateConstructor(definition) {
-    return function() {
-      return instantiate(definition);
-    };
-  }
-  var HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
-  function createElementNS(namespace, tag, typeExtension) {
-    if (namespace === HTML_NAMESPACE) {
-      return createElement(tag, typeExtension);
-    } else {
-      return domCreateElementNS(namespace, tag);
-    }
-  }
-  function createElement(tag, typeExtension) {
-    if (tag) {
-      tag = tag.toLowerCase();
-    }
-    if (typeExtension) {
-      typeExtension = typeExtension.toLowerCase();
-    }
-    var definition = getRegisteredDefinition(typeExtension || tag);
-    if (definition) {
-      if (tag == definition.tag && typeExtension == definition.is) {
-        return new definition.ctor();
-      }
-      if (!typeExtension && !definition.is) {
-        return new definition.ctor();
-      }
-    }
-    var element;
-    if (typeExtension) {
-      element = createElement(tag);
-      element.setAttribute("is", typeExtension);
-      return element;
-    }
-    element = domCreateElement(tag);
-    if (tag.indexOf("-") >= 0) {
-      implementPrototype(element, HTMLElement);
-    }
-    return element;
-  }
-  var domCreateElement = document.createElement.bind(document);
-  var domCreateElementNS = document.createElementNS.bind(document);
-  var isInstance;
-  if (!Object.__proto__ && !useNative) {
-    isInstance = function(obj, ctor) {
-      if (obj instanceof ctor) {
-        return true;
-      }
-      var p = obj;
-      while (p) {
-        if (p === ctor.prototype) {
-          return true;
-        }
-        p = p.__proto__;
-      }
-      return false;
-    };
-  } else {
-    isInstance = function(obj, base) {
-      return obj instanceof base;
-    };
-  }
-  function wrapDomMethodToForceUpgrade(obj, methodName) {
-    var orig = obj[methodName];
-    obj[methodName] = function() {
-      var n = orig.apply(this, arguments);
-      upgradeAll(n);
-      return n;
-    };
-  }
-  wrapDomMethodToForceUpgrade(Node.prototype, "cloneNode");
-  wrapDomMethodToForceUpgrade(document, "importNode");
-  document.registerElement = register;
-  document.createElement = createElement;
-  document.createElementNS = createElementNS;
-  scope.registry = registry;
-  scope.instanceof = isInstance;
-  scope.reservedTagList = reservedTagList;
-  scope.getRegisteredDefinition = getRegisteredDefinition;
-  document.register = document.registerElement;
-});
-
-(function(scope) {
-  var useNative = scope.useNative;
-  var initializeModules = scope.initializeModules;
-  var isIE = scope.isIE;
-  if (useNative) {
-    var nop = function() {};
-    scope.watchShadow = nop;
-    scope.upgrade = nop;
-    scope.upgradeAll = nop;
-    scope.upgradeDocumentTree = nop;
-    scope.upgradeSubtree = nop;
-    scope.takeRecords = nop;
-    scope.instanceof = function(obj, base) {
-      return obj instanceof base;
-    };
-  } else {
-    initializeModules();
-  }
-  var upgradeDocumentTree = scope.upgradeDocumentTree;
-  var upgradeDocument = scope.upgradeDocument;
-  if (!window.wrap) {
-    if (window.ShadowDOMPolyfill) {
-      window.wrap = window.ShadowDOMPolyfill.wrapIfNeeded;
-      window.unwrap = window.ShadowDOMPolyfill.unwrapIfNeeded;
-    } else {
-      window.wrap = window.unwrap = function(node) {
-        return node;
-      };
-    }
-  }
-  if (window.HTMLImports) {
-    window.HTMLImports.__importsParsingHook = function(elt) {
-      if (elt.import) {
-        upgradeDocument(wrap(elt.import));
-      }
-    };
-  }
-  function bootstrap() {
-    upgradeDocumentTree(window.wrap(document));
-    window.CustomElements.ready = true;
-    var requestAnimationFrame = window.requestAnimationFrame || function(f) {
-      setTimeout(f, 16);
-    };
-    requestAnimationFrame(function() {
-      setTimeout(function() {
-        window.CustomElements.readyTime = Date.now();
-        if (window.HTMLImports) {
-          window.CustomElements.elapsed = window.CustomElements.readyTime - window.HTMLImports.readyTime;
-        }
-        document.dispatchEvent(new CustomEvent("WebComponentsReady", {
-          bubbles: true
-        }));
-      });
-    });
-  }
-  if (document.readyState === "complete" || scope.flags.eager) {
-    bootstrap();
-  } else if (document.readyState === "interactive" && !window.attachEvent && (!window.HTMLImports || window.HTMLImports.ready)) {
-    bootstrap();
-  } else {
-    var loadEvent = window.HTMLImports && !window.HTMLImports.ready ? "HTMLImportsLoaded" : "DOMContentLoaded";
-    window.addEventListener(loadEvent, bootstrap);
-  }
-})(window.CustomElements);
-},{}],34:[function(require,module,exports){
-(function(self) {
-  'use strict';
-
-  if (self.fetch) {
-    return
-  }
-
-  var support = {
-    searchParams: 'URLSearchParams' in self,
-    iterable: 'Symbol' in self && 'iterator' in Symbol,
-    blob: 'FileReader' in self && 'Blob' in self && (function() {
-      try {
-        new Blob()
-        return true
-      } catch(e) {
-        return false
-      }
-    })(),
-    formData: 'FormData' in self,
-    arrayBuffer: 'ArrayBuffer' in self
-  }
-
-  function normalizeName(name) {
-    if (typeof name !== 'string') {
-      name = String(name)
-    }
-    if (/[^a-z0-9\-#$%&'*+.\^_`|~]/i.test(name)) {
-      throw new TypeError('Invalid character in header field name')
-    }
-    return name.toLowerCase()
-  }
-
-  function normalizeValue(value) {
-    if (typeof value !== 'string') {
-      value = String(value)
-    }
-    return value
-  }
-
-  // Build a destructive iterator for the value list
-  function iteratorFor(items) {
-    var iterator = {
-      next: function() {
-        var value = items.shift()
-        return {done: value === undefined, value: value}
-      }
-    }
-
-    if (support.iterable) {
-      iterator[Symbol.iterator] = function() {
-        return iterator
-      }
-    }
-
-    return iterator
-  }
-
-  function Headers(headers) {
-    this.map = {}
-
-    if (headers instanceof Headers) {
-      headers.forEach(function(value, name) {
-        this.append(name, value)
-      }, this)
-
-    } else if (headers) {
-      Object.getOwnPropertyNames(headers).forEach(function(name) {
-        this.append(name, headers[name])
-      }, this)
-    }
-  }
-
-  Headers.prototype.append = function(name, value) {
-    name = normalizeName(name)
-    value = normalizeValue(value)
-    var list = this.map[name]
-    if (!list) {
-      list = []
-      this.map[name] = list
-    }
-    list.push(value)
-  }
-
-  Headers.prototype['delete'] = function(name) {
-    delete this.map[normalizeName(name)]
-  }
-
-  Headers.prototype.get = function(name) {
-    var values = this.map[normalizeName(name)]
-    return values ? values[0] : null
-  }
-
-  Headers.prototype.getAll = function(name) {
-    return this.map[normalizeName(name)] || []
-  }
-
-  Headers.prototype.has = function(name) {
-    return this.map.hasOwnProperty(normalizeName(name))
-  }
-
-  Headers.prototype.set = function(name, value) {
-    this.map[normalizeName(name)] = [normalizeValue(value)]
-  }
-
-  Headers.prototype.forEach = function(callback, thisArg) {
-    Object.getOwnPropertyNames(this.map).forEach(function(name) {
-      this.map[name].forEach(function(value) {
-        callback.call(thisArg, value, name, this)
-      }, this)
-    }, this)
-  }
-
-  Headers.prototype.keys = function() {
-    var items = []
-    this.forEach(function(value, name) { items.push(name) })
-    return iteratorFor(items)
-  }
-
-  Headers.prototype.values = function() {
-    var items = []
-    this.forEach(function(value) { items.push(value) })
-    return iteratorFor(items)
-  }
-
-  Headers.prototype.entries = function() {
-    var items = []
-    this.forEach(function(value, name) { items.push([name, value]) })
-    return iteratorFor(items)
-  }
-
-  if (support.iterable) {
-    Headers.prototype[Symbol.iterator] = Headers.prototype.entries
-  }
-
-  function consumed(body) {
-    if (body.bodyUsed) {
-      return Promise.reject(new TypeError('Already read'))
-    }
-    body.bodyUsed = true
-  }
-
-  function fileReaderReady(reader) {
-    return new Promise(function(resolve, reject) {
-      reader.onload = function() {
-        resolve(reader.result)
-      }
-      reader.onerror = function() {
-        reject(reader.error)
-      }
-    })
-  }
-
-  function readBlobAsArrayBuffer(blob) {
-    var reader = new FileReader()
-    reader.readAsArrayBuffer(blob)
-    return fileReaderReady(reader)
-  }
-
-  function readBlobAsText(blob) {
-    var reader = new FileReader()
-    reader.readAsText(blob)
-    return fileReaderReady(reader)
-  }
-
-  function Body() {
-    this.bodyUsed = false
-
-    this._initBody = function(body) {
-      this._bodyInit = body
-      if (typeof body === 'string') {
-        this._bodyText = body
-      } else if (support.blob && Blob.prototype.isPrototypeOf(body)) {
-        this._bodyBlob = body
-      } else if (support.formData && FormData.prototype.isPrototypeOf(body)) {
-        this._bodyFormData = body
-      } else if (support.searchParams && URLSearchParams.prototype.isPrototypeOf(body)) {
-        this._bodyText = body.toString()
-      } else if (!body) {
-        this._bodyText = ''
-      } else if (support.arrayBuffer && ArrayBuffer.prototype.isPrototypeOf(body)) {
-        // Only support ArrayBuffers for POST method.
-        // Receiving ArrayBuffers happens via Blobs, instead.
-      } else {
-        throw new Error('unsupported BodyInit type')
-      }
-
-      if (!this.headers.get('content-type')) {
-        if (typeof body === 'string') {
-          this.headers.set('content-type', 'text/plain;charset=UTF-8')
-        } else if (this._bodyBlob && this._bodyBlob.type) {
-          this.headers.set('content-type', this._bodyBlob.type)
-        } else if (support.searchParams && URLSearchParams.prototype.isPrototypeOf(body)) {
-          this.headers.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8')
-        }
-      }
-    }
-
-    if (support.blob) {
-      this.blob = function() {
-        var rejected = consumed(this)
-        if (rejected) {
-          return rejected
-        }
-
-        if (this._bodyBlob) {
-          return Promise.resolve(this._bodyBlob)
-        } else if (this._bodyFormData) {
-          throw new Error('could not read FormData body as blob')
-        } else {
-          return Promise.resolve(new Blob([this._bodyText]))
-        }
-      }
-
-      this.arrayBuffer = function() {
-        return this.blob().then(readBlobAsArrayBuffer)
-      }
-
-      this.text = function() {
-        var rejected = consumed(this)
-        if (rejected) {
-          return rejected
-        }
-
-        if (this._bodyBlob) {
-          return readBlobAsText(this._bodyBlob)
-        } else if (this._bodyFormData) {
-          throw new Error('could not read FormData body as text')
-        } else {
-          return Promise.resolve(this._bodyText)
-        }
-      }
-    } else {
-      this.text = function() {
-        var rejected = consumed(this)
-        return rejected ? rejected : Promise.resolve(this._bodyText)
-      }
-    }
-
-    if (support.formData) {
-      this.formData = function() {
-        return this.text().then(decode)
-      }
-    }
-
-    this.json = function() {
-      return this.text().then(JSON.parse)
-    }
-
-    return this
-  }
-
-  // HTTP methods whose capitalization should be normalized
-  var methods = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT']
-
-  function normalizeMethod(method) {
-    var upcased = method.toUpperCase()
-    return (methods.indexOf(upcased) > -1) ? upcased : method
-  }
-
-  function Request(input, options) {
-    options = options || {}
-    var body = options.body
-    if (Request.prototype.isPrototypeOf(input)) {
-      if (input.bodyUsed) {
-        throw new TypeError('Already read')
-      }
-      this.url = input.url
-      this.credentials = input.credentials
-      if (!options.headers) {
-        this.headers = new Headers(input.headers)
-      }
-      this.method = input.method
-      this.mode = input.mode
-      if (!body) {
-        body = input._bodyInit
-        input.bodyUsed = true
-      }
-    } else {
-      this.url = input
-    }
-
-    this.credentials = options.credentials || this.credentials || 'omit'
-    if (options.headers || !this.headers) {
-      this.headers = new Headers(options.headers)
-    }
-    this.method = normalizeMethod(options.method || this.method || 'GET')
-    this.mode = options.mode || this.mode || null
-    this.referrer = null
-
-    if ((this.method === 'GET' || this.method === 'HEAD') && body) {
-      throw new TypeError('Body not allowed for GET or HEAD requests')
-    }
-    this._initBody(body)
-  }
-
-  Request.prototype.clone = function() {
-    return new Request(this)
-  }
-
-  function decode(body) {
-    var form = new FormData()
-    body.trim().split('&').forEach(function(bytes) {
-      if (bytes) {
-        var split = bytes.split('=')
-        var name = split.shift().replace(/\+/g, ' ')
-        var value = split.join('=').replace(/\+/g, ' ')
-        form.append(decodeURIComponent(name), decodeURIComponent(value))
-      }
-    })
-    return form
-  }
-
-  function headers(xhr) {
-    var head = new Headers()
-    var pairs = (xhr.getAllResponseHeaders() || '').trim().split('\n')
-    pairs.forEach(function(header) {
-      var split = header.trim().split(':')
-      var key = split.shift().trim()
-      var value = split.join(':').trim()
-      head.append(key, value)
-    })
-    return head
-  }
-
-  Body.call(Request.prototype)
-
-  function Response(bodyInit, options) {
-    if (!options) {
-      options = {}
-    }
-
-    this.type = 'default'
-    this.status = options.status
-    this.ok = this.status >= 200 && this.status < 300
-    this.statusText = options.statusText
-    this.headers = options.headers instanceof Headers ? options.headers : new Headers(options.headers)
-    this.url = options.url || ''
-    this._initBody(bodyInit)
-  }
-
-  Body.call(Response.prototype)
-
-  Response.prototype.clone = function() {
-    return new Response(this._bodyInit, {
-      status: this.status,
-      statusText: this.statusText,
-      headers: new Headers(this.headers),
-      url: this.url
-    })
-  }
-
-  Response.error = function() {
-    var response = new Response(null, {status: 0, statusText: ''})
-    response.type = 'error'
-    return response
-  }
-
-  var redirectStatuses = [301, 302, 303, 307, 308]
-
-  Response.redirect = function(url, status) {
-    if (redirectStatuses.indexOf(status) === -1) {
-      throw new RangeError('Invalid status code')
-    }
-
-    return new Response(null, {status: status, headers: {location: url}})
-  }
-
-  self.Headers = Headers
-  self.Request = Request
-  self.Response = Response
-
-  self.fetch = function(input, init) {
-    return new Promise(function(resolve, reject) {
-      var request
-      if (Request.prototype.isPrototypeOf(input) && !init) {
-        request = input
-      } else {
-        request = new Request(input, init)
-      }
-
-      var xhr = new XMLHttpRequest()
-
-      function responseURL() {
-        if ('responseURL' in xhr) {
-          return xhr.responseURL
-        }
-
-        // Avoid security warnings on getResponseHeader when not allowed by CORS
-        if (/^X-Request-URL:/m.test(xhr.getAllResponseHeaders())) {
-          return xhr.getResponseHeader('X-Request-URL')
-        }
-
-        return
-      }
-
-      xhr.onload = function() {
-        var options = {
-          status: xhr.status,
-          statusText: xhr.statusText,
-          headers: headers(xhr),
-          url: responseURL()
-        }
-        var body = 'response' in xhr ? xhr.response : xhr.responseText
-        resolve(new Response(body, options))
-      }
-
-      xhr.onerror = function() {
-        reject(new TypeError('Network request failed'))
-      }
-
-      xhr.ontimeout = function() {
-        reject(new TypeError('Network request failed'))
-      }
-
-      xhr.open(request.method, request.url, true)
-
-      if (request.credentials === 'include') {
-        xhr.withCredentials = true
-      }
-
-      if ('responseType' in xhr && support.blob) {
-        xhr.responseType = 'blob'
-      }
-
-      request.headers.forEach(function(value, name) {
-        xhr.setRequestHeader(name, value)
-      })
-
-      xhr.send(typeof request._bodyInit === 'undefined' ? null : request._bodyInit)
-    })
-  }
-  self.fetch.polyfill = true
-})(typeof self !== 'undefined' ? self : this);
-
-},{}],35:[function(require,module,exports){
-'use strict';
-
-var _createClass = function () {
-  function defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }return function (Constructor, protoProps, staticProps) {
-    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
-  };
-}();
-
-function _classCallCheck(instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-}
-
-/**
- * Aggregate values from dom tree
- */
-
-var Aggregator = function () {
-  function Aggregator(element) {
-    _classCallCheck(this, Aggregator);
-
-    this.element = element;
-  }
-
-  _createClass(Aggregator, [{
-    key: 'aggregate',
-    value: function aggregate(scope) {
-      var elems = this.element.querySelectorAll('input,select,textarea');
-      for (var i = 0, l = elems.length; i < l; ++i) {
-        var elem = elems[i];
-        var modelName = elem.getAttribute('sj-model');
-        if (modelName && modelName.substr(0, 5) === 'this.') {
-          var val = elem.type === 'checkbox' ? elem.checked : elem.value;
-          new Function('$val', 'if (!' + modelName + ') { ' + modelName + '=$val; }').apply(scope, [val]);
-        }
-      }
-    }
-  }]);
-
-  return Aggregator;
-}();
-
-module.exports = Aggregator;
-
-},{}],36:[function(require,module,exports){
-'use strict';
-
-var Compiler = require('./compiler.js');
-var Aggregator = require('./aggregator.js');
-var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
-
-window.addEventListener("DOMContentLoaded", function () {
-  var elems = document.querySelectorAll('[sj-app]');
-
-  var _loop = function _loop(i, l) {
-    var elem = elems[i];
-
-    var template = document.createElement("div");
-
-    // copy attributes
-    var attributes = elem.attributes;
-    for (var _i = 0, _l = attributes.length; _i < _l; _i++) {
-      var attr = attributes[_i];
-      template.setAttribute(attr.name, attr.value);
-    }
-
-    new Aggregator(elem).aggregate(template);
-    var compiled = new Compiler().compile(elem);
-    template.update = function () {
-      var _this = this;
-
-      IncrementalDOM.patch(this, function () {
-        compiled.apply(_this, [IncrementalDOM]);
-      });
-    };
-
-    var app = elem.getAttribute('sj-app');
-    var replaced = elem.parentNode.replaceChild(template, elem);
-    if (app) {
-      // Note. sj allows sj-app="" for demo app.
-      var func = window[app];
-      if (func) {
-        func.apply(template);
-      } else {
-        throw 'Unknown function \'' + app + '\', specefied by sj-app';
-      }
-    }
-    template.update();
-  };
-
-  for (var i = 0, l = elems.length; i < l; ++i) {
-    _loop(i, l);
-  }
-});
-
-},{"./aggregator.js":35,"./compiler.js":37,"incremental-dom/dist/incremental-dom.js":17}],37:[function(require,module,exports){
+},{"_process":49,"stream":60}],33:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () {
@@ -4618,7 +3052,7 @@ var Compiler = function () {
       for (var i = 0; i < children.length; ++i) {
         code = code.concat(this.renderDOM(children[i], []));
       }
-      console.log(code.join(";\n"));
+      // console.log(code.join(";\n"));
       return new Function('IncrementalDOM', code.join(";\n"));
     }
   }, {
@@ -4627,22 +3061,30 @@ var Compiler = function () {
       assert(elem);
       assert(vars);
       if (elem.nodeType === Node.TEXT_NODE) {
-        return 'IncrementalDOM.text(' + this.text(elem.textContent) + ')';
+        return ['IncrementalDOM.text(' + this.text(elem.textContent) + ')'];
       } else if (elem.nodeType === Node.COMMENT_NODE) {
         // Ignore comment node
-        return '';
+        return [];
       }
 
-      var headers = [];
-      var footers = [];
-      var body = [];
+      var tagName = elem.tagName.toLowerCase();
 
       // process `sj-if`
       {
         var cond = elem.getAttribute('sj-if');
         if (cond) {
-          headers.push('if (' + cond + ') {');
-          footers.push('}');
+          var body = [';'];
+          body.push('if (' + cond + ') {');
+          body.push('IncrementalDOM.elementOpenStart("' + tagName + '")');
+          body = body.concat(this.renderAttributes(elem, vars));
+          body.push('IncrementalDOM.elementOpenEnd("' + tagName + '")');
+
+          body = body.concat(this.renderBody(elem, vars));
+
+          body.push('IncrementalDOM.elementClose("' + tagName + '")');
+
+          body.push('}');
+          return body;
         }
       }
 
@@ -4656,32 +3098,57 @@ var Compiler = function () {
           }
 
           if (m[1]) {
+            // varName in container
             var varName = m[1];
             var container = m[4];
 
-            headers.push('(function(IncrementalDOM) {\nvar $$container=' + container + ';\nfor (var $index=0,$l=$$container.length; $index<$l; $index++) {\nvar ' + varName + '=$$container[$index];');
-            footers.push('}\n}).apply(this, [IncrementalDOM]);');
+            var body = [';'];
+            body.push('IncrementalDOM.elementOpenStart("' + tagName + '")');
+            body = body.concat(this.renderAttributes(elem, vars));
+            body.push('IncrementalDOM.elementOpenEnd("' + tagName + '")');
 
-            vars = vars.concat([varName, '$index']);
+            body.push('(function(IncrementalDOM) {\nvar $$container=' + container + ';\nfor (var $index=0,$l=$$container.length; $index<$l; $index++) {\nvar ' + varName + '=$$container[$index];');
+
+            body = body.concat(this.renderBody(elem, vars.concat([varName, '$index'])));
+
+            body.push('}\n}).apply(this, [IncrementalDOM]);');
+            body.push('IncrementalDOM.elementClose("' + tagName + '")');
+
+            return body;
           } else {
+            // (keyName, varName) in container
             var keyName = m[2];
             var valueName = m[3];
             var _container = m[4];
-            headers.push('(function(IncrementalDOM) {\n$$container=' + _container + ';for (var ' + keyName + ' in $$container) {\nvar ' + valueName + '=$$container[' + keyName + '];');
-            footers.push('}\n}).apply(this, [IncrementalDOM]);');
-            vars = vars.concat([keyName, valueName]);
+            var body = [';'];
+            body.push('IncrementalDOM.elementOpenStart("' + tagName + '")');
+            body = body.concat(this.renderAttributes(elem, vars));
+            body.push('IncrementalDOM.elementOpenEnd("' + tagName + '")');
+            body.push('(function(IncrementalDOM) {\n$$container=' + _container + ';for (var ' + keyName + ' in $$container) {\nvar ' + valueName + '=$$container[' + keyName + '];');
+            body = body.concat(this.renderBody(elem, vars.concat([keyName, valueName])));
+            body.push('}\n}).apply(this, [IncrementalDOM]);');
+            body.push('IncrementalDOM.elementClose("' + tagName + '")');
+            return body;
           }
         }
       }
 
-      var tagName = elem.tagName.toLowerCase();
-
       // process attributes
+      var body = [';'];
       body.push('IncrementalDOM.elementOpenStart("' + tagName + '")');
       body = body.concat(this.renderAttributes(elem, vars));
       body.push('IncrementalDOM.elementOpenEnd("' + tagName + '")');
+      body = body.concat(this.renderBody(elem, vars));
+      body.push('IncrementalDOM.elementClose("' + tagName + '")');
 
+      return body;
+    }
+  }, {
+    key: 'renderBody',
+    value: function renderBody(elem, vars) {
+      var body = [];
       var bind = elem.getAttribute('sj-bind');
+      var tagName = elem.tagName.toLowerCase();
       if (tagName.indexOf('-') >= 0) {
         body.push('IncrementalDOM.skip()');
       } else if (bind) {
@@ -4698,11 +3165,7 @@ var Compiler = function () {
           }
         }
       }
-      body.push('IncrementalDOM.elementClose("' + tagName + '")');
-
-      var retval = [';'].concat(headers).concat(body).concat(footers);
-      // console.log(`DONE renderDOM ${JSON.stringify(retval)}`);
-      return retval;
+      return body;
     }
   }, {
     key: 'renderAttributes',
@@ -4783,346 +3246,7 @@ var Compiler = function () {
 
 module.exports = Compiler;
 
-},{"./text-expression-scanner.js":43,"incremental-dom/dist/incremental-dom.js":17}],38:[function(require,module,exports){
-'use strict';
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-var _createClass = function () {
-  function defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }return function (Constructor, protoProps, staticProps) {
-    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
-  };
-}();
-
-function _classCallCheck(instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-}
-
-function _possibleConstructorReturn(self, call) {
-  if (!self) {
-    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-  }return call && ((typeof call === "undefined" ? "undefined" : _typeof(call)) === "object" || typeof call === "function") ? call : self;
-}
-
-function _inherits(subClass, superClass) {
-  if (typeof superClass !== "function" && superClass !== null) {
-    throw new TypeError("Super expression must either be null or a function, not " + (typeof superClass === "undefined" ? "undefined" : _typeof(superClass)));
-  }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
-}
-
-var Compiler = require('./compiler.js');
-var Aggregator = require('./aggregator.js');
-var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
-
-// babel hacks
-// See https://phabricator.babeljs.io/T1548
-if (typeof HTMLElement !== 'function') {
-  var _HTMLElement = function _HTMLElement() {};
-  _HTMLElement.prototype = HTMLElement.prototype;
-  HTMLElement = _HTMLElement;
-}
-
-var scopes = {};
-var compiled = {};
-
-var Element = function (_HTMLElement2) {
-  _inherits(Element, _HTMLElement2);
-
-  function Element() {
-    _classCallCheck(this, Element);
-
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(Element).apply(this, arguments));
-  }
-
-  _createClass(Element, [{
-    key: 'createdCallback',
-    value: function createdCallback() {
-      console.log("CREATED " + this.tagName);
-      if (!scopes[this.tagName]) {
-        // parse template
-        var template = this.template();
-        if (!template) {
-          throw 'template shouldn\'t be null';
-        }
-
-        var html = document.createElement("div");
-        html.innerHTML = template;
-
-        scopes[this.tagName] = this.default();
-        new Aggregator(html).aggregate(scopes[this.tagName]);
-        compiled[this.tagName] = new Compiler().compile(html);
-      }
-
-      var def = {};
-
-      // overwrite by scope values
-      var scope = scopes[this.tagName];
-      for (var key in scope) {
-        if (scope.hasOwnProperty(key)) {
-          def[key] = scope[key];
-        }
-      }
-
-      //  // overwrite by attribute values
-      //  const attrs = this.attributes;
-      //  for (let i = 0, l = attrs.length; i < l; ++i) {
-      //    const attr = attrs[i];
-      //    if (attr.name.substr(0, 8) !== 'sj-attr-') {
-      //      def[attr.name] = attr.value;
-      //    }
-      //  }
-
-      // and set to tag attributes
-      console.trace("SETTING VALUES");
-      console.log(def);
-      for (var _key in def) {
-        if (def.hasOwnProperty(_key)) {
-          this[_key] = def[_key];
-        }
-      }
-
-      this.initialize();
-
-      this.update();
-    }
-  }, {
-    key: 'default',
-    value: function _default() {
-      return {};
-    }
-  }, {
-    key: 'template',
-    value: function template() {
-      throw "Please implement 'template' method";
-    }
-  }, {
-    key: 'attributeChangedCallback',
-    value: function attributeChangedCallback(key) {
-      console.log('SET ATTRIBUTE: ' + key);
-      this[key] = this.getAttribute(key);
-      this.update();
-    }
-  }, {
-    key: 'initialize',
-    value: function initialize() {
-      // nop. abstract method.
-    }
-  }, {
-    key: 'update',
-    value: function update() {
-      var _this2 = this;
-
-      console.log("UPDATE");
-      IncrementalDOM.patch(this, function () {
-        compiled[_this2.tagName].apply(_this2, [IncrementalDOM]);
-      });
-    }
-  }, {
-    key: 'dump',
-    value: function dump() {
-      var _this3 = this;
-
-      var scope = {};
-      Object.keys(this).forEach(function (key) {
-        if (key !== 'renderer') {
-          scope[key] = _this3[key];
-        }
-      });
-      return scope;
-    }
-  }]);
-
-  return Element;
-}(HTMLElement);
-
-module.exports = Element;
-
-},{"./aggregator.js":35,"./compiler.js":37,"incremental-dom/dist/incremental-dom.js":17}],39:[function(require,module,exports){
-"use strict";
-
-// polyfill
-// https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/CustomEvent
-
-(function () {
-  if (typeof window.CustomEvent === "function") return false;
-
-  function CustomEvent(event, params) {
-    params = params || { bubbles: false, cancelable: false, detail: undefined };
-    var evt = document.createEvent('CustomEvent');
-    evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
-    return evt;
-  }
-
-  CustomEvent.prototype = window.Event.prototype;
-
-  window.CustomEvent = CustomEvent;
-})();
-
-function fireEvent(element, eventName, options) {
-  var event = new CustomEvent(eventName, options);
-  element.dispatchEvent(event);
-}
-
-module.exports = fireEvent;
-
-},{}],40:[function(require,module,exports){
-'use strict';
-
-// polyfills
-
-require('webcomponents.js/CustomElements.js');
-require('./polyfill.js');
-require('whatwg-fetch/fetch.js');
-
-var tag = require('./tag.js');
-var Element = require('./element.js');
-require('./app.js');
-
-module.exports.Element = Element;
-module.exports.tag = tag;
-module.exports.fireEvent = require('./fire-event.js');
-
-},{"./app.js":36,"./element.js":38,"./fire-event.js":39,"./polyfill.js":41,"./tag.js":42,"webcomponents.js/CustomElements.js":33,"whatwg-fetch/fetch.js":34}],41:[function(require,module,exports){
-'use strict';
-
-// polyfill
-
-require('webcomponents.js/CustomElements.js');
-
-if (!window.customElements) {
-  window.customElements = {
-    define: function define(name, elem) {
-      document.registerElement(name, elem);
-    }
-  };
-}
-
-},{"webcomponents.js/CustomElements.js":33}],42:[function(require,module,exports){
-'use strict';
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-var _createClass = function () {
-  function defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }return function (Constructor, protoProps, staticProps) {
-    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
-  };
-}();
-
-function _classCallCheck(instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-}
-
-function _possibleConstructorReturn(self, call) {
-  if (!self) {
-    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-  }return call && ((typeof call === "undefined" ? "undefined" : _typeof(call)) === "object" || typeof call === "function") ? call : self;
-}
-
-function _inherits(subClass, superClass) {
-  if (typeof superClass !== "function" && superClass !== null) {
-    throw new TypeError("Super expression must either be null or a function, not " + (typeof superClass === "undefined" ? "undefined" : _typeof(superClass)));
-  }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
-}
-
-var Compiler = require('./compiler');
-var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
-var Aggregator = require('./aggregator.js');
-var Element = require('./element.js');
-
-var unwrapComment = /\/\*!?(?:\@preserve)?[ \t]*(?:\r\n|\n)([\s\S]*?)(?:\r\n|\n)\s*\*\//;
-
-var knownOpts = ['template', 'accessors', 'default', 'events', 'initialize', 'methods'];
-var knownOptMap = {};
-knownOpts.forEach(function (e) {
-  knownOptMap[e] = e;
-});
-
-function tag(tagName, opts) {
-  for (var key in opts) {
-    if (!knownOptMap[key]) {
-      throw 'Unknown options for sj.tag: ' + tagName + ':' + key + '(Known keys: ' + knownOpts + ')';
-    }
-  }
-
-  var _template = void 0;
-
-  var elementClass = function (_Element) {
-    _inherits(elementClass, _Element);
-
-    function elementClass() {
-      _classCallCheck(this, elementClass);
-
-      return _possibleConstructorReturn(this, Object.getPrototypeOf(elementClass).apply(this, arguments));
-    }
-
-    _createClass(elementClass, [{
-      key: 'template',
-      value: function template() {
-        if (!_template) {
-          if (typeof opts.template === 'function') {
-            _template = unwrapComment.exec(opts.template.toString())[1];
-          } else {
-            _template = opts.template;
-          }
-        }
-        return _template;
-      }
-    }, {
-      key: 'default',
-      value: function _default() {
-        return opts.default || {};
-      }
-    }, {
-      key: 'initialize',
-      value: function initialize() {
-        // set event listeners
-        if (opts.events) {
-          for (var event in opts.events) {
-            this.addEventListener(event, opts.events[event].bind(this));
-          }
-        }
-        if (opts.initialize) {
-          opts.initialize.apply(this);
-        }
-      }
-    }]);
-
-    return elementClass;
-  }(Element);
-
-  if (opts.methods) {
-    for (var name in opts.methods) {
-      elementClass.prototype[name] = opts.methods[name];
-    }
-  }
-
-  if (opts.accessors) {
-    for (var _name in opts.accessors) {
-      Object.defineProperty(elementClass.prototype, _name, {
-        get: opts.accessors[_name].get,
-        set: opts.accessors[_name].set
-      });
-    }
-  }
-
-  customElements.define(tagName, elementClass);
-}
-
-module.exports = tag;
-
-},{"./aggregator.js":35,"./compiler":37,"./element.js":38,"incremental-dom/dist/incremental-dom.js":17}],43:[function(require,module,exports){
+},{"./text-expression-scanner.js":34,"incremental-dom/dist/incremental-dom.js":17}],34:[function(require,module,exports){
 'use strict';
 
 function scan(s) {
@@ -5157,398 +3281,219 @@ function scan(s) {
 
 module.exports = scan;
 
-},{}],44:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 'use strict';
 
 var test = require('tape');
-var sj = require('../src/main.js');
+var Compiler = require('../src/compiler');
+var IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
-function runTest(tagName, elementClass, code) {
-  test(tagName, function (t) {
-    var elem = document.createElement(tagName);
-    code.apply(elem, [t, tagName]);
+test('foo', function (t) {
+  t.plan(1);
+  var div = document.createElement('div');
+  div.innerHTML = '<div id="foo"></div>';
+  var code = new Compiler().compile(div);
+  var target = document.createElement('target');
+  target.update = function () {};
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
   });
-}
-
-// simulate onchange event
-// http://stackoverflow.com/questions/2856513/how-can-i-trigger-an-onchange-event-manually
-function invokeEvent(elem, name) {
-  if ("createEvent" in document) {
-    var evt = document.createEvent("HTMLEvents");
-    evt.initEvent(name, false, true);
-    elem.dispatchEvent(evt);
-  } else {
-    elem.fireEvent('on' + name);
-  }
-}
-
-test('export', function (t) {
-  t.plan(2);
-  t.ok(sj.tag, 'sj.tag');
-  t.ok(sj.Element, 'sj.Element');
+  t.equal(target.querySelector('div').getAttribute('id'), 'foo');
 });
-
-runTest('test-input-value', sj.tag('test-input-value', {
-  template: function template() {/*
-                                     <input type="text" sj-model="this.filter" value="hoge">
-                                 */}
-}), function (t, tagName) {
+test('sj-if', function (t) {
   t.plan(2);
-  var input = this.querySelector('input');
-
-  t.equal(input.value, 'hoge', 'input.value');
-  t.equal(this.filter, 'hoge', tagName);
+  var div = document.createElement('div');
+  div.innerHTML = '\n    <div id="foo" sj-if="this.foo"></div>\n    <div id="bar" sj-if="this.bar"></div>\n  ';
+  var code = new Compiler().compile(div);
+  var target = document.createElement('target');
+  target.update = function () {};
+  target.foo = true;
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
+  });
+  t.ok(target.querySelector('#foo'));
+  t.ok(!target.querySelector('#bar'));
 });
+test('sj-repeat', function (t) {
+  t.plan(2);
+  var div = document.createElement('div');
+  div.innerHTML = '\n    <div sj-repeat="book in this.books" class="outer">\n      <div class="book" sj-bind="book.name"></div>\n    </div>\n  ';
+  var code = new Compiler().compile(div);
 
-runTest('test-disabled', sj.tag('test-disabled', {
-  template: function template() {/*
-                                 <div sj-disabled="this.f">f</div>
-                                 <div sj-disabled="this.t">t</div>
-                                 */},
-  initialize: function initialize() {
-    this.t = true;
-    this.f = false;
-  }
-}), function (t, tagName) {
+  var target = document.createElement('target');
+  target.update = function () {};
+  target.books = [{ name: 'hoge' }, { name: 'fuga' }];
+
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+  console.log(target.innerHTML);
+
+  var books = target.querySelectorAll('.book');
+  t.equal(books.length, 2);
+  t.equal(target.querySelectorAll('.outer').length, 1);
+});
+test('sj-repeat array kv', function (t) {
   t.plan(3);
-  var divs = this.querySelectorAll('div');
-  t.ok(divs.length == 2, tagName);
-  t.ok(!divs[0].getAttribute('disabled'), tagName);
-  t.ok(divs[1].getAttribute('disabled') === 'disabled', tagName);
-});
+  var div = document.createElement('div');
+  div.innerHTML = '\n    <div sj-repeat="(i,book) in this.books">\n      <div class="book"><span sj-bind="i"></span>:<span sj-bind="book.name"></span></div>\n    </div>\n  ';
+  var code = new Compiler().compile(div);
 
-// regression test
-runTest('test-multi-attributes', sj.tag('test-multi-attributes', {
-  template: function template() {/*
-                                 <div class="b" sj-repeat="x in this.books">
-                                 <div class='book'><span sj-bind="x.name"></span></div>
-                                 </div>
-                                 */},
-  initialize: function initialize() {
-    this.books = [{ "name": "foo" }, { "name": "bar" }];
-  }
-}), function (t, tagName) {
-  t.plan(1);
-  t.equal(this.querySelectorAll('div.book').length, 2, tagName);
-});
+  var target = document.createElement('target');
+  target.update = function () {};
+  target.books = [{ name: 'hoge' }, { name: 'fuga' }];
 
-runTest('test-events', sj.tag('test-events', {
-  template: function template() {/*
-                                     <button id="clickTest" sj-click="this.btnclick($event)">yay</button>
-                                     */},
-  methods: {
-    btnclick: function btnclick() {
-      this.clicked = true;
-    }
-  }
-}), function (t) {
-  var elem = this.querySelector("#clickTest");
-  elem.click();
-
-  t.plan(1);
-  t.ok(!!this.clicked);
-});
-
-runTest('test-set-attrs', sj.tag('test-set-attrs', {
-  template: '<div sj-bind="this.foo"></div>'
-}), function (t, tagName) {
-  this.setAttribute('foo', 'bar');
-  t.plan(1);
-  t.equal(this.querySelector('div').textContent, 'bar');
-});
-
-runTest('test-input', sj.tag('test-input', {
-  template: function template() {/*
-                                    <h1>Input</h1>
-                                    <input type="text" name="name" sj-model="this.name" id="myInput">
-                                    Hello, <span sj-bind="this.name"></span>
-                                    */}
-}), function (t, tagName) {
-  var input = this.querySelector('input');
-  input.value = 'foo';
-
-  invokeEvent(input, 'input');
-
-  t.plan(1);
-  t.ok(this.querySelector('span').textContent === "foo", tagName);
-});
-
-runTest('test-input-checkbox', sj.tag('test-input-checkbox', {
-  template: function template() {/*
-                                    <input class='a' type="checkbox" sj-model="this.a">
-                                    <input type="checkbox" sj-model="this.b">
-                                    */}
-}), function (t, tagName) {
-  var a = this.querySelector('.a');
-  a.checked = true;
-
-  invokeEvent(a, 'change');
-
-  t.plan(2);
-  t.equal(this.a, true, 'this.a is checked');
-  t.equal(this.b, false);
-});
-
-runTest('test-input-nested', sj.tag('test-input-nested', {
-  template: function template() {/*
-                                 <h1>Input</h1>
-                                 <input type="text" name="name" sj-model="this.x.y" id="myInput">
-                                 Hello, <span sj-model="this.name"></span>
-                                 */},
-  default: {
-    x: {}
-  },
-  initialize: function initialize() {
-    this.x = {
-      y: 3
-    };
-  }
-}), function (t, tagName) {
-  var input = this.querySelector('input');
-  input.value = 'foo';
-
-  invokeEvent(input, 'input');
-
-  t.plan(1);
-  t.ok(this.x.y === 'foo', tagName);
-});
-
-runTest('test-textarea', sj.tag('test-textarea', {
-  template: function template() {/*
-                                 <h1>Textarea</h1>
-                                 <textarea name="hoge" sj-model="this.hoge"></textarea>
-                                 Hello, <span sj-bind="this.hoge"></span>
-                                 */}
-}), function (t, tagName) {
-  var input = this.querySelector('textarea');
-  input.value = "foo";
-  invokeEvent(input, 'input');
-
-  t.plan(1);
-  t.ok(this.querySelector('span').textContent === "foo", tagName);
-});
-
-runTest('test-from-controller', sj.tag('test-from-controller', {
-  initialize: function initialize() {
-    this.hogehoge = "foo";
-  },
-  template: function template() {/*
-                                 <h1>Passed from controller</h1>
-                                 <input type="text" name="bar" sj-model="this.hogehoge">
-                                 */}
-}), function (t, tagName) {
-  t.plan(1);
-  t.ok(this.querySelector('input').value === "foo", tagName);
-});
-
-runTest('test-select', sj.tag('test-select', {
-  template: function template() {/*
-                                 <h1>Select</h1>
-                                 <select sj-model="this.sss">
-                                 <option value="ppp">ppp</option>
-                                 <option value="qqq">qqq</option>
-                                 </select>
-                                 SSS: <span sj-bind="this.sss"></span>
-                                 */}
-}), function (t, tagName) {
-  t.plan(1);
-  t.equal(this.querySelector('span').textContent, "ppp");
-});
-
-runTest('test-for', sj.tag('test-for', {
-  template: function template() {/*
-                                 <h1>bar</h1>
-                                 <div sj-repeat="x in this.bar">
-                                 <div class="item" sj-bind="x.boo"></div>
-                                 </div>
-                                 */},
-  initialize: function initialize() {
-    this.bar = [{ boo: 4649 }, { boo: 1 }, { boo: 2 }, { boo: 3 }];
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div.item');
-  t.plan(1);
-  t.ok(elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' && elems[2].textContent === '2' && elems[3].textContent === '3', tagName);
-});
-
-runTest('test-for-index', sj.tag('test-for-index', {
-  template: function template() {/*
-                                 <h1>For index</h1>
-                                 <div sj-repeat="x in this.bar">
-                                 <div class="item"><span sj-bind="x.boo"></span>:<span sj-bind="$index"></span></div>
-                                 </div>
-                                 */},
-  initialize: function initialize() {
-    this.bar = [{ boo: 4649 }, { boo: 1 }, { boo: 2 }, { boo: 3 }];
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div.item');
-  t.plan(1);
-  t.ok(elems.length == 4 && elems[0].textContent == "4649:0" && elems[1].textContent === '1:1' && elems[2].textContent === '2:2' && elems[3].textContent === '3:3', tagName);
-});
-
-runTest('test-for-empty', sj.tag('test-for-empty', {
-  template: function template() {/*
-                                 <h1>sj-repeat with empty value</h1>
-                                 <div sj-repeat="x in this.bar">
-                                 <div class="item" sj-model="x.boo">replace here</div>
-                                 </div>
-                                 */},
-  initialize: function initialize() {
-    this.bar = [];
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div.item');
-  t.plan(1);
-  t.ok(elems.length == 0, tagName);
-});
-
-runTest('test-if', sj.tag('test-if', {
-  template: function template() {/*
-                                 <h1>Test if</h1>
-                                 <div sj-if="this.getFalse()">FALSE</div>
-                                 <div sj-if="this.getTrue()">TRUE</div>
-                                 */},
-  methods: {
-    getTrue: function getTrue() {
-      return true;
-    },
-    getFalse: function getFalse() {
-      return false;
-    }
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div');
-  t.plan(1);
-  t.ok(elems.length == 1 && elems[0].textContent === 'TRUE', tagName);
-});
-
-runTest('test-if-array', sj.tag('test-if-array', {
-  template: function template() {/*
-                                 return `
-                                 <h1>Test if</h1>
-                                 <div sj-repeat="x in this.bar">
-                                 <div sj-if="this.matched(x)" class="target" sj-bind="x.foo"></div>
-                                 </div>
-                                 */},
-  initialize: function initialize() {
-    this.bar = [{ "foo": 1 }];
-  },
-  methods: {
-    matched: function matched(x) {
-      return x.foo == 1;
-    }
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div.target');
-  t.plan(1);
-  t.ok(elems.length === 1 && elems[0].textContent === '1', tagName);
-});
-
-runTest('test-text-var', sj.tag('test-text-var', {
-  template: function template() {/*
-                                 <h1>Test text var</h1>
-                                 <div>Hello, <span sj-bind="this.name"></span></div>
-                                 */},
-  initialize: function initialize() {
-    this.name = 'John';
-  }
-}), function (t, tagName) {
-  var elem = this.querySelector('div');
-  t.plan(1);
-  t.ok(elem.textContent === 'Hello, John', tagName);
-});
-
-runTest('test-filter', sj.tag('test-filter', {
-  template: function template() {/*
-                                 <h1>Test filter</h1>
-                                 <div sj-if="this.filter(this.x.y)">Hello</div>
-                                 <div sj-if="this.filter(this.x.z)">Hi</div>
-                                 */},
-  initialize: function initialize() {
-    this.x = {
-      y: true,
-      z: false
-    };
-    this.filter = function (e) {
-      return e;
-    };
-  }
-}), function (t, tagName) {
-  var elems = this.querySelectorAll('div');
-  t.plan(1);
-  t.ok(elems.length === 1 && elems[0].textContent === 'Hello', tagName);
-});
-
-runTest('test-comment', sj.tag('test-comment', {
-  template: function template() {/*
-                                 <h1>Test comment</h1>
-                                 <!-- foo -->
-                                 */}
-}), function (t, tagName) {
-  t.plan(1);
-  t.ok(this.querySelector('h1'), tagName);
-});
-
-runTest('test-sanitize-href', sj.tag('test-sanitize-href', {
-  template: function template() {/*
-                                    <a class='unsafe' sj-href="this.href"></a>
-                                    <a class='unsafe2' sj-href="'jscript:alert(3)'"></a>
-                                    <a class='unsafe3' sj-href="'view-source:alert(3)'"></a>
-                                    <a class='safe' sj-href="'http://example.com'"></a>
-                                 */},
-  default: {
-    'href': 'javascript:this.x=3',
-    x: 5
-  }
-}), function (t, tagName) {
-  t.plan(4);
-  t.equal(this.querySelector('a.unsafe').getAttribute('href'), 'unsafe:javascript:this.x=3');
-  t.equal(this.querySelector('a.unsafe2').getAttribute('href'), 'unsafe:jscript:alert(3)');
-  t.equal(this.querySelector('a.unsafe3').getAttribute('href'), 'unsafe:view-source:alert(3)');
-  t.equal(this.querySelector('a.safe').getAttribute('href'), 'http://example.com');
-});
-
-runTest('test-bind', sj.tag('test-bind', {
-  template: function template() {/*
-                                    <span sj-bind="this.text"></span>
-                                 */},
-  default: {
-    'text': '<xmp>hoge'
-  }
-}), function (t, tagName) {
-  t.plan(1);
-  console.log(this.outerHTML);
-  t.ok(this.querySelector('span').outerHTML.match(/\&lt;xmp&gt;hoge/));
-});
-
-runTest('test-sj-attr', sj.tag('test-sj-attr', {
-  template: function template() {/*
-                                    <span sj-attr-data-foo="5963"></span>
-                                 */}
-}), function (t, tagName) {
-  t.plan(1);
-  t.equal(this.querySelector('span').getAttribute('data-foo'), '5963');
-});
-
-runTest('test-fireEvent', sj.tag('test-fireevent', {
-  template: function template() {/*
-                                    <div></div>
-                                 */},
-  events: {
-    foo: function foo($event) {
-      this.gotEvent = $event.detail;
-    }
-  }
-}), function (t, tagName) {
-  t.plan(1);
-  sj.fireEvent(this, 'foo', {
-    detail: { hello: 'nick' }
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
   });
-  t.deepEqual(this.gotEvent, { hello: 'nick' });
+
+  var books = target.querySelectorAll('.book');
+  t.equal(books.length, 2);
+  t.equal(books[0].textContent, '0:hoge');
+  t.equal(books[1].textContent, '1:fuga');
+});
+test('sj-repeat(object)', function (t) {
+  t.plan(2);
+  var div = document.createElement('div');
+  div.innerHTML = '\n    <div sj-repeat="(x,y) in this.obj">\n      <div class="item" sj-click="this.result.push(x)"><span sj-bind="x"></span>:<span sj-bind="y"></span></div>\n    </div>\n  ';
+  var code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () {};
+  target.obj = {
+    a: 'b',
+    c: 'd'
+  };
+  target.result = [];
+
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+  var items = target.querySelectorAll('.item');
+  t.equal(items.length, 2);
+
+  for (var i = 0; i < items.length; i++) {
+    items[i].click();
+  }
+  t.deepEqual(target.result, ['a', 'c']);
+});
+test('sj-click', function (t) {
+  t.plan(1);
+  var div = document.createElement('div');
+  div.innerHTML = '\n    <div sj-click="this.called = true"></div>\n  ';
+  var code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () {};
+  target.books = [{ name: 'hoge' }, { name: 'fuga' }];
+
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+  target.querySelector('div').click();
+
+  t.ok(target.called);
+});
+test('sj-disabled', function (t) {
+  t.plan(2);
+  var div = document.createElement('div');
+  div.innerHTML = '\n    <div class="t" sj-disabled="true"></div>\n    <div class="f" sj-disabled="false"></div>\n  ';
+  var code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () {};
+
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+  t.equal(target.querySelector('.t').getAttribute('disabled'), 'disabled');
+  t.ok(!target.querySelector('.f').getAttribute('disabled'));
+});
+test('sj-bind', function (t) {
+  t.plan(1);
+  var div = document.createElement('div');
+  div.innerHTML = '\n    <div sj-bind="this.foo"></div>\n  ';
+  var code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () {};
+  target.foo = 'foo';
+
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+  t.ok(target.innerHTML.match(/foo/));
+});
+test('nested for', function (t) {
+  t.plan(2);
+  var div = document.createElement('div');
+  div.innerHTML = '\n    <div sj-repeat="blog in this.blogs">\n      <div sj-repeat="entry in blog.entries">\n        <div class="book"><span sj-bind="entry.title"></span>:<span sj-bind="$index"></span></div>\n      </div>\n    </div>\n  ';
+  var code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () {};
+  target.blogs = [{ entries: [{ title: 'hoge' }, { title: 'hige' }] }, { entries: [{ title: 'fuga' }, { title: 'figa' }] }];
+
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+  t.ok(target.innerHTML.match(/hoge/));
+  t.ok(target.innerHTML.match(/fuga/));
+});
+test('nested for', function (t) {
+  t.plan(1);
+  var div = document.createElement('div');
+  div.innerHTML = '\n    <div sj-repeat="blog in this.blogs">\n      <div sj-repeat="entry in blog.entries">\n        <div class="book" sj-click="this.result.push($index)"><span sj-bind="entry.title"></span>:<span sj-bind="$index"></span></div>\n      </div>\n    </div>\n  ';
+  var code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () {};
+  target.blogs = [{ entries: [{ title: 'hoge' }, { title: 'hige' }] }, { entries: [{ title: 'fuga' }, { title: 'figa' }] }];
+  target.result = [];
+
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
+  });
+  var books = target.querySelectorAll('.book');
+  for (var i = 0; i < books.length; i++) {
+    books[i].click();
+  }
+  t.deepEqual(target.result, [0, 1, 0, 1]);
+});
+test('text', function (t) {
+  var compiler = new Compiler();
+  var s = ["\n", '"'];
+  t.plan(s.length);
+  for (var i = 0, l = s.length; i < l; i++) {
+    var m = s[i];
+    t.equal(eval(compiler.text(m)), m);
+  }
+});
+test('sj-class', function (t) {
+  t.plan(1);
+  var div = document.createElement('div');
+  div.innerHTML = '\n    <div sj-class=\'this.klass\'>\n    </div>\n  ';
+  var code = new Compiler().compile(div);
+
+  var target = document.createElement('target');
+  target.update = function () {};
+  target.klass = ['a', 'b'];
+
+  IncrementalDOM.patch(target, function () {
+    code.apply(target, [IncrementalDOM]);
+  });
+
+  var got = target.querySelector('div');
+  t.deepEqual(got.getAttribute('class'), 'a b');
 });
 
-},{"../src/main.js":40,"tape":28}],45:[function(require,module,exports){
+},{"../src/compiler":33,"incremental-dom/dist/incremental-dom.js":17,"tape":28}],36:[function(require,module,exports){
 'use strict'
 
 exports.toByteArray = toByteArray
@@ -5659,11 +3604,11 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],46:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 
-},{}],47:[function(require,module,exports){
-arguments[4][46][0].apply(exports,arguments)
-},{"dup":46}],48:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"dup":37}],39:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -5775,7 +3720,7 @@ exports.allocUnsafeSlow = function allocUnsafeSlow(size) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"buffer":49}],49:[function(require,module,exports){
+},{"buffer":40}],40:[function(require,module,exports){
 (function (global){
 /*!
  * The buffer module from node.js, for the browser.
@@ -7490,7 +5435,7 @@ function isnan (val) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"base64-js":45,"ieee754":52,"isarray":55}],50:[function(require,module,exports){
+},{"base64-js":36,"ieee754":43,"isarray":46}],41:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -7601,7 +5546,7 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../is-buffer/index.js")})
-},{"../../is-buffer/index.js":54}],51:[function(require,module,exports){
+},{"../../is-buffer/index.js":45}],42:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7901,7 +5846,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],52:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -7987,9 +5932,9 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],53:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"dup":18}],54:[function(require,module,exports){
+},{"dup":18}],45:[function(require,module,exports){
 /**
  * Determine if an object is Buffer
  *
@@ -8008,14 +5953,14 @@ module.exports = function (obj) {
     ))
 }
 
-},{}],55:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
 
-},{}],56:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -8243,7 +6188,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this,require('_process'))
-},{"_process":58}],57:[function(require,module,exports){
+},{"_process":49}],48:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -8290,7 +6235,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 }
 
 }).call(this,require('_process'))
-},{"_process":58}],58:[function(require,module,exports){
+},{"_process":49}],49:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -8391,10 +6336,10 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],59:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":60}],60:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":51}],51:[function(require,module,exports){
 // a duplex stream is just a stream that is both readable and writable.
 // Since JS doesn't have multiple prototypal inheritance, this class
 // prototypally inherits from Readable, and then parasitically from
@@ -8470,7 +6415,7 @@ function forEach(xs, f) {
     f(xs[i], i);
   }
 }
-},{"./_stream_readable":62,"./_stream_writable":64,"core-util-is":50,"inherits":53,"process-nextick-args":57}],61:[function(require,module,exports){
+},{"./_stream_readable":53,"./_stream_writable":55,"core-util-is":41,"inherits":44,"process-nextick-args":48}],52:[function(require,module,exports){
 // a passthrough stream.
 // basically just the most minimal sort of Transform stream.
 // Every written chunk gets output as-is.
@@ -8497,7 +6442,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":63,"core-util-is":50,"inherits":53}],62:[function(require,module,exports){
+},{"./_stream_transform":54,"core-util-is":41,"inherits":44}],53:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -9393,7 +7338,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'))
-},{"./_stream_duplex":60,"_process":58,"buffer":49,"buffer-shims":48,"core-util-is":50,"events":51,"inherits":53,"isarray":55,"process-nextick-args":57,"string_decoder/":70,"util":46}],63:[function(require,module,exports){
+},{"./_stream_duplex":51,"_process":49,"buffer":40,"buffer-shims":39,"core-util-is":41,"events":42,"inherits":44,"isarray":46,"process-nextick-args":48,"string_decoder/":61,"util":37}],54:[function(require,module,exports){
 // a transform stream is a readable/writable stream where you do
 // something with the data.  Sometimes it's called a "filter",
 // but that's not a great name for it, since that implies a thing where
@@ -9574,7 +7519,7 @@ function done(stream, er) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":60,"core-util-is":50,"inherits":53}],64:[function(require,module,exports){
+},{"./_stream_duplex":51,"core-util-is":41,"inherits":44}],55:[function(require,module,exports){
 (function (process){
 // A bit simpler than readable streams.
 // Implement an async ._write(chunk, encoding, cb), and it'll handle all
@@ -10103,10 +8048,10 @@ function CorkedRequest(state) {
   };
 }
 }).call(this,require('_process'))
-},{"./_stream_duplex":60,"_process":58,"buffer":49,"buffer-shims":48,"core-util-is":50,"events":51,"inherits":53,"process-nextick-args":57,"util-deprecate":71}],65:[function(require,module,exports){
+},{"./_stream_duplex":51,"_process":49,"buffer":40,"buffer-shims":39,"core-util-is":41,"events":42,"inherits":44,"process-nextick-args":48,"util-deprecate":62}],56:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":61}],66:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":52}],57:[function(require,module,exports){
 (function (process){
 var Stream = (function (){
   try {
@@ -10126,13 +8071,13 @@ if (!process.browser && process.env.READABLE_STREAM === 'disable' && Stream) {
 }
 
 }).call(this,require('_process'))
-},{"./lib/_stream_duplex.js":60,"./lib/_stream_passthrough.js":61,"./lib/_stream_readable.js":62,"./lib/_stream_transform.js":63,"./lib/_stream_writable.js":64,"_process":58}],67:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":51,"./lib/_stream_passthrough.js":52,"./lib/_stream_readable.js":53,"./lib/_stream_transform.js":54,"./lib/_stream_writable.js":55,"_process":49}],58:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":63}],68:[function(require,module,exports){
+},{"./lib/_stream_transform.js":54}],59:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":64}],69:[function(require,module,exports){
+},{"./lib/_stream_writable.js":55}],60:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -10261,7 +8206,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":51,"inherits":53,"readable-stream/duplex.js":59,"readable-stream/passthrough.js":65,"readable-stream/readable.js":66,"readable-stream/transform.js":67,"readable-stream/writable.js":68}],70:[function(require,module,exports){
+},{"events":42,"inherits":44,"readable-stream/duplex.js":50,"readable-stream/passthrough.js":56,"readable-stream/readable.js":57,"readable-stream/transform.js":58,"readable-stream/writable.js":59}],61:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -10484,7 +8429,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":49}],71:[function(require,module,exports){
+},{"buffer":40}],62:[function(require,module,exports){
 (function (global){
 
 /**
@@ -10555,4 +8500,4 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[44]);
+},{}]},{},[35]);

@@ -32,10 +32,10 @@ test('sj-if', (t) => {
   t.ok(!target.querySelector('#bar'));
 });
 test('sj-repeat', (t) => {
-  t.plan(1);
+  t.plan(2);
   var div = document.createElement('div');
   div.innerHTML = `
-    <div sj-repeat="book in this.books">
+    <div sj-repeat="book in this.books" class="outer">
       <div class="book" sj-bind="book.name"></div>
     </div>
   `;
@@ -49,9 +49,11 @@ test('sj-repeat', (t) => {
     code.apply(target, [IncrementalDOM]);
   });
 
+  console.log(target.innerHTML);
 
   const books = target.querySelectorAll('.book');
   t.equal(books.length, 2);
+  t.equal(target.querySelectorAll('.outer').length, 1);
 });
 test('sj-repeat array kv', (t) => {
   t.plan(3);

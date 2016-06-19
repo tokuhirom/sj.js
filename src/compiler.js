@@ -46,7 +46,7 @@ class Compiler {
     for (let i = 0; i < children.length; ++i) {
       code = code.concat(this.renderDOM(children[i], []));
     }
-    console.log(code.join(";\n"));
+    // console.log(code.join(";\n"));
     return new Function('IncrementalDOM', code.join(";\n"));
   }
 
@@ -54,22 +54,30 @@ class Compiler {
     assert(elem);
     assert(vars);
     if (elem.nodeType === Node.TEXT_NODE) {
-      return `IncrementalDOM.text(${this.text(elem.textContent)})`;
+      return [`IncrementalDOM.text(${this.text(elem.textContent)})`];
     } else if (elem.nodeType === Node.COMMENT_NODE) {
       // Ignore comment node
-      return '';
+      return [];
     }
 
-    const headers = [];
-    const footers = [];
-    var body = [];
+    const tagName = elem.tagName.toLowerCase();
 
     // process `sj-if`
     {
       const cond = elem.getAttribute('sj-if');
       if (cond) {
-        headers.push(`if (${cond}) {`);
-        footers.push(`}`);
+        var body = [';'];
+        body.push(`if (${cond}) {`);
+        body.push(`IncrementalDOM.elementOpenStart("${tagName}")`);
+        body = body.concat(this.renderAttributes(elem, vars));
+        body.push(`IncrementalDOM.elementOpenEnd("${tagName}")`);
+
+        body = body.concat(this.renderBody(elem, vars));
+
+        body.push(`IncrementalDOM.elementClose("${tagName}")`);
+
+        body.push(`}`);
+        return body;
       }
     }
 
@@ -83,32 +91,56 @@ class Compiler {
         }
 
         if (m[1]) {
+          // varName in container
           const varName = m[1];
           const container = m[4];
 
-          headers.push(`(function(IncrementalDOM) {\nvar $$container=${container};\nfor (var $index=0,$l=$$container.length; $index<$l; $index++) {\nvar ${varName}=$$container[$index];`);
-          footers.push(`}\n}).apply(this, [IncrementalDOM]);`);
+          var body = [';'];
+          body.push(`IncrementalDOM.elementOpenStart("${tagName}")`);
+          body = body.concat(this.renderAttributes(elem, vars));
+          body.push(`IncrementalDOM.elementOpenEnd("${tagName}")`);
 
-          vars = vars.concat([varName, '$index']);
+          body.push(`(function(IncrementalDOM) {\nvar $$container=${container};\nfor (var $index=0,$l=$$container.length; $index<$l; $index++) {\nvar ${varName}=$$container[$index];`);
+
+          body = body.concat(this.renderBody(elem, vars.concat([varName, '$index'])));
+
+          body.push(`}\n}).apply(this, [IncrementalDOM]);`);
+          body.push(`IncrementalDOM.elementClose("${tagName}")`);
+
+          return body;
         } else {
+          // (keyName, varName) in container
           const keyName = m[2];
           const valueName = m[3];
           const container = m[4];
-          headers.push(`(function(IncrementalDOM) {\n$$container=${container};for (var ${keyName} in $$container) {\nvar ${valueName}=$$container[${keyName}];`);
-          footers.push(`}\n}).apply(this, [IncrementalDOM]);`);
-          vars = vars.concat([keyName, valueName]);
+          var body = [';'];
+          body.push(`IncrementalDOM.elementOpenStart("${tagName}")`);
+          body = body.concat(this.renderAttributes(elem, vars));
+          body.push(`IncrementalDOM.elementOpenEnd("${tagName}")`);
+          body.push(`(function(IncrementalDOM) {\n$$container=${container};for (var ${keyName} in $$container) {\nvar ${valueName}=$$container[${keyName}];`);
+          body = body.concat(this.renderBody(elem, vars.concat([keyName, valueName])));
+          body.push(`}\n}).apply(this, [IncrementalDOM]);`);
+          body.push(`IncrementalDOM.elementClose("${tagName}")`);
+          return body;
         }
       }
     }
 
-    const tagName = elem.tagName.toLowerCase();
-
     // process attributes
+    var body = [';'];
     body.push(`IncrementalDOM.elementOpenStart("${tagName}")`);
     body = body.concat(this.renderAttributes(elem, vars));
     body.push(`IncrementalDOM.elementOpenEnd("${tagName}")`);
+    body = body.concat(this.renderBody(elem, vars));
+    body.push(`IncrementalDOM.elementClose("${tagName}")`);
 
+    return body;
+  }
+
+  renderBody(elem, vars) {
+    let body = [];
     const bind = elem.getAttribute('sj-bind');
+    const tagName = elem.tagName.toLowerCase();
     if (tagName.indexOf('-') >= 0) {
       body.push(`IncrementalDOM.skip()`);
     } else if (bind) {
@@ -116,20 +148,16 @@ class Compiler {
     } else {
       const children = elem.childNodes;
       for (let i = 0, l = children.length; i < l; ++i) {
-      const child = children[i];
-      if (child.nodeType === Node.TEXT_NODE) {
-        // replaceVariables
-        body.push(`IncrementalDOM.text(${this.text(child.textContent)})`);
-      } else {
-        body = body.concat(this.renderDOM(child, vars));
-      }
+        const child = children[i];
+        if (child.nodeType === Node.TEXT_NODE) {
+          // replaceVariables
+          body.push(`IncrementalDOM.text(${this.text(child.textContent)})`);
+        } else {
+          body = body.concat(this.renderDOM(child, vars));
+        }
       }
     }
-    body.push(`IncrementalDOM.elementClose("${tagName}")`);
-
-    const retval = [';'].concat(headers).concat(body).concat(footers);
-    // console.log(`DONE renderDOM ${JSON.stringify(retval)}`);
-    return retval;
+    return body;
   }
 
   renderAttributes(elem, vars) {
