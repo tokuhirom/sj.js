@@ -117,7 +117,7 @@ class Compiler {
           body.push(`IncrementalDOM.elementOpenStart("${tagName}")`);
           body = body.concat(this.renderAttributes(elem, vars));
           body.push(`IncrementalDOM.elementOpenEnd("${tagName}")`);
-          body.push(`(function(IncrementalDOM) {\n$$container=${container};for (var ${keyName} in $$container) {\nvar ${valueName}=$$container[${keyName}];`);
+          body.push(`(function(IncrementalDOM) {\nvar $$container=${container};for (var ${keyName} in $$container) {\nvar ${valueName}=$$container[${keyName}];`);
           body = body.concat(this.renderBody(elem, vars.concat([keyName, valueName])));
           body.push(`}\n}).apply(this, [IncrementalDOM]);`);
           body.push(`IncrementalDOM.elementClose("${tagName}")`);
