@@ -1,9 +1,10 @@
-var test = require('tape');
+// var test = require('tape');
+const test = require('qunitjs').test;
 var Compiler = require('../src/compiler');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
 test('foo', (t) => {
-  t.plan(1);
+  console.log("AH");
   var div = document.createElement('div');
   div.innerHTML = '<div id="foo"></div>';
   const code = new Compiler().compile(div);
@@ -15,7 +16,6 @@ test('foo', (t) => {
   t.equal(target.querySelector('div').getAttribute('id'), 'foo');
 });
 test('sj-if', (t) => {
-  t.plan(2);
   var div = document.createElement('div');
   div.innerHTML = `
     <div id="foo" sj-if="this.foo"></div>
@@ -32,7 +32,6 @@ test('sj-if', (t) => {
   t.ok(!target.querySelector('#bar'));
 });
 test('sj-repeat', (t) => {
-  t.plan(2);
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="book in this.books" class="outer">
@@ -56,7 +55,6 @@ test('sj-repeat', (t) => {
   t.equal(target.querySelectorAll('.outer').length, 1);
 });
 test('sj-repeat array kv', (t) => {
-  t.plan(3);
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="(i,book) in this.books">
@@ -79,7 +77,6 @@ test('sj-repeat array kv', (t) => {
   t.equal(books[1].textContent, '1:fuga');
 });
 test('sj-repeat(object)', (t) => {
-  t.plan(2);
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="(x,y) in this.obj">
@@ -109,7 +106,6 @@ test('sj-repeat(object)', (t) => {
   t.deepEqual(target.result, ['a', 'c']);
 });
 test('sj-click', (t) => {
-  t.plan(1);
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-click="this.called = true"></div>
@@ -129,7 +125,6 @@ test('sj-click', (t) => {
   t.ok(target.called);
 });
 test('sj-disabled', (t) => {
-  t.plan(2);
   var div = document.createElement('div');
   div.innerHTML = `
     <div class="t" sj-disabled="true"></div>
@@ -148,7 +143,6 @@ test('sj-disabled', (t) => {
   t.ok(!target.querySelector('.f').getAttribute('disabled'));
 });
 test('sj-bind', (t) => {
-  t.plan(1);
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-bind="this.foo"></div>
@@ -166,7 +160,6 @@ test('sj-bind', (t) => {
   t.ok(target.innerHTML.match(/foo/));
 });
 test('nested for', (t) => {
-  t.plan(2);
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="blog in this.blogs">
@@ -198,7 +191,6 @@ test('nested for', (t) => {
   t.ok(target.innerHTML.match(/fuga/));
 });
 test('nested for', (t) => {
-  t.plan(1);
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-repeat="blog in this.blogs">
@@ -235,14 +227,12 @@ test('nested for', (t) => {
 test('text', (t) => {
   const compiler = new Compiler();
   const s = ["\n", `"`];
-  t.plan(s.length);
   for (let i=0, l=s.length; i<l; i++) {
     const m = s[i];
     t.equal(eval(compiler.text(m)), m);
   }
 });
 test('sj-class', (t) => {
-  t.plan(1);
   var div = document.createElement('div');
   div.innerHTML = `
     <div sj-class='this.klass'>

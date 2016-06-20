@@ -1,7 +1,7 @@
 all: dist/sj.bundle.js dist/sj.bundle.min.js
 
-test.js: src/*.js test/test-suite.js
-	browserify -t babelify test/test-suite.js -o test.js
+test/compiled.js: src/*.js test/all.js test/test-*.js
+	browserify -v --debug -t babelify test/all.js -o test/compiled.js
 
 setup:
 	npm install -g uglify-js testling babelify browserify
@@ -12,11 +12,8 @@ dist/sj.bundle.js: src/*.js
 dist/sj.bundle.min.js: dist/sj.bundle.js
 	uglifyjs --source-map dist/sj.bundle.min.js.map dist/sj.bundle.js -o dist/sj.bundle.min.js
 
-test:
-	browserify -t babelify test/test-aggregator.js | testling
-	browserify -t babelify test/test-compile.js | testling
-	browserify -t babelify test/test-element.js | testling
-	browserify -t babelify test/test-suite.js | testling
+test: test/compiled.js
+	phantomjs test/run-qunit.js test/test.html
 
 pages:
 	git subtree push --prefix dist origin gh-pages

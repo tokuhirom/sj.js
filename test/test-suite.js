@@ -1,4 +1,4 @@
-var test = require('tape');
+var test = require('qunitjs').test;
 var sj = require('../src/main.js');
 
 function runTest(tagName, elementClass, code) {
@@ -21,7 +21,6 @@ function invokeEvent(elem, name) {
 }
 
 test('export', function (t) {
-  t.plan(2);
   t.ok(sj.tag, 'sj.tag');
   t.ok(sj.Element, 'sj.Element');
 });
@@ -31,7 +30,6 @@ runTest('test-input-value', sj.tag('test-input-value', {
                             <input type="text" sj-model="this.filter" value="hoge">
   */}
 }), function (t, tagName) {
-  t.plan(2);
   var input = this.querySelector('input');
 
   t.equal(input.value, 'hoge', 'input.value');
@@ -48,7 +46,6 @@ runTest('test-disabled', sj.tag('test-disabled', {
     this.f = false;
   }
 }), function (t, tagName) {
-  t.plan(3);
   var divs = this.querySelectorAll('div');
   t.ok(divs.length == 2, tagName);
   t.ok(!divs[0].getAttribute('disabled'), tagName);
@@ -66,7 +63,6 @@ runTest('test-multi-attributes', sj.tag('test-multi-attributes', {
     this.books = [{"name":"foo"}, {"name":"bar"}];
   }
 }), function (t, tagName) {
-  t.plan(1);
   t.equal(this.querySelectorAll('div.book').length, 2, tagName);
 });
 
@@ -83,7 +79,6 @@ runTest('test-events', sj.tag('test-events', {
   var elem = this.querySelector("#clickTest");
   elem.click();
 
-  t.plan(1);
   t.ok(!!this.clicked);
 });
 
@@ -91,7 +86,6 @@ runTest('test-set-attrs', sj.tag('test-set-attrs', {
   template: '<div sj-bind="this.foo"></div>'
 }), function (t, tagName) {
   this.setAttribute('foo', 'bar');
-  t.plan(1);
   t.equal(this.querySelector('div').textContent, 'bar');
 });
 
@@ -107,7 +101,6 @@ runTest('test-input', sj.tag('test-input', {
 
   invokeEvent(input, 'input');
 
-  t.plan(1);
   t.ok(this.querySelector('span').textContent === "foo", tagName);
 });
 
@@ -122,7 +115,6 @@ runTest('test-input-checkbox', sj.tag('test-input-checkbox', {
 
   invokeEvent(a, 'change');
 
-  t.plan(2);
   t.equal(this.a, true, 'this.a is checked');
   t.equal(this.b, false);
 });
@@ -147,7 +139,6 @@ runTest('test-input-nested', sj.tag('test-input-nested', {
 
   invokeEvent(input, 'input');
 
-  t.plan(1);
   t.ok(this.x.y === 'foo', tagName);
 });
 
@@ -162,7 +153,6 @@ runTest('test-textarea', sj.tag('test-textarea', {
   input.value = "foo";
   invokeEvent(input, 'input');
 
-  t.plan(1);
   t.ok(this.querySelector('span').textContent === "foo", tagName);
 });
 
@@ -175,7 +165,6 @@ runTest('test-from-controller', sj.tag('test-from-controller', {
     <input type="text" name="bar" sj-model="this.hogehoge">
   */}
 }), function (t, tagName) {
-  t.plan(1);
   t.ok(this.querySelector('input').value === "foo", tagName);
 });
 
@@ -189,7 +178,6 @@ runTest('test-select', sj.tag('test-select', {
     SSS: <span sj-bind="this.sss"></span>
   */}
 }), function (t, tagName) {
-  t.plan(1);
   t.equal(this.querySelector('span').textContent, "ppp");
 });
 
@@ -210,7 +198,6 @@ runTest('test-for', sj.tag('test-for', {
   }
 }), function (t, tagName) {
   var elems = this.querySelectorAll('div.item');
-  t.plan(1);
   t.ok(elems.length == 4 && elems[0].textContent == "4649" && elems[1].textContent === '1' &&
         elems[2].textContent === '2' && elems[3].textContent === '3', tagName);
 });
@@ -232,7 +219,6 @@ runTest('test-for-index', sj.tag('test-for-index', {
   }
 }), function (t, tagName) {
   var elems = this.querySelectorAll('div.item');
-  t.plan(1);
   t.ok(elems.length == 4 && elems[0].textContent == "4649:0" && elems[1].textContent === '1:1' &&
         elems[2].textContent === '2:2' && elems[3].textContent === '3:3', tagName);
 });
@@ -249,7 +235,6 @@ runTest('test-for-empty', sj.tag('test-for-empty', {
   }
 }), function (t, tagName) {
   var elems = this.querySelectorAll('div.item');
-  t.plan(1);
   t.ok(elems.length == 0, tagName);
 });
 
@@ -269,7 +254,6 @@ runTest('test-if', sj.tag('test-if', {
   }
 }), function (t, tagName) {
   var elems = this.querySelectorAll('div');
-  t.plan(1);
   t.ok(elems.length == 1 && elems[0].textContent === 'TRUE', tagName);
 });
 
@@ -291,7 +275,6 @@ runTest('test-if-array', sj.tag('test-if-array', {
   }
 }), function (t, tagName) {
   var elems = this.querySelectorAll('div.target');
-  t.plan(1);
   t.ok(elems.length === 1 && elems[0].textContent === '1', tagName);
 });
 
@@ -305,7 +288,6 @@ runTest('test-text-var', sj.tag('test-text-var', {
   }
 }), function (t, tagName) {
   var elem = this.querySelector('div');
-  t.plan(1);
   t.ok(elem.textContent === 'Hello, John', tagName);
 });
 
@@ -326,7 +308,6 @@ runTest('test-filter', sj.tag('test-filter', {
   }
 }), function (t, tagName) {
   var elems = this.querySelectorAll('div');
-  t.plan(1);
   t.ok(elems.length === 1 && elems[0].textContent === 'Hello', tagName);
 });
 
@@ -336,7 +317,6 @@ runTest('test-comment', sj.tag('test-comment', {
     <!-- foo -->
   */}
 }), function (t, tagName) {
-  t.plan(1);
   t.ok(this.querySelector('h1'), tagName);
 });
 
@@ -352,7 +332,6 @@ runTest('test-sanitize-href', sj.tag('test-sanitize-href', {
     x: 5
   }
 }), function (t, tagName) {
-  t.plan(4);
   t.equal(this.querySelector('a.unsafe').getAttribute('href'), 'unsafe:javascript:this.x=3');
   t.equal(this.querySelector('a.unsafe2').getAttribute('href'), 'unsafe:jscript:alert(3)');
   t.equal(this.querySelector('a.unsafe3').getAttribute('href'), 'unsafe:view-source:alert(3)');
@@ -367,7 +346,6 @@ runTest('test-bind', sj.tag('test-bind', {
     'text': '<xmp>hoge'
   }
 }), function (t, tagName) {
-  t.plan(1);
   console.log(this.outerHTML);
   t.ok(this.querySelector('span').outerHTML.match(/\&lt;xmp&gt;hoge/));
 });
@@ -377,7 +355,6 @@ runTest('test-sj-attr', sj.tag('test-sj-attr', {
                             <span sj-attr-data-foo="5963"></span>
   */}
 }), function (t, tagName) {
-  t.plan(1);
   t.equal(this.querySelector('span').getAttribute('data-foo'), '5963');
 });
 
@@ -391,7 +368,6 @@ runTest('test-fireEvent', sj.tag('test-fireevent', {
     }
   }
 }), function (t, tagName) {
-  t.plan(1);
   sj.fireEvent(this, 'foo', {
     detail: {hello: 'nick'}
   });

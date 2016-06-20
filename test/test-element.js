@@ -1,4 +1,4 @@
-var test = require('tape');
+var test = require('qunitjs').test;
 var Element = require('../src/element.js');
 require('../src/polyfill.js');
 
@@ -10,7 +10,6 @@ test('es6', t => {
   });
 
   const elem = document.createElement('test-es6');
-  t.plan(1);
   t.equal(elem.filter, 'hoge');
 });
 

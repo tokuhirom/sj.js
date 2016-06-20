@@ -1,8 +1,7 @@
-const test = require('tape');
+const test = require('qunitjs').test;
 const Aggregator = require('../src/aggregator');
 
 test('input', (t) => {
-  t.plan(1);
   const div = document.createElement('div');
   div.innerHTML = '<input sj-model="this.hoge" value="iyan">';
   const scope = {};
@@ -13,7 +12,6 @@ test('input', (t) => {
 });
 
 test('input(checkbox)', (t) => {
-  t.plan(1);
   const div = document.createElement('div');
   div.innerHTML = `
   <input type="checkbox" sj-model="this.a" checked="checked">
@@ -28,7 +26,6 @@ test('input(checkbox)', (t) => {
 });
 
 test('input(empty)', (t) => {
-  t.plan(1);
   const div = document.createElement('div');
   div.innerHTML = '<input sj-model="this.hoge" value="">';
   const scope = {};
@@ -39,7 +36,6 @@ test('input(empty)', (t) => {
 });
 
 test('input(repeat)', (t) => {
-  t.plan(1);
   const div = document.createElement('div');
   div.innerHTML = `
   <div sj-repeat="item in this.items">
@@ -51,7 +47,6 @@ test('input(repeat)', (t) => {
 });
 
 test('textarea', (t) => {
-  t.plan(1);
   const div = document.createElement('div');
   div.innerHTML = '<textarea sj-model="this.hoge">iyan</textarea>';
   const scope = {};
@@ -62,7 +57,6 @@ test('textarea', (t) => {
 });
 
 test('select', (t) => {
-  t.plan(1);
   const div = document.createElement('div');
   div.innerHTML = '<select sj-model="this.hoge"><option value="iyan" checked>iyan</option></select>';
   const scope = {};

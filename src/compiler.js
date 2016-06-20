@@ -1,5 +1,4 @@
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
-const scan = require('./text-expression-scanner.js');
 const assert = val => { };
 
 // hack

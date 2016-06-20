@@ -2,4 +2,4 @@
 /.idea/
 *.iml
 /foo.html
-/test.js
+/test/compiled.js
