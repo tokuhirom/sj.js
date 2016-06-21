@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset=utf8>
+    <title>sj.js</title>
+    <style>
+      .container {
+        max-width: 640px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>sj.js</h1>
+      <hr>
+      <div>
+        <h2>Hello</h2>
+        <x-hello></x-hello>
+      </div>
+      <hr>
+      <div>
+        <h2>Counter</h2>
+        <div sj-app="CounterApp">
+          <button sj-click="this.count()">Click Me!</button>
+          <p sj-bind="this.counter"></p>
+        </div>
+      </div>
+      <div>
+        <h2>Preview</h2>
+        <div sj-app="PreviewApp">
+          <textarea sj-model="this.html">Hello <B>John</B></textarea>
+          <iframe sj-attr-src="this.src()"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <template id="tmpl-hello">
+      <input type="text" sj-model="this.newitem" sj-keyup="this.update()"/>
+      Hello, <span sj-bind="this.newitem"></span>
+    </template>
+
+    <script type="text/javascript" src="../dist/sj.bundle.js"></script>
+    <script type="text/javascript">
+      // Note. should i add 'sj.ready()' function?
+      document.addEventListener("DOMContentLoaded", function(event) {
+        sj.tag('x-hello', {
+          template: document.getElementById('tmpl-hello').innerHTML
+        });
+      });
+
+function CounterApp() {
+  this.counter = 0;
+  this.count = function () {
+    this.counter++;
+    this.update();
+  };
+}
+
+function PreviewApp() {
+  this.src = function () {
+    return "data:text/html," + encodeURIComponent(this.html);
+  };
+}
+    </script>
+  </body>
+</html>

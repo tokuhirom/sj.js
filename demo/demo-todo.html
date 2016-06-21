@@ -2,7 +2,7 @@
 <html>
   <body>
     <x-todo-list></x-todo-list>
-    <script type="text/javascript" src="sj.bundle.js"></script>
+    <script type="text/javascript" src="../dist/sj.bundle.js"></script>
     <script>
 sj.tag('x-todo-list', {
   template: `
@@ -78,20 +78,19 @@ sj.tag('x-todo-item', {
                });
              }
            },
-           accessors: {
-             checked: {
-               set: function (value) {
-                 this.scope.checked = value === 'true' || value === true;
-                 console.trace(`SET CHECKED ${value} ${this.scope.checked} ${this.title}`);
-                 this.update();
-               },
-               get: function () {
-                 // console.log(`GET checked: ${this.scope.checked}`);
-                 return this.scope.checked;
-               }
+           attributes: {
+             checked: function (value) {
+               this.checked = value === 'true' || value === true;
+               console.trace(`SET CHECKED ${value} ${this.scope.checked} ${this.title}`);
+               this.update();
+             },
+             title: function (value) {
+               this.title = value;
+               this.update();
              }
            }
-});
+}
+);
     </script>
 
   </body>
