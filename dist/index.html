@@ -130,7 +130,7 @@
             checked: {
               set: function (value) {
                 this.scope.checked = value === 'true' || value === true;
-                console.trace(`SET CHECKED ${this.scope.checked} ${this.title}`);
+                console.trace(`SET CHECKED ${value} ${this.scope.checked} ${this.title}`);
                 this.update();
               },
               get: function () {

@@ -374,3 +374,41 @@ runTest('test-fireEvent', sj.tag('test-fireevent', {
   t.deepEqual(this.gotEvent, {hello: 'nick'});
 });
 
+sj.tag('test-child', {
+  template: `
+      <input type="checkbox" sj-model="this.checked">
+  `,
+  default: {
+    scope: { }
+  },
+  accessors: {
+    checked: {
+      set: function (value) {
+        this.scope.checked = value === 'true' || value === true;
+        this.update();
+      },
+      get: function () {
+        return this.scope.checked;
+      }
+    }
+  }
+});
+runTest('test-parent', sj.tag('test-parent', {
+  template: function () {/*
+                            oo
+                            <div sj-repeat="x in this.items">
+                            <test-child sj-attr-checked="x.checked"></test-child>
+                            </div>
+  */},
+ default: {
+  items: [
+    {checked: true},
+    {checked: false}
+  ]
+ }
+}), function (t, tagName) {
+  const inputs = this.querySelectorAll('input');
+  t.equal(inputs[0].checked, true);
+  t.equal(inputs[1].checked, false);
+});
+
