@@ -35,7 +35,6 @@ sj.tag('x-todo-list', {
                this.items = this.items.filter(function (e) {
                  return !e.checked;
                });
-               console.log(JSON.stringify(this.items));
                this.update();
              }
            },
@@ -81,7 +80,6 @@ sj.tag('x-todo-item', {
            attributes: {
              checked: function (value) {
                this.checked = value === 'true' || value === true;
-               console.trace(`SET CHECKED ${value} ${this.scope.checked} ${this.title}`);
                this.update();
              },
              title: function (value) {
