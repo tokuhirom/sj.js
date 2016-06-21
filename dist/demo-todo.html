@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+  <body>
+    <x-todo-list></x-todo-list>
+    <script type="text/javascript" src="sj.bundle.js"></script>
+    <script>
+sj.tag('x-todo-list', {
+  template: `
+    <div><a sj-click="this.archive()">Archive</a></div>
+    <input type="text" sj-model="this.newitem"/>
+    <button sj-click="this.add()">Add</button>
+    <div sj-repeat="item in this.items">
+    <x-todo-item sj-attr-index="$index" sj-attr-title="item.title" sj-attr-checked="item.checked"></x-todo-item>
+    </div>
+    `,
+  default: {
+    items: [
+    {title:'buy milk', checked: true},
+    {title:'tel nick', checked: false}
+    ]
+  },
+           methods: {
+             add: function () {
+               if (this.newitem==='') {
+                 return;
+               }
+               this.items.push({
+                 title: this.newitem,
+                 checked: false
+               });
+               this.newitem = '';
+               this.update();
+             },
+             archive: function () {
+               this.items = this.items.filter(function (e) {
+                 return !e.checked;
+               });
+               console.log(JSON.stringify(this.items));
+               this.update();
+             }
+           },
+           events: {
+             todoItemChanged: function ($event) {
+               var elem = $event.detail;
+               this.items[elem.index] = {
+                 title: elem.title,
+                 checked: elem.checked
+               };
+             }
+           }
+});
+
+sj.tag('x-todo-item', {
+  template: `
+    <div sj-attr-style="this.getStyle()">
+    <label>
+    <input type="checkbox" sj-model="this.checked" sj-change="this.change()">
+    <span sj-bind="this.title"></span>
+    </label>
+    </div>
+    `,
+  default: {
+    scope: {}
+  },
+           methods: {
+             getStyle: function () {
+               if (this.checked) {
+                 return {
+                   'text-decoration': 'line-through'
+                 }
+               }
+               return { };
+             },
+             change: function () {
+               sj.fireEvent(this, 'todoItemChanged', {
+                 detail: this,
+                 bubbles: true
+               });
+             }
+           },
+           accessors: {
+             checked: {
+               set: function (value) {
+                 this.scope.checked = value === 'true' || value === true;
+                 console.trace(`SET CHECKED ${value} ${this.scope.checked} ${this.title}`);
+                 this.update();
+               },
+               get: function () {
+                 // console.log(`GET checked: ${this.scope.checked}`);
+                 return this.scope.checked;
+               }
+             }
+           }
+});
+    </script>
+
+  </body>
+</html>
+
