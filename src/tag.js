@@ -12,6 +12,7 @@ const knownOpts = [
   'default',
   'events',
   'initialize',
+  'attributes',
   'methods'
 ];
 const knownOptMap = {};
@@ -27,6 +28,7 @@ function tag(tagName, opts) {
   }
 
   const defaultValue = objectAssign({}, opts.default);
+  const attributes = opts.attributes || {};
 
   let template;
 
@@ -53,8 +55,32 @@ function tag(tagName, opts) {
           this.addEventListener(event, opts.events[event].bind(this));
         }
       }
+      // overwrite by attribute values
+      const attrs = this.attributes;
+      for (let i = 0, l = attrs.length; i < l; ++i) {
+        const attr = attrs[i];
+        const key = attr.name;
+        if (key.substr(0, 8) !== 'sj-attr-') {
+          const cb = attributes[key];
+          if (cb) {
+            cb.apply(this, [attr.value]);
+          }
+        }
+      }
       if (opts.initialize) {
         opts.initialize.apply(this);
+      }
+    }
+
+    attributeChangedCallback(key) {
+      if (key.substr(0, 8) === 'sj-attr-') {
+        return;
+      }
+
+      const cb = attributes[key];
+      if (cb) {
+        cb.apply(this, [this.getAttribute(key)]);
+        this.update();
       }
     }
   };

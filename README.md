@@ -68,6 +68,30 @@ TBD
 
 TBD
 
+### attributes
+
+Set attribute handler.
+This handler will be called when creating tag and attribute changed.
+
+Example:
+
+    sj.tag('x-foo', {
+        attributes: {
+            checked: function (value) {
+                this.checked = value === 'true' || value === true;
+                this.update();
+            },
+            title: function (value) {
+                this.title = value;
+                this.update();
+            }
+        }
+    });
+
+Tag example:
+
+    <x-foo checked="true" title="hoge"></x-foo>
+
 ### methods
 
 TBD

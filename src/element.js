@@ -16,7 +16,6 @@ const compiled = {};
 
 class Element extends HTMLElement {
   createdCallback() {
-    console.log("CREATED " + this.tagName);
     if (!scopes[this.tagName]) {
       // parse template
       var template = this.template();
@@ -42,18 +41,7 @@ class Element extends HTMLElement {
       }
     }
 
-//  // overwrite by attribute values
-//  const attrs = this.attributes;
-//  for (let i = 0, l = attrs.length; i < l; ++i) {
-//    const attr = attrs[i];
-//    if (attr.name.substr(0, 8) !== 'sj-attr-') {
-//      def[attr.name] = attr.value;
-//    }
-//  }
-
     // and set to tag attributes
-    console.trace("SETTING VALUES");
-    console.log(def);
     for (const key in def) {
       if (def.hasOwnProperty(key)) {
         this[key] = def[key];
@@ -73,18 +61,11 @@ class Element extends HTMLElement {
     throw "Please implement 'template' method";
   }
 
-  attributeChangedCallback(key) {
-    console.log(`SET ATTRIBUTE: ${key}`);
-    this[key] = this.getAttribute(key);
-    this.update();
-  }
-
   initialize() {
     // nop. abstract method.
   }
 
   update() {
-    console.log("UPDATE");
     IncrementalDOM.patch(this, () => {
       compiled[this.tagName].apply(this, [IncrementalDOM]);
     });
