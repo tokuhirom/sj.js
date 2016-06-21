@@ -2,6 +2,7 @@ const Compiler = require('./compiler');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 const Aggregator = require('./aggregator.js');
 const Element = require('./element.js');
+const objectAssign = require('object-assign');
 
 var unwrapComment = /\/\*!?(?:\@preserve)?[ \t]*(?:\r\n|\n)([\s\S]*?)(?:\r\n|\n)\s*\*\//;
 
@@ -25,6 +26,8 @@ function tag(tagName, opts) {
     }
   }
 
+  const defaultValue = objectAssign({}, opts.default);
+
   let template;
 
   const elementClass = class extends Element {
@@ -40,7 +43,7 @@ function tag(tagName, opts) {
     }
 
     default() {
-      return opts.default || {};
+      return defaultValue;
     }
 
     initialize() {

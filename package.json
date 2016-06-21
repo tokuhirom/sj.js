@@ -23,6 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "incremental-dom": "^0.4.1",
+    "object-assign": "^4.1.0",
     "webcomponents.js": "^0.7.22",
     "whatwg-fetch": "^1.0.0"
   },
