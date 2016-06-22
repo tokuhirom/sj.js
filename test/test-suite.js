@@ -82,13 +82,6 @@ runTest('test-events', sj.tag('test-events', {
   t.ok(!!this.clicked);
 });
 
-runTest('test-set-attrs', sj.tag('test-set-attrs', {
-  template: '<div sj-bind="this.foo"></div>'
-}), function (t, tagName) {
-  this.setAttribute('foo', 'bar');
-  t.equal(this.querySelector('div').textContent, 'bar');
-});
-
 runTest('test-input', sj.tag('test-input', {
   template: function () {/*
                             <h1>Input</h1>
@@ -381,15 +374,10 @@ sj.tag('test-child', {
   default: {
     scope: { }
   },
-  accessors: {
-    checked: {
-      set: function (value) {
-        this.scope.checked = value === 'true' || value === true;
-        this.update();
-      },
-      get: function () {
-        return this.scope.checked;
-      }
+  attributes: {
+    checked: function (value) {
+      this.checked = value === 'true' || value === true;
+      this.update();
     }
   }
 });
