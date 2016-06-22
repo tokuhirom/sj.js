@@ -104,16 +104,18 @@ class Compiler {
           const container = m[4];
 
           var body = [';'];
+
+          body.push(`(function(IncrementalDOM) {\nvar $$container=${container};\nfor (var $index=0,$l=$$container.length; $index<$l; $index++) {\nvar ${varName}=$$container[$index];`);
+
           body.push(`IncrementalDOM.elementOpenStart("${tagName}")`);
           body = body.concat(this.renderAttributes(elem, vars));
           body.push(`IncrementalDOM.elementOpenEnd("${tagName}")`);
 
-          body.push(`(function(IncrementalDOM) {\nvar $$container=${container};\nfor (var $index=0,$l=$$container.length; $index<$l; $index++) {\nvar ${varName}=$$container[$index];`);
-
           body = body.concat(this.renderBody(elem, vars.concat([varName, '$index'])));
 
-          body.push(`}\n}).apply(this, [IncrementalDOM]);`);
           body.push(`IncrementalDOM.elementClose("${tagName}")`);
+
+          body.push(`}\n}).apply(this, [IncrementalDOM]);`);
 
           return body;
         } else {
@@ -122,13 +124,13 @@ class Compiler {
           const valueName = m[3];
           const container = m[4];
           var body = [';'];
+          body.push(`(function(IncrementalDOM) {\nvar $$container=${container};for (var ${keyName} in $$container) {\nvar ${valueName}=$$container[${keyName}];`);
           body.push(`IncrementalDOM.elementOpenStart("${tagName}")`);
           body = body.concat(this.renderAttributes(elem, vars));
           body.push(`IncrementalDOM.elementOpenEnd("${tagName}")`);
-          body.push(`(function(IncrementalDOM) {\nvar $$container=${container};for (var ${keyName} in $$container) {\nvar ${valueName}=$$container[${keyName}];`);
           body = body.concat(this.renderBody(elem, vars.concat([keyName, valueName])));
-          body.push(`}\n}).apply(this, [IncrementalDOM]);`);
           body.push(`IncrementalDOM.elementClose("${tagName}")`);
+          body.push(`}\n}).apply(this, [IncrementalDOM]);`);
           return body;
         }
       }

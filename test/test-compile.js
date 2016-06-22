@@ -47,16 +47,15 @@ test('sj-repeat', (t) => {
     code.apply(target, [IncrementalDOM]);
   });
 
-  console.log(target.innerHTML);
 
   const books = target.querySelectorAll('.book');
   t.equal(books.length, 2);
-  t.equal(target.querySelectorAll('.outer').length, 1);
+  t.equal(target.querySelectorAll('.outer').length, 2);
 });
 test('sj-repeat array kv', (t) => {
   var div = document.createElement('div');
   div.innerHTML = `
-    <div sj-repeat="(i,book) in this.books">
+    <div sj-repeat="(i,book) in this.books" class="outer">
       <div class="book"><span sj-bind="i"></span>:<span sj-bind="book.name"></span></div>
     </div>
   `;
@@ -74,6 +73,7 @@ test('sj-repeat array kv', (t) => {
   t.equal(books.length, 2);
   t.equal(books[0].textContent, '0:hoge');
   t.equal(books[1].textContent, '1:fuga');
+  t.equal(target.querySelectorAll('.outer').length, 2);
 });
 test('sj-repeat(object)', (t) => {
   var div = document.createElement('div');

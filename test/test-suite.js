@@ -339,7 +339,6 @@ runTest('test-bind', sj.tag('test-bind', {
     'text': '<xmp>hoge'
   }
 }), function (t, tagName) {
-  console.log(this.outerHTML);
   t.ok(this.querySelector('span').outerHTML.match(/\&lt;xmp&gt;hoge/));
 });
 
