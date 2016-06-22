@@ -4,7 +4,6 @@ var Compiler = require('../src/compiler');
 const IncrementalDOM = require('incremental-dom/dist/incremental-dom.js');
 
 test('foo', (t) => {
-  console.log("AH");
   var div = document.createElement('div');
   div.innerHTML = '<div id="foo"></div>';
   const code = new Compiler().compile(div);
