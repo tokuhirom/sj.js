@@ -34,6 +34,15 @@ const sj_boolean_attributes = {
   'sj-checked': 'checked'
 };
 
+// oncompositionstart and oncompositionend is not available in current HTML spec.
+// https://github.com/whatwg/html/issues/685
+IncrementalDOM.attributes['oncompositionstart'] = function (element, name, value) {
+  element.addEventListener('compositionstart', value);
+};
+IncrementalDOM.attributes['oncompositionend'] = function (element, name, value) {
+  element.addEventListener('compositionend', value);
+};
+
 class Compiler {
   constructor() {
     assert(arguments.length === 0);
@@ -202,6 +211,35 @@ class Compiler {
             ${model} = $event.target.checked;
             ${code};
             this.update();
+          }.bind(${['this'].concat(vars).join(",")}));
+        `);
+      } else if (elem.type === 'text' || elem.tagName === 'TEXTAREA') {
+        normalEvents.push('onchange');
+        const input = events['oninput'] || '';
+        const compositionstart = events['oncompositionstart'] || '';
+        const compositionend = events['oncompositionend'] || '';
+        const i = this.composition_index++;
+        codeList.push(`
+          IncrementalDOM.attr("value", ${model});
+
+          IncrementalDOM.attr("oncompositionstart", function (${vars.concat(['$event']).join(",")}) {
+            $event.target.$$composing = true;
+            ${compositionstart};
+          }.bind(${['this'].concat(vars).join(",")}));
+
+          IncrementalDOM.attr("oncompositionend", function (${vars.concat(['$event']).join(",")}) {
+            $event.target.$$composing = false;
+            ${compositionend};
+          }.bind(${['this'].concat(vars).join(",")}));
+
+          IncrementalDOM.attr("oninput", function (${vars.concat(['$event']).join(",")}) {
+            if (!$event.target.$$composing) {
+              ${model} = $event.target.value;
+            }
+            ${input};
+            if (!$event.target.$$composing) {
+              this.update();
+            }
           }.bind(${['this'].concat(vars).join(",")}));
         `);
       } else {
