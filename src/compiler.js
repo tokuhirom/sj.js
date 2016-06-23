@@ -42,6 +42,24 @@ IncrementalDOM.attributes['oncompositionstart'] = function (element, name, value
 IncrementalDOM.attributes['oncompositionend'] = function (element, name, value) {
   element.addEventListener('compositionend', value);
 };
+IncrementalDOM.attributes['sj-merge-style'] = function (element, name, value) {
+  element.style.cssText = value[0];
+
+  if (typeof value[1] === 'object') {
+    const elStyle = element.style;
+    const obj = /** @type {!Object<string,string>} */(value[1]);
+
+    for (const prop in obj) {
+      if (obj.hasOwnProperty(prop)) {
+        if (prop.indexOf('-') >= 0) {
+          elStyle.setProperty(prop, /** @type {string} */(obj[prop]));
+        } else {
+          elStyle[prop] = obj[prop];
+        }
+      }
+    }
+  }
+};
 
 class Compiler {
   constructor() {
@@ -268,8 +286,16 @@ class Compiler {
       }
     }
 
+    codeList.push(this.renderStyle(elem));
+
     // console.log(`DONE renderAttributes ${JSON.stringify(codeList)}`);
     return codeList;
+  }
+
+  renderStyle(elem, codeList) {
+    const style = elem.getAttribute('style') || '';
+    const sjAttrStyle = elem.getAttribute('sj-attr-style') || 'undefined';
+    return `IncrementalDOM.attr("sj-merge-style", [${this.text(style)}, ${sjAttrStyle}]);`;
   }
 
   renderAttribute(elem, attr, vars, events) {
@@ -291,11 +317,18 @@ class Compiler {
         return `IncrementalDOM.attr("class", ${attr.value}.join(" "));`;
       } else if (attr.name === 'sj-href') {
         return `IncrementalDOM.attr("href", ${attr.value}.replace(/^[^:]+?:/, function (scheme) { return (scheme === 'http:' || scheme === 'https://') ? scheme : 'unsafe:' + scheme }));`;
+      } else if (attr.name === 'sj-attr-style' || attrName === 'sj-model' || attrName === 'sj-bind' || attrName === 'sj-if' || attrName === 'sj-repeat') {
+        // handled by above.
+        return '';
       } else if (attr.name.substr(0,8) === 'sj-attr-') {
         return `IncrementalDOM.attr(${JSON.stringify(attr.name.substr(8))}, ${attr.value});`;
       } else {
+        console.log(`Unknown attribute: ${attr.name}`);
         return '';
       }
+    } else if (attrName === 'style') {
+      // 'style' is special case.
+      return '';
     } else {
       return `IncrementalDOM.attr("${attr.name}", ${this.text(attr.value)});`;
     }

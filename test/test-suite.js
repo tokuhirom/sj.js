@@ -398,4 +398,18 @@ runTest('test-parent', sj.tag('test-parent', {
   t.equal(inputs[0].checked, true);
   t.equal(inputs[1].checked, false);
 });
+runTest('test-merge-style', sj.tag('test-merge-style', {
+  template: function () {/*
+    <div style="color:red" sj-attr-style="this.foo">UAAAAAAAAAAAAAAA</div>
+  */},
+ default: {
+  foo: {
+    'background-color': 'yellow'
+  }
+ }
+}), function (t, tagName) {
+  const div = this.querySelector('div');
+  t.equal(div.style.color, 'red');
+  t.equal(div.style.backgroundColor, 'yellow');
+});
 

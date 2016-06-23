@@ -47,7 +47,6 @@ test('sj-repeat', (t) => {
     code.apply(target, [IncrementalDOM]);
   });
 
-
   const books = target.querySelectorAll('.book');
   t.equal(books.length, 2);
   t.equal(target.querySelectorAll('.outer').length, 2);
