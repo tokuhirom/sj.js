@@ -241,6 +241,12 @@ No. But you can write a code like following.
 
 No. It may cause security issue.
 
+## This library is powered by browserstack!
+
+We are using browserstack's OSS license to testing this application on browsers!
+
+browserstack is awesome tool to test web applications!
+
 ## LICENSE
 
     The MIT License (MIT)
