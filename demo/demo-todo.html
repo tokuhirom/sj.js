@@ -51,7 +51,7 @@ sj.tag('x-todo-list', {
 
 sj.tag('x-todo-item', {
   template: `
-    <div sj-attr-style="this.getStyle()">
+    <div sj-style="this.getStyle()">
     <label>
     <input type="checkbox" sj-model="this.checked" sj-change="this.change()">
     <span sj-bind="this.title"></span>

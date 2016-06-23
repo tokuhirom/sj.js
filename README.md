@@ -146,6 +146,13 @@ In the expression, _this_ indicates your custom element.
 
 If the eavaluation result contains unsafe url scheme, sj will sanitize it.
 
+## sj-style
+
+    <div sj-style="<<EXPRESSION>>"></div>
+
+You can specify the href for element via `sj-style` attribute.
+In the expression, _this_ indicates your custom element.
+
 ## `sj-attr-*`
 
     <div sj-attr-ATTR_NAME="<<EXPRESSION>>"></a>

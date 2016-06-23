@@ -400,7 +400,7 @@ runTest('test-parent', sj.tag('test-parent', {
 });
 runTest('test-merge-style', sj.tag('test-merge-style', {
   template: function () {/*
-    <div style="color:red" sj-attr-style="this.foo">UAAAAAAAAAAAAAAA</div>
+    <div style="color:red" sj-style="this.foo">UAAAAAAAAAAAAAAA</div>
   */},
  default: {
   foo: {

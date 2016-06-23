@@ -294,8 +294,8 @@ class Compiler {
 
   renderStyle(elem, codeList) {
     const style = elem.getAttribute('style') || '';
-    const sjAttrStyle = elem.getAttribute('sj-attr-style') || 'undefined';
-    return `IncrementalDOM.attr("sj-merge-style", [${this.text(style)}, ${sjAttrStyle}]);`;
+    const sjStyle = elem.getAttribute('sj-style') || 'undefined';
+    return `IncrementalDOM.attr("sj-merge-style", [${this.text(style)}, ${sjStyle}]);`;
   }
 
   renderAttribute(elem, attr, vars, events) {
@@ -317,7 +317,7 @@ class Compiler {
         return `IncrementalDOM.attr("class", ${attr.value}.join(" "));`;
       } else if (attr.name === 'sj-href') {
         return `IncrementalDOM.attr("href", ${attr.value}.replace(/^[^:]+?:/, function (scheme) { return (scheme === 'http:' || scheme === 'https://') ? scheme : 'unsafe:' + scheme }));`;
-      } else if (attr.name === 'sj-attr-style' || attrName === 'sj-model' || attrName === 'sj-bind' || attrName === 'sj-if' || attrName === 'sj-repeat') {
+      } else if (attr.name === 'sj-style' || attrName === 'sj-model' || attrName === 'sj-bind' || attrName === 'sj-if' || attrName === 'sj-repeat') {
         // handled by above.
         return '';
       } else if (attr.name.substr(0,8) === 'sj-attr-') {
